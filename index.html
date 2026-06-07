@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <title>Arani Das - Analytics & Data Science Leadership</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Professional profile and resume of Arani Das, a data-driven analytics leader with 9+ years of experience spanning supply chain operations, logistics, e-commerce, and strategic analytics.">
+  <meta name="keywords" content="Arani Das, Data Analytics, Data Science, Supply Chain, Logistics, Operations, Leadership, ISB, Allcargo Gati, Tata CLiQ">
+  <meta name="color-scheme" content="dark light">
+  
+  <!-- Preconnect to Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom styles for non-utility elements -->
+  <style>
+    /* Antialiasing / Scaling fixes for crisp rendering */
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.1);
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(15, 23, 42, 0.2);
+    }
+
+    /* Mesh Grid Background */
+    .bg-grid-pattern {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+    }
+    .dark .bg-grid-pattern {
+      background-image: 
+        linear-gradient(to right, rgba(51, 65, 85, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(51, 65, 85, 0.12) 1px, transparent 1px);
+    }
+
+    /* Radial Gradient Mask for Background Map */
+    .map-mask {
+      mask-image: radial-gradient(circle at center, black 65%, transparent 100%);
+      -webkit-mask-image: radial-gradient(circle at center, black 65%, transparent 100%);
+    }
+
+    /* Map Radar Pulse Animation */
+    @keyframes radar-pulse {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.9;
+      }
+      100% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+    }
+    .pulse-ring {
+      animation: radar-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+      transform-origin: center;
+    }
+
+    /* Map Connections Flow Animation */
+    @keyframes dash-flow {
+      to {
+        stroke-dashoffset: -20;
+      }
+    }
+    .map-flow-line {
+      stroke-dasharray: 6, 4;
+      animation: dash-flow 3s linear infinite;
+    }
+
+    /* Smooth Height Accordion Classes */
+    .accordion-grid {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .accordion-grid.open {
+      grid-template-rows: 1fr;
+    }
+
+    /* Accessibility Skip Link styling */
+    .skip-to-content:focus {
+      top: 1rem;
+      left: 1rem;
+    }
+
+    /* Preferences and Accessibility rules */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .pulse-ring, .map-flow-line {
+        animation: none !important;
+      }
+    }
+  </style>
+  
+  <!-- Load Sectioned Config Data -->
+  <script src="data/personal.js"></script>
+  <script src="data/overview.js"></script>
+  <script src="data/trajectory.js"></script>
+  <script src="data/faqs.js"></script>
+  <script src="data/recommendations.js"></script>
+  <script src="data/map.js"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 transition-colors duration-300 font-sans antialiased overflow-x-hidden relative min-h-screen">
+
+  <!-- Skip to Content Accessibility Link -->
+  <a href="#main-content" class="skip-to-content absolute -top-16 left-4 z-50 bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all duration-300">
+    Skip to Content
+  </a>
+
+  <!-- Ambient Backdrop Mesh Grid -->
+  <div class="fixed inset-0 bg-grid-pattern -z-30 pointer-events-none"></div>
+  
+  <!-- Glassmorphic Background Blur Circles -->
+  <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/5 dark:bg-indigo-900/10 blur-[120px] -z-40 pointer-events-none"></div>
+  <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-rose-400/5 dark:bg-rose-900/10 blur-[120px] -z-40 pointer-events-none"></div>
+
+  <!-- FIXED GEOSPATIAL WIREFRAME BACKGROUND MAP -->
+  <div class="fixed inset-0 -z-20 flex items-center justify-center pointer-events-none overflow-hidden map-mask">
+    <div class="relative w-full w-screen h-screen opacity-15 dark:opacity-25 transition-all duration-1000 transform scale-105">
+      <!-- Background Map Image -->
+      <img src="assets/wireframe-map-of-the-world-world.png" class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none mix-blend-luminosity dark:invert" alt="World Map">
+      <!-- Overlay SVG for coordinates plotting -->
+      <svg id="career-map" viewBox="0 0 840 506" class="absolute inset-0 w-full h-full">
+        <!-- Coordinate System Grid Overlay -->
+        <g id="map-grid-axes"></g>
+        <!-- Connection Flow Lines -->
+        <g id="map-connections" class="transition-opacity duration-500"></g>
+        <!-- Interactive City Markers -->
+        <g id="map-nodes"></g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- WRAPPER -->
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+
+    <!-- HEADER / HERO -->
+    <header class="mb-10 rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl p-6 sm:p-10 shadow-xl dark:shadow-slate-950/20 relative overflow-hidden group">
+      <!-- Ambient card illumination -->
+      <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 dark:bg-indigo-400/5 blur-[80px] pointer-events-none group-hover:bg-indigo-500/15 transition-all duration-700"></div>
+      
+      <div class="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
+        <!-- Profile Picture with Elegant Outer Border -->
+        <div class="relative flex-shrink-0 group/img">
+          <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-60 blur-md group-hover/img:opacity-100 transition-opacity duration-500"></div>
+          <div class="relative w-40 h-40 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 shadow-lg">
+            <img id="profile-img" src="" alt="" class="w-full h-full object-cover object-top transition-transform duration-700 group-hover/img:scale-105" width="160" height="160">
+          </div>
+        </div>
+        
+        <!-- Header Info -->
+        <div class="flex-1 text-center md:text-left">
+          <h1 id="profile-name" class="text-4xl sm:text-5xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white mb-2"></h1>
+          <p id="profile-title" class="text-lg sm:text-xl font-semibold tracking-wide text-indigo-600 dark:text-amber-400 mb-6"></p>
+          
+          <!-- Contact Grid -->
+          <div id="contact-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl text-sm font-medium"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- STICKY NAVIGATION BAR -->
+    <nav class="sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md p-2 shadow-lg dark:shadow-slate-950/20 flex items-center justify-between gap-2 overflow-x-auto">
+      <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
+        <button onclick="setSection('overview')" id="nav-overview" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+          Overview
+        </button>
+        <button onclick="setSection('workex')" id="nav-workex" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+          Career Trajectory
+        </button>
+        <button onclick="setSection('faq')" id="nav-faq" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+          FAQ
+        </button>
+        <button onclick="setSection('recommendations')" id="nav-recommendations" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+          Recommendations
+        </button>
+      </div>
+      
+      <!-- Theme Toggle Button -->
+      <button onclick="toggleTheme()" aria-label="Toggle visual theme" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
+        <!-- Sun Icon (Light Mode) -->
+        <svg id="theme-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+        </svg>
+        <!-- Moon Icon (Dark Mode) -->
+        <svg id="theme-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- MAIN CONTENT SECTIONS -->
+    <main id="main-content" class="space-y-12 outline-none">
+
+      <!-- SECTION: OVERVIEW -->
+      <section id="sec-overview" class="section-pane animate-fade">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          
+          <!-- Bio & Global Footprint Panel -->
+          <div class="md:col-span-2 space-y-6">
+            <p id="overview-bio" class="text-lg leading-relaxed text-slate-600 dark:text-slate-300 font-medium"></p>
+            
+            <!-- Global Presence Highlight Widget -->
+            <div class="p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-lg">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+                <i data-lucide="globe" class="w-4 h-4"></i> Global Footprint
+              </h3>
+              <p id="global-footprint-text" class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4"></p>
+              
+              <div class="flex flex-wrap gap-2.5 mb-4" id="overview-countries"></div>
+              
+              <!-- Mini region SVG map -->
+              <div id="overview-mini-map"></div>
+            </div>
+          </div>
+          
+          <!-- Quick Facts Sidepanel -->
+          <div class="rounded-3xl bg-gradient-to-b from-indigo-500/5 to-purple-500/5 dark:from-indigo-950/10 dark:to-purple-950/10 border border-slate-200/60 dark:border-slate-800/60 p-6 space-y-6">
+            <h3 class="text-lg font-bold font-display text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="briefcase" class="w-5 h-5 text-indigo-500"></i> Executive Profile
+            </h3>
+            
+            <div class="space-sm text-sm font-medium">
+              <div class="flex flex-col justify-center gap-1 min-h-[56px] pb-3 border-b border-slate-200/50 dark:border-slate-800/50">
+                <span class="text-xs font-semibold text-slate-500">Current Position</span>
+                <span class="text-slate-900 dark:text-white font-bold text-sm leading-tight">Associate Director, Program Analytics, ISB</span>
+              </div>
+
+              <div class="flex items-center min-h-[56px] py-2">
+                <span class="text-slate-500">Experience</span>
+                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
+                  9+ Years
+                </span>
+              </div>
+
+              <div class="flex items-center min-h-[56px] py-2">
+                <span class="text-slate-500">Core Expertise</span>
+                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
+                  Analytics and Insights
+                </span>
+              </div>
+
+              <div class="flex items-center min-h-[56px] py-2">
+                <span class="text-slate-500">Function Setup</span>
+                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
+                  Ground Up Analytics
+                </span>
+              </div>
+
+              <div class="flex items-center min-h-[56px] py-2">
+                <span class="text-slate-500">Role Base</span>
+                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
+                  Hyderabad, India
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Competencies Section -->
+        <div class="mt-12">
+          <h3 class="text-xl font-bold font-display tracking-tight text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <i data-lucide="grid" class="w-5 h-5 text-indigo-500"></i> Core Competencies
+          </h3>
+          <div id="competencies-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+      </section>
+
+      <!-- SECTION: CAREER TRAJECTORY (Z-PATTERN TIMELINE) -->
+      <section id="sec-workex" class="section-pane hidden animate-fade">
+        <!-- Timeline Container -->
+        <div class="relative overflow-hidden w-full px-1">
+          <!-- Timeline Rail - Desktop Center, Mobile Left -->
+          <div class="absolute left-6 md:left-1/2 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800 transform -translate-x-1/2 pointer-events-none"></div>
+
+          <!-- Timeline Container (Z-pattern rows inserted dynamically) -->
+          <div id="timeline-flow" class="relative space-y-10 md:space-y-6"></div>
+        </div>
+      </section>
+
+      <!-- SECTION: FAQ -->
+      <section id="sec-faq" class="section-pane hidden animate-fade">
+        <div id="faq-list" class="space-y-4 max-w-3xl"></div>
+      </section>
+
+      <!-- SECTION: RECOMMENDATIONS -->
+      <section id="sec-recommendations" class="section-pane hidden animate-fade">
+        <div id="recommendations-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mt-20 border-t border-slate-200/50 dark:border-slate-800/50 pt-8 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+      <p class="mb-2">&copy; <span id="copyright-year"></span> Arani Das. All rights reserved.</p>
+      <p>Modular Portfolio Format &bull; Built with Tailwind CSS & Lucide Icons</p>
+    </footer>
+
+  </div>
+
+  <!-- APPLICATION JAVASCRIPT -->
+  <script>
+    // Constants & DOM Nodes
+    let activeSection = 'overview';
+    const themeSun = document.getElementById('theme-sun');
+    const themeMoon = document.getElementById('theme-moon');
+
+    // Document Ready Initialisation
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      initAppContent();
+      if (typeof initMap === 'function') {
+        initMap();
+      }
+      setSection(activeSection);
+      
+      // Animate copyright year
+      document.getElementById('copyright-year').textContent = new Date().getFullYear();
+    });
+
+    // Theme Management (Light/Dark)
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+        document.documentElement.classList.add('dark');
+        themeSun.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeMoon.classList.remove('hidden');
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      
+      if (isDark) {
+        themeSun.classList.remove('hidden');
+        themeMoon.classList.add('hidden');
+      } else {
+        themeSun.classList.add('hidden');
+        themeMoon.classList.remove('hidden');
+      }
+      
+      // Update dynamic brand colors according to theme
+      updateDynamicBrandStyles();
+      
+      // Refresh map nodes & lines for theme contrast
+      renderMap();
+    }
+
+    // Nav pane controller
+    function setSection(sectionId) {
+      activeSection = sectionId;
+      
+      // Toggle nav tab style
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        const id = tab.id.replace('nav-', '');
+        if (id === sectionId) {
+          tab.className = 'nav-tab px-4 py-2.5 rounded-xl text-sm font-bold tracking-wide bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
+        } else {
+          tab.className = 'nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
+        }
+      });
+      
+      // Hide / show section panels
+      document.querySelectorAll('.section-pane').forEach(panel => {
+        const id = panel.id.replace('sec-', '');
+        if (id === sectionId) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      });
+
+      // Update background map behavior
+      const mapSvg = document.getElementById('career-map');
+      if (sectionId === 'workex') {
+        mapSvg.closest('.map-mask').classList.remove('opacity-15', 'dark:opacity-25');
+        mapSvg.closest('.map-mask').classList.add('opacity-30', 'dark:opacity-45');
+        
+        // Find if a card is open and highlight that city
+        const openCard = TRAJECTORY_DATA.find(c => {
+          const grid = document.getElementById(`content-grid-${c.id}`);
+          return grid && grid.classList.contains('open');
+        });
+        lucide.createIcons();
+        if (openCard) {
+          highlightMapCity(openCard.cityId);
+        } else {
+          highlightMapCity('all');
+        }
+      } else {
+        mapSvg.closest('.map-mask').classList.remove('opacity-30', 'dark:opacity-45');
+        mapSvg.closest('.map-mask').classList.add('opacity-15', 'dark:opacity-25');
+        
+        // Static view: highlight all cities subtly
+        highlightMapCity('all');
+      }
+      
+      // Rerun Lucide icon rendering
+      lucide.createIcons();
+    }
+
+    // Dynamic APP rendering (Modularity core)
+    function initAppContent() {
+      // Personal Details
+      document.getElementById('profile-name').textContent = PERSONAL_DATA.name;
+      document.getElementById('profile-title').textContent = PERSONAL_DATA.title;
+      document.getElementById('profile-img').src = PERSONAL_DATA.profileImage;
+      document.getElementById('profile-img').alt = `Professional profile photo of ${PERSONAL_DATA.name}`;
+      
+      // Contact info
+      const contactGrid = document.getElementById('contact-grid');
+      contactGrid.innerHTML = '';
+      PERSONAL_DATA.contacts.forEach(contact => {
+        const card = document.createElement('a');
+        card.href = contact.href;
+        if (contact.type === 'linkedin') card.target = '_blank';
+        card.className = 'flex items-center gap-3 p-3 rounded-xl bg-white/20 dark:bg-slate-900/20 border border-slate-200/40 dark:border-slate-800/40 hover:bg-white/50 dark:hover:bg-slate-900/50 hover:border-indigo-500/40 dark:hover:border-amber-400/40 hover:shadow-md transition-all duration-300 text-slate-700 dark:text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
+        
+        card.innerHTML = `
+          <div class="p-2 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10 text-indigo-600 dark:text-amber-400">
+            <i data-lucide="${contact.icon}" class="w-4 h-4"></i>
+          </div>
+          <span class="truncate">${contact.label}</span>
+        `;
+        contactGrid.appendChild(card);
+      });
+
+      lucide.createIcons();
+
+      // Overview Summary
+      document.getElementById('overview-bio').innerHTML = OVERVIEW_DATA.bio;
+      document.getElementById('global-footprint-text').textContent = OVERVIEW_DATA.globalPresence.text;
+      
+      const countriesWrapper = document.getElementById('overview-countries');
+      countriesWrapper.innerHTML = '';
+      OVERVIEW_DATA.globalPresence.countries.forEach(country => {
+        const badge = document.createElement('div');
+        badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm font-semibold';
+        badge.innerHTML = `<span>${country.flag}</span> <span class="text-slate-700 dark:text-slate-300">${country.name}</span>`;
+        countriesWrapper.appendChild(badge);
+      });
+      
+      // // Inline mini map inside Global Footprint Card
+      // const miniMapWrapper = document.getElementById('overview-mini-map');
+      // miniMapWrapper.innerHTML = `
+      //   <div class="mt-4 w-full h-32 rounded-xl bg-slate-100/50 dark:bg-slate-950/30 border border-slate-200/50 dark:border-slate-800/50 overflow-hidden relative shadow-inner">
+      //     <svg viewBox="490 140 160 110" class="w-full h-full opacity-70 dark:opacity-90">
+      //       <!-- Subtle regional grid -->
+      //       <line x1="500" y1="140" x2="500" y2="250" class="stroke-slate-200/50 dark:stroke-slate-900/60 stroke-[0.5] stroke-dasharray-[2,2]" />
+      //       <line x1="550" y1="140" x2="550" y2="250" class="stroke-slate-200/50 dark:stroke-slate-900/60 stroke-[0.5] stroke-dasharray-[2,2]" />
+      //       <line x1="600" y1="140" x2="600" y2="250" class="stroke-slate-200/50 dark:stroke-slate-900/60 stroke-[0.5] stroke-dasharray-[2,2]" />
+            
+      //       <!-- Arabian Peninsula / Gulf -->
+      //       <path d="M 495,160 Q 515,150 528,160 T 545,175 T 562,190 T 545,215 T 520,210 Z" 
+      //             class="stroke-slate-300 dark:stroke-slate-700 fill-none stroke-[1]" />
+      //       <!-- India -->
+      //       <path d="M 565,150 Q 585,145 595,155 T 635,175 T 620,195 T 595,235 T 575,200 Z" 
+      //             class="stroke-slate-300 dark:stroke-slate-700 fill-none stroke-[1]" />
+                  
+      //       <!-- Connections -->
+      //       <path d="M 626.2,189.5 Q 608.5,189.9 590.8,190.3" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
+      //       <path d="M 590.8,190.3 Q 590.4,194.8 590.1,199.4" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
+      //       <path d="M 590.1,199.4 Q 561.0,184.9 532.0,170.4" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
+      //       <path d="M 532.0,170.4 Q 540.5,176.3 549.0,182.2" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
+      //       <path d="M 549.0,182.2 Q 569.5,190.8 590.1,199.4" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
+      //       <path d="M 590.1,199.4 Q 596.6,201.7 603.1,204.1" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
+            
+      //       <!-- City Nodes -->
+      //       <circle cx="626.2" cy="189.5" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
+      //       <circle cx="590.8" cy="190.3" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
+      //       <circle cx="590.1" cy="199.4" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
+      //       <circle cx="603.1" cy="204.1" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
+      //       <circle cx="532.0" cy="170.4" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
+      //       <circle cx="549.0" cy="182.2" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
+      //     </svg>
+      //   </div>
+      // `;
+      
+      // Competencies
+      const compGrid = document.getElementById('competencies-grid');
+      compGrid.innerHTML = '';
+      OVERVIEW_DATA.competencies.forEach(comp => {
+        const block = document.createElement('div');
+        block.className = 'p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-md hover:shadow-lg hover:border-indigo-500/30 dark:hover:border-amber-400/30 transition-all duration-300 group';
+        block.innerHTML = `
+          <h4 class="text-base font-bold font-display text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-amber-400 transition-colors duration-300">${comp.title}</h4>
+          <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400 font-medium">${comp.description}</p>
+        `;
+        compGrid.appendChild(block);
+      });
+      
+      // FAQs
+      const faqList = document.getElementById('faq-list');
+      faqList.innerHTML = '';
+      FAQS_DATA.forEach((faq, index) => {
+        const item = document.createElement('div');
+        item.className = 'border border-slate-200/50 dark:border-slate-800/50 bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl overflow-hidden shadow-sm hover:shadow transition-shadow duration-300';
+        
+        item.innerHTML = `
+          <button onclick="toggleFaq(${index})" id="faq-btn-${index}" aria-expanded="false" aria-controls="faq-ans-${index}" class="w-full flex items-center justify-between p-5 text-left font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-100/30 dark:hover:bg-slate-800/30 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+            <span>${faq.question}</span>
+            <i data-lucide="plus" class="w-5 h-5 text-indigo-500 dark:text-amber-400 transform transition-transform duration-300" id="faq-icon-${index}"></i>
+          </button>
+          <div id="faq-ans-${index}" role="region" aria-labelledby="faq-btn-${index}" class="accordion-grid">
+            <div class="overflow-hidden">
+              <div class="p-5 pt-0 text-sm leading-relaxed text-slate-600 dark:text-slate-400 border-t border-slate-200/10 dark:border-slate-800/10 font-medium">
+                ${faq.answer}
+              </div>
+            </div>
+          </div>
+        `;
+        faqList.appendChild(item);
+      });
+
+      // Recommendations
+      const recsGrid = document.getElementById('recommendations-container');
+      recsGrid.innerHTML = '';
+      RECOMMENDATIONS_DATA.forEach(rec => {
+        const card = document.createElement('div');
+        card.className = 'p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-lg relative flex flex-col justify-between group';
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 rounded-xl overflow-hidden shadow-md border border-slate-200/50 dark:border-slate-800/50 bg-slate-100 dark:bg-slate-800 flex-shrink-0">
+                <img src="${rec.avatarImage}" alt="${rec.author}" class="w-full h-full object-cover">
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${rec.author}</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium line-clamp-1">${rec.title}</p>
+                <p class="text-[10px] text-indigo-600 dark:text-amber-400 font-semibold tracking-wider uppercase mt-0.5">${rec.relationship}</p>
+              </div>
+            </div>
+            <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 italic font-medium">
+              "${rec.text}"
+            </p>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-200/30 dark:border-slate-800/30 flex justify-end">
+            <a href="${rec.linkedin}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 transition-colors duration-300 focus-visible:ring-1 focus-visible:ring-indigo-500 rounded px-1">
+              <i data-lucide="linkedin" class="w-3.5 h-3.5"></i> linkedin
+            </a>
+          </div>
+        `;
+        recsGrid.appendChild(card);
+      });
+
+      const referencesSection = document.createElement('div');
+      referencesSection.className = 'mt-12 col-span-full';
+      referencesSection.innerHTML = `
+        <div class="mb-6">
+          <h3 class="text-xl font-bold font-display text-slate-900 dark:text-white">
+            Professional References
+          </h3>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Leaders and managers who have worked closely with me and can provide additional perspective on my work and impact.
+            <br/>Click for their LinkedIn profiles.
+          </p>
+        </div>
+
+        <div id="references-grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
+      `;
+
+      recsGrid.appendChild(referencesSection);
+
+      const referencesGrid = document.getElementById('references-grid');
+
+      REFERENCES_DATA.forEach(ref => {
+        const card = document.createElement('a');
+
+        card.href = ref.linkedin;
+        card.target = '_blank';
+        card.rel = 'noopener';
+
+        card.className = `
+          group block p-5 rounded-2xl
+          bg-white/40 dark:bg-slate-900/40
+          border border-slate-200/50 dark:border-slate-800/50
+          backdrop-blur-xl shadow-lg
+          hover:-translate-y-0.5
+          transition-all duration-300
+        `;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl overflow-hidden shadow-md border border-slate-200/50 dark:border-slate-800/50 bg-slate-100 dark:bg-slate-800 flex-shrink-0">
+              <img src="${ref.avatarImage}" alt="${ref.name}" class="w-full h-full object-cover">
+            </div>
+
+            <div class="min-w-0">
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:whitespace-normal transition-all duration-300">
+                ${ref.name}
+              </h4>
+
+              <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
+                ${ref.title}
+              </p>
+
+              <p class="text-[10px] text-indigo-600 dark:text-amber-400 font-semibold tracking-wider uppercase mt-1">
+                ${ref.relationship}
+              </p>
+            </div>
+          </div>
+        `;
+
+        referencesGrid.appendChild(card);
+      });
+
+      // Career Trajectory timeline (reverse chronological order)
+      const timelineFlow = document.getElementById('timeline-flow');
+      timelineFlow.innerHTML = '';
+      
+      TRAJECTORY_DATA.forEach((item, index) => {
+        const isOdd = index % 2 === 0;
+        const isFirst = index === 0;
+        const isLast = index === TRAJECTORY_DATA.length - 1;
+        
+        const row = document.createElement('div');
+        row.id = `row-${item.id}`;
+        row.className = 'relative flex gap-4 md:gap-0 md:grid md:grid-cols-9 items-stretch group/row';
+        
+        // Timeline line padding logic
+        let railClass = 'absolute top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-800 transition-colors duration-300';
+        if (isFirst) railClass = 'absolute top-1/2 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-800 transition-colors duration-300';
+        if (isLast) railClass = 'absolute top-0 bottom-1/2 w-0.5 bg-slate-200 dark:bg-slate-800 transition-colors duration-300';
+
+        let timelineItemHTML = '';
+        
+        if (isOdd) {
+          // Odd: Left side card, Right spacer
+          timelineItemHTML = `
+            <div class="w-full md:col-span-4 order-2 md:order-1 flex flex-col justify-center items-stretch md:items-end">
+              ${generateCardMarkup(item)}
+            </div>
+            
+            <div class="flex items-center justify-center relative md:col-span-1 order-1 md:order-2 w-8 md:w-auto flex-shrink-0">
+              <div class="${railClass}"></div>
+              <button onclick="toggleTimelineCard('${item.id}')" aria-label="Toggle details for ${item.company}" class="absolute w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-900 border-2 border-slate-350 dark:border-slate-700 flex items-center justify-center z-10 transition-all duration-300 transform group-hover/row:scale-110 timeline-dot-node" id="dot-${item.id}" style="--node-brand-color: #6366f1;">
+                <span class="w-3.5 h-3.5 rounded-full transition-transform duration-300 transform scale-75 timeline-dot-center" style="background-color: var(--node-brand-color);"></span>
+              </button>
+            </div>
+            
+            <div class="hidden md:block md:col-span-4 order-3"></div>
+          `;
+        } else {
+          // Even: Left spacer, Right side card
+          timelineItemHTML = `
+            <div class="hidden md:block md:col-span-4 order-1"></div>
+            
+            <div class="flex items-center justify-center relative md:col-span-1 order-2 w-8 md:w-auto flex-shrink-0">
+              <div class="${railClass}"></div>
+              <button onclick="toggleTimelineCard('${item.id}')" aria-label="Toggle details for ${item.company}" class="absolute w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-900 border-2 border-slate-350 dark:border-slate-700 flex items-center justify-center z-10 transition-all duration-300 transform group-hover/row:scale-110 timeline-dot-node" id="dot-${item.id}" style="--node-brand-color: #6366f1;">
+                <span class="w-3.5 h-3.5 rounded-full transition-transform duration-300 transform scale-75 timeline-dot-center" style="background-color: var(--node-brand-color);"></span>
+              </button>
+            </div>
+            
+            <div class="w-full md:col-span-4 order-3 flex flex-col justify-center items-stretch md:items-start">
+              ${generateCardMarkup(item)}
+            </div>
+          `;
+        }
+        
+        row.innerHTML = timelineItemHTML;
+        timelineFlow.appendChild(row);
+      });
+      
+      // Setup dynamic brand colors
+      updateDynamicBrandStyles();
+      
+      // All items start collapsed to satisfy User Request #6 (behaving erratically in auto-expand)
+    }
+
+    // Timeline card compiler
+    function generateCardMarkup(item) {
+      let typeIcon = 'briefcase';
+      if (item.type === 'education') typeIcon = 'graduation-cap';
+      if (item.type === 'internship') typeIcon = 'award';
+      
+      // Determine logo rendering
+      const logoHTML = item.logo ? `
+        <div class="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+          <img src="${item.logo}" alt="${item.company} logo" class="w-full h-full object-cover">
+        </div>
+      ` : '';
+
+      if (item.isMerged) {
+        // Merged Multiple-Role Segments (Tata CLiQ)
+        return `
+          <div id="card-${item.id}" onclick="event.stopPropagation(); toggleTimelineCard('${item.id}')" class="w-full text-left bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 hover:border-[var(--brand-color)] hover:shadow-lg backdrop-blur-xl rounded-2xl shadow-sm transition-all duration-300 cursor-pointer overflow-hidden relative group/card border-l-[3.5px] border-l-[var(--brand-color)]">
+            <div class="p-5">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)]">
+                  <i data-lucide="${typeIcon}" class="w-2.5 h-2.5"></i> ${item.type}
+                </span>
+
+                <span class="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/85 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 shadow-sm tracking-wide">
+                  ${item.period}
+                </span>
+
+                <button onclick="event.stopPropagation(); toggleTimelineCard('${item.id}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all duration-300 bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)] hover:bg-[var(--brand-color)] hover:text-white dark:hover:text-slate-950 focus:outline-none" id="btn-toggle-${item.id}">
+                  <span id="btn-text-${item.id}">Details</span>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 transform transition-transform duration-300" id="chevron-${item.id}"></i>
+                </button>
+              </div>
+              <div class="flex items-center gap-4 min-w-0">
+                ${logoHTML}
+                <div class="min-w-0">
+                  <h3 class="text-lg font-bold font-display text-slate-900 dark:text-white leading-tight group-hover/card:text-[var(--brand-color)] transition-colors duration-200">
+                    ${item.role}
+                  </h3>
+                  <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span class="font-bold text-slate-850 dark:text-slate-200">${item.company}</span>
+                    <span class="text-slate-400">•</span>
+                    <span class="flex items-center gap-0.5">${item.flag} ${item.location}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div id="content-grid-${item.id}" class="accordion-grid">
+              <div class="overflow-hidden">
+                <div class="px-5 pb-5 pt-3 border-t border-slate-200/30 dark:border-slate-800/30 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300 space-y-6">
+                  ${item.roles.map((subRole, sIdx) => `
+                    <div class="${sIdx > 0 ? 'border-t border-slate-200/30 dark:border-slate-800/30 pt-5' : ''}">
+                      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+                        <h4 class="text-sm font-extrabold text-slate-800 dark:text-slate-200">${subRole.role}</h4>
+                        <span class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200/30 dark:border-slate-750/30 self-start sm:self-auto">${subRole.period}</span>
+                      </div>
+                      <p class="text-xs mb-3 text-slate-600 dark:text-slate-400 font-medium">${subRole.description}</p>
+                      <ul class="space-y-2 text-xs">
+                        ${subRole.highlights.map(hl => `
+                          <li class="flex items-start gap-2">
+                            <span class="mt-1.5 w-1.2 h-1.2 rounded-full bg-[var(--brand-color)] flex-shrink-0"></span>
+                            <span class="flex-1">${hl}</span>
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Standard single-role timeline card
+      return `
+        <div id="card-${item.id}" onclick="event.stopPropagation(); toggleTimelineCard('${item.id}')" class="w-full text-left bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 hover:border-[var(--brand-color)] hover:shadow-lg backdrop-blur-xl rounded-2xl shadow-sm transition-all duration-300 cursor-pointer overflow-hidden relative group/card border-l-[3.5px] border-l-[var(--brand-color)]">
+          <div class="p-5">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)]">
+                <i data-lucide="${typeIcon}" class="w-2.5 h-2.5"></i> ${item.type}
+              </span>
+
+              <span class="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/85 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 shadow-sm tracking-wide">
+                ${item.period}
+              </span>
+
+              <button onclick="event.stopPropagation(); toggleTimelineCard('${item.id}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all duration-300 bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)] hover:bg-[var(--brand-color)] hover:text-white dark:hover:text-slate-950 focus:outline-none" id="btn-toggle-${item.id}">
+                <span id="btn-text-${item.id}">Details</span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 transform transition-transform duration-300" id="chevron-${item.id}"></i>
+              </button>
+            </div>
+            <div class="flex items-center gap-4 min-w-0">
+              ${logoHTML}
+              <div class="min-w-0">
+                <h3 class="text-lg font-bold font-display text-slate-900 dark:text-white leading-tight group-hover/card:text-[var(--brand-color)] transition-colors duration-200">
+                  ${item.role}
+                </h3>
+                <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span class="font-bold text-slate-850 dark:text-slate-200">${item.company}</span>
+                  <span class="text-slate-400">•</span>
+                  <span class="flex items-center gap-0.5">${item.flag} ${item.location}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="content-grid-${item.id}" class="accordion-grid">
+            <div class="overflow-hidden">
+              <div class="px-5 pb-5 pt-3 border-t border-slate-200/30 dark:border-slate-800/30 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300 space-y-4">
+                <p>${item.description}</p>
+                
+                ${item.score ? `
+                  <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-xs font-bold">
+                    <span class="text-slate-500">Academic Score:</span>
+                    <span class="text-indigo-600 dark:text-amber-400 font-extrabold">${item.score}</span>
+                  </div>
+                ` : ''}
+                
+                ${item.highlights && item.highlights.length > 0 ? `
+                  <ul class="space-y-2.5">
+                    ${item.highlights.map(hl => `
+                      <li class="flex items-start gap-2.5">
+                        <span class="mt-1.5 w-1.2 h-1.2 rounded-full bg-[var(--brand-color)] flex-shrink-0"></span>
+                        <span class="flex-1">${hl}</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Dynamic brand colors loader
+    function updateDynamicBrandStyles() {
+      const isDark = document.documentElement.classList.contains('dark');
+      TRAJECTORY_DATA.forEach(item => {
+        const card = document.getElementById(`card-${item.id}`);
+        const dotNode = document.getElementById(`dot-${item.id}`);
+        
+        if (card && dotNode) {
+          const color = isDark ? item.colors.dark : item.colors.light;
+          
+          card.style.setProperty('--brand-color', color);
+          card.style.setProperty('--brand-bg', color + '12'); // 7% opacity
+          card.style.setProperty('--brand-bg-border', color + '22'); // 13% opacity
+          
+          dotNode.style.setProperty('--node-brand-color', color);
+        }
+      });
+    }
+
+    // Toggle FAQ dropdown
+    function toggleFaq(index) {
+      const ansGrid = document.getElementById(`faq-ans-${index}`);
+      const btn = document.getElementById(`faq-btn-${index}`);
+      const icon = document.getElementById(`faq-icon-${index}`);
+      
+      const isOpen = ansGrid.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      
+      if (isOpen) {
+        icon.classList.add('rotate-45');
+        icon.style.color = '#e11d48';
+      } else {
+        icon.classList.remove('rotate-45');
+        icon.style.color = '';
+      }
+    }
+
+    // Timeline card expander
+    function toggleTimelineCard(cardId, forceExpand = false) {
+      const targetItem = TRAJECTORY_DATA.find(c => c.id === cardId);
+      if (!targetItem) return;
+      
+      const grid = document.getElementById(`content-grid-${cardId}`);
+      const chevron = document.getElementById(`chevron-${cardId}`);
+      const card = document.getElementById(`card-${cardId}`);
+      const dot = document.getElementById(`dot-${cardId}`);
+      const btnText = document.getElementById(`btn-text-${cardId}`);
+      
+      if (!grid) return;
+      
+      const isCurrentlyOpen = grid.classList.contains('open');
+      const shouldOpen = forceExpand ? true : !isCurrentlyOpen;
+      
+      // Close other cards for clean visualization
+      if (shouldOpen) {
+        TRAJECTORY_DATA.forEach(item => {
+          if (item.id !== cardId) {
+            const otherGrid = document.getElementById(`content-grid-${item.id}`);
+            const otherChevron = document.getElementById(`chevron-${item.id}`);
+            const otherCard = document.getElementById(`card-${item.id}`);
+            const otherDot = document.getElementById(`dot-${item.id}`);
+            const otherBtnText = document.getElementById(`btn-text-${item.id}`);
+            
+            if (otherGrid && otherGrid.classList.contains('open')) {
+              otherGrid.classList.remove('open');
+              if (otherChevron) otherChevron.classList.remove('rotate-180');
+              if (otherBtnText) otherBtnText.textContent = 'Details';
+              if (otherCard) {
+                otherCard.classList.remove('ring-2', 'ring-[var(--brand-color)]/30', 'bg-white/70', 'dark:bg-slate-900/70', 'scale-[1.01]');
+                otherCard.classList.add('bg-white/40', 'dark:bg-slate-900/40');
+              }
+              if (otherDot) {
+                otherDot.classList.remove('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
+                otherDot.querySelector('.timeline-dot-center').classList.remove('scale-110');
+                otherDot.querySelector('.timeline-dot-center').classList.add('scale-75');
+              }
+            }
+          }
+        });
+      }
+      
+      // Update targeted card states
+      if (shouldOpen) {
+        grid.classList.add('open');
+        if (chevron) chevron.classList.add('rotate-180');
+        if (btnText) btnText.textContent = 'Collapse';
+        if (card) {
+          card.classList.add('ring-2', 'ring-[var(--brand-color)]/30', 'bg-white/70', 'dark:bg-slate-900/70', 'scale-[1.01]');
+          card.classList.remove('bg-white/40', 'dark:bg-slate-900/40');
+        }
+        if (dot) {
+          dot.classList.add('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
+          dot.querySelector('.timeline-dot-center').classList.remove('scale-75');
+          dot.querySelector('.timeline-dot-center').classList.add('scale-110');
+        }
+        
+        if (activeSection === 'workex') {
+          highlightMapCity(targetItem.cityId);
+        }
+      } else {
+        grid.classList.remove('open');
+        if (chevron) chevron.classList.remove('rotate-180');
+        if (btnText) btnText.textContent = 'Details';
+        if (card) {
+          card.classList.remove('ring-2', 'ring-[var(--brand-color)]/30', 'bg-white/70', 'dark:bg-slate-900/70', 'scale-[1.01]');
+          card.classList.add('bg-white/40', 'dark:bg-slate-900/40');
+        }
+        if (dot) {
+          dot.classList.remove('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
+          dot.querySelector('.timeline-dot-center').classList.remove('scale-110');
+          dot.querySelector('.timeline-dot-center').classList.add('scale-75');
+        }
+        
+        if (activeSection === 'workex') {
+          highlightMapCity('all');
+        }
+      }
+    }
+
+    // // ==========================================
+    // // GEOSPATIAL MAP DRAW ENGINE
+    // // ==========================================
+    // function initMap() {
+    //   const gridGroup = document.getElementById('map-grid-axes');
+    //   gridGroup.innerHTML = '';
+      
+    //   // Draw grid lines aligning to 840x506 world dimensions
+    //   for (let x = 40; x < 840; x += 40) {
+    //     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    //     line.setAttribute('x1', x);
+    //     line.setAttribute('y1', 0);
+    //     line.setAttribute('x2', x);
+    //     line.setAttribute('y2', 506);
+    //     line.setAttribute('class', 'stroke-slate-200/5 dark:stroke-slate-800/10 stroke-[0.5]');
+    //     gridGroup.appendChild(line);
+    //   }
+    //   for (let y = 40; y < 506; y += 40) {
+    //     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    //     line.setAttribute('x1', 0);
+    //     line.setAttribute('y1', y);
+    //     line.setAttribute('x2', 840);
+    //     line.setAttribute('y2', y);
+    //     line.setAttribute('class', 'stroke-slate-200/5 dark:stroke-slate-800/10 stroke-[0.5]');
+    //     gridGroup.appendChild(line);
+    //   }
+      
+    //   renderMap();
+    // }
+
+    // function renderMap() {
+    //   // 1. Plot connection flight-path curves
+    //   const connectionsGroup = document.getElementById('map-connections');
+    //   connectionsGroup.innerHTML = '';
+      
+    //   MAP_DATA.connections.forEach(conn => {
+    //     const fromCity = MAP_DATA.cities[conn.from];
+    //     const toCity = MAP_DATA.cities[conn.to];
+    //     if (!fromCity || !toCity) return;
+        
+    //     const x1 = fromCity.x;
+    //     const y1 = fromCity.y;
+    //     const x2 = toCity.x;
+    //     const y2 = toCity.y;
+        
+    //     const dx = x2 - x1;
+    //     const dy = y2 - y1;
+    //     const mx = (x1 + x2) / 2;
+    //     const my = (y1 + y2) / 2;
+    //     const px = -dy;
+    //     const py = dx;
+    //     const len = Math.sqrt(px*px + py*py);
+        
+    //     // Offset curve factor
+    //     const offset = 0.22;
+    //     const xc = mx + (px / len) * Math.min(70, len * offset);
+    //     const yc = my + (py / len) * Math.min(70, len * offset);
+        
+    //     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    //     path.setAttribute('d', `M ${x1} ${y1} Q ${xc} ${yc} ${x2} ${y2}`);
+    //     path.setAttribute('id', `arc-${conn.from}-${conn.to}`);
+    //     path.setAttribute('class', 'map-arc stroke-indigo-500/20 dark:stroke-amber-400/10 fill-none stroke-[1.25] transition-all duration-500');
+    //     connectionsGroup.appendChild(path);
+    //   });
+      
+    //   // 2. Plot city coordinate nodes
+    //   const nodesGroup = document.getElementById('map-nodes');
+    //   nodesGroup.innerHTML = '';
+      
+    //   Object.keys(MAP_DATA.cities).forEach(key => {
+    //     const city = MAP_DATA.cities[key];
+    //     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    //     g.setAttribute('id', `node-${key}`);
+    //     g.setAttribute('class', 'map-city-group opacity-70 transition-all duration-500 cursor-pointer');
+        
+    //     // Custom click event: Highlights and focuses cards for this location
+    //     g.addEventListener('click', () => {
+    //       if (activeSection !== 'workex') {
+    //         setSection('workex');
+    //       }
+    //       const trajectoryCard = TRAJECTORY_DATA.find(item => item.cityId === key);
+    //       if (trajectoryCard) {
+    //         toggleTimelineCard(trajectoryCard.id, true);
+    //         document.getElementById(`row-${trajectoryCard.id}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    //       }
+    //     });
+
+    //     // Pulsing radar boundary
+    //     const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    //     ring.setAttribute('cx', city.x);
+    //     ring.setAttribute('cy', city.y);
+    //     ring.setAttribute('r', 10);
+    //     ring.setAttribute('class', 'pulse-ring fill-none stroke-indigo-500/40 dark:stroke-amber-400/30 stroke-1.5 hidden');
+    //     g.appendChild(ring);
+        
+    //     // Outer dot boundary
+    //     const outerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    //     outerCircle.setAttribute('cx', city.x);
+    //     outerCircle.setAttribute('cy', city.y);
+    //     outerCircle.setAttribute('r', 6);
+    //     outerCircle.setAttribute('class', 'fill-slate-100 dark:fill-slate-950 stroke-slate-400 dark:stroke-slate-700 stroke-[1.5] transition-all duration-300');
+    //     g.appendChild(outerCircle);
+        
+    //     // Active inner point
+    //     const innerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    //     innerCircle.setAttribute('cx', city.x);
+    //     innerCircle.setAttribute('cy', city.y);
+    //     innerCircle.setAttribute('r', 3);
+    //     innerCircle.setAttribute('class', 'fill-indigo-500 dark:fill-amber-400 transition-all duration-300');
+    //     g.appendChild(innerCircle);
+        
+    //     // Text labels with background offset to guarantee legibility
+    //     const labelG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        
+    //     // Label background shadow
+    //     const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    //     labelBg.setAttribute('x', city.x + 10);
+    //     labelBg.setAttribute('y', city.y + 3);
+    //     labelBg.setAttribute('class', 'text-[9px] font-bold fill-slate-50 dark:fill-slate-950 stroke-slate-50 dark:stroke-slate-950 stroke-[2.5] font-sans');
+    //     labelBg.textContent = `${city.flag} ${city.name}`;
+    //     labelG.appendChild(labelBg);
+        
+    //     // True text label
+    //     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    //     label.setAttribute('x', city.x + 10);
+    //     label.setAttribute('y', city.y + 3);
+    //     label.setAttribute('class', 'text-[9px] font-bold fill-slate-600 dark:fill-slate-450 font-sans transition-colors duration-300');
+    //     label.textContent = `${city.flag} ${city.name}`;
+    //     labelG.appendChild(label);
+        
+    //     g.appendChild(labelG);
+    //     nodesGroup.appendChild(g);
+    //   });
+    // }
+
+    // // Highlighting engine for background map coordinates
+    // function highlightMapCity(activeId) {
+    //   Object.keys(MAP_DATA.cities).forEach(key => {
+    //     const node = document.getElementById(`node-${key}`);
+    //     if (!node) return;
+        
+    //     const ring = node.querySelector('.pulse-ring');
+    //     const outerCircle = node.querySelector('circle:nth-child(2)');
+    //     const innerCircle = node.querySelector('circle:nth-child(3)');
+    //     const label = node.querySelector('g text:last-child');
+        
+    //     if (activeId === 'all') {
+    //       node.className = 'map-city-group opacity-70 transition-all duration-500 cursor-pointer';
+    //       if (ring) ring.classList.add('hidden');
+          
+    //       if (outerCircle) outerCircle.setAttribute('class', 'fill-slate-100 dark:fill-slate-950 stroke-slate-400 dark:stroke-slate-700 stroke-[1.5]');
+    //       if (innerCircle) innerCircle.setAttribute('class', 'fill-indigo-500 dark:fill-amber-400');
+    //       if (label) label.setAttribute('class', 'text-[9px] font-bold fill-slate-500 dark:fill-slate-400 font-sans');
+    //     } else if (key === activeId) {
+    //       node.className = 'map-city-group opacity-100 transition-all duration-500 cursor-pointer';
+    //       if (ring) ring.classList.remove('hidden');
+          
+    //       if (outerCircle) outerCircle.setAttribute('class', 'fill-indigo-500/10 dark:fill-amber-400/10 stroke-indigo-500 dark:stroke-amber-400 stroke-2 scale-125');
+    //       if (innerCircle) innerCircle.setAttribute('class', 'fill-indigo-600 dark:fill-amber-300 scale-125');
+    //       if (label) label.setAttribute('class', 'text-[9px] font-extrabold fill-indigo-600 dark:fill-amber-400 font-sans');
+    //     } else {
+    //       node.className = 'map-city-group opacity-25 transition-all duration-500 cursor-pointer';
+    //       if (ring) ring.classList.add('hidden');
+          
+    //       if (outerCircle) outerCircle.setAttribute('class', 'fill-slate-100/50 dark:fill-slate-950/50 stroke-slate-350/40 dark:stroke-slate-800/40 stroke-1');
+    //       if (innerCircle) innerCircle.setAttribute('class', 'fill-slate-400/30 dark:fill-slate-700/30');
+    //       if (label) label.setAttribute('class', 'text-[9px] font-bold fill-slate-400/20 dark:fill-slate-700/20 font-sans');
+    //     }
+    //   });
+      
+    //   // Update flight connections paths
+    //   MAP_DATA.connections.forEach(conn => {
+    //     const arc = document.getElementById(`arc-${conn.from}-${conn.to}`);
+    //     if (!arc) return;
+        
+    //     if (activeId === 'all') {
+    //       arc.setAttribute('class', 'stroke-indigo-500/15 dark:stroke-amber-400/10 fill-none stroke-[1.25]');
+    //     } else if (conn.from === activeId || conn.to === activeId) {
+    //       arc.setAttribute('class', 'map-flow-line stroke-indigo-600 dark:stroke-amber-400 fill-none stroke-[2] opacity-90 drop-shadow-[0_0_2px_rgba(99,102,241,0.5)]');
+    //     } else {
+    //       arc.setAttribute('class', 'stroke-slate-200/10 dark:stroke-slate-850/10 fill-none stroke-[0.75] opacity-20');
+    //     }
+    //   });
+    // }
+
+    // // Scroll Observer mapping coordinates (without auto accordion expanding)
+    // const observerOptions = {
+    //   root: null,
+    //   rootMargin: '-25% 0px -45% 0px',
+    //   threshold: 0.05
+    // };
+
+    // const activeCardObserver = new IntersectionObserver((entries) => {
+    //   if (activeSection !== 'workex') return;
+      
+    //   entries.forEach(entry => {
+    //     if (entry.isIntersecting) {
+    //       const rowId = entry.target.id;
+    //       const itemId = rowId.replace('row-', '');
+          
+    //       // Highlights timeline dot and corresponding map city (without auto expansion)
+    //       const targetItem = TRAJECTORY_DATA.find(c => c.id === itemId);
+    //       if (targetItem) {
+    //         highlightMapCity(targetItem.cityId);
+            
+    //         // Highlight targeted dot styling
+    //         TRAJECTORY_DATA.forEach(item => {
+    //           const dotNode = document.getElementById(`dot-${item.id}`);
+    //           if (dotNode) {
+    //             if (item.id === itemId) {
+    //               dotNode.classList.add('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
+    //               dotNode.querySelector('.timeline-dot-center').classList.remove('scale-75');
+    //               dotNode.querySelector('.timeline-dot-center').classList.add('scale-110');
+    //             } else {
+    //               // Only reset details if the card itself is NOT open
+    //               const cardGrid = document.getElementById(`content-grid-${item.id}`);
+    //               if (cardGrid && !cardGrid.classList.contains('open')) {
+    //                 dotNode.classList.remove('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
+    //                 dotNode.querySelector('.timeline-dot-center').classList.remove('scale-110');
+    //                 dotNode.querySelector('.timeline-dot-center').classList.add('scale-75');
+    //               }
+    //             }
+    //           }
+    //         });
+    //       }
+    //     }
+    //   });
+    // }, observerOptions);
+
+    // window.addEventListener('load', () => {
+    //   TRAJECTORY_DATA.forEach(item => {
+    //     const row = document.getElementById(`row-${item.id}`);
+    //     if (row) activeCardObserver.observe(row);
+    //   });
+    // });
+  </script>
+</body>
+</html>

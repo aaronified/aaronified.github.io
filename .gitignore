@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+#kilo
+.kilo
+changes_required.txt
+*.bak
