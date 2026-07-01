@@ -5,7 +5,7 @@ const RECOMMENDATIONS_DATA = [
     title: "Analytics | TISS Mumbai | Problem Solver",
     relationship: "Reported to me in Allcargo Gati (Shared in Oct 2025)",
     avatarImage: "assets/kavyashree.jpg",
-    text: "Working with Arani Das has been an absolute delight. He's one of those rare managers who lead by example. He's exceptionally skilled and has an incredible drive to get things done with precision and creativity, while constantly exploring new technologies and finding smarter ways to solve problems. On top of that, he's so well-read and can talk about anything from AI to history, we literally call him our team's 'GPT'! Truly a great leader and an amazing person to work with.",
+    text: "Working with Arani Das has been an absolute delight. He's one of those rare managers who lead by example. He's exceptionally skilled and has an incredible drive to get things done with precision and creativity, while constantly exploring new technologies and finding smarter ways to solve problems. On top of that, he's so well-read and can talk about anything from ^AI^ to history, we literally call him our team's 'GPT'! Truly a great leader and an amazing person to work with.",
     linkedin: "https://www.linkedin.com/in/kavyashree-sawadi-a65966170"
   },
   {

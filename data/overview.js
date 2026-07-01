@@ -1,6 +1,6 @@
 // Overview Bio, Quick Facts and Competencies
 const OVERVIEW_DATA = {
-  bio: "Data-driven analytics leader with 9+ years spanning supply chain operations, logistics, e-commerce, and now strategic analytics. Built high-impact analytics functions from scratch, delivering insights that shape CEO-level decisions. Combine hands-on supply chain expertise with advanced statistical and ML capabilities. Proven track record designing delivery models, optimizing networks, and scaling data-informed cultures across organizations.",
+  bio: "Data-driven analytics leader with *9+ years* spanning supply chain operations, logistics, e-commerce, and now strategic analytics. Built high-impact analytics functions from scratch, delivering insights that shape CEO-level decisions. Combine hands-on supply chain expertise with ^advanced statistical and ML^ capabilities. Proven track record designing delivery models, optimizing networks, and scaling data-informed cultures across organizations.",
   // Quick Facts sidepanel. Set emphasis:true to render a fact as a stacked, highlighted row.
   quickFacts: [
     { label: "Current Position", value: "Associate Director, Program Analytics, ISB", emphasis: true },

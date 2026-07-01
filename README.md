@@ -59,6 +59,30 @@ All content is plain JavaScript objects/arrays. Keep the quotes and commas intac
 comma or missing quote will stop the page from rendering. Fields marked *(HTML allowed)* accept
 inline HTML such as `<br>` or `<strong>` for light formatting.
 
+### Inline highlights (markers)
+
+Inside most text fields you can wrap a phrase in a marker to highlight it. There are three types,
+each styled to match its surroundings — inside a timeline card a highlight picks up *that card's*
+brand colour; elsewhere it uses the site accent (indigo in light mode, amber in dark):
+
+- **Significant numbers / achievements** → wrap in asterisks — renders as coloured, bold text.
+- **Skills & techniques** → wrap in carets `^…^` — renders with a subtle highlighter background.
+- **Software / tools** → wrap in backticks — renders as a small pill badge.
+
+Examples — the raw text you'd type into a data field:
+
+```text
+saving *₹50 lakh/month*      →  coloured figure
+using ^geofencing^           →  highlighted skill
+Introduced `TIBCO Spotfire`  →  software pill
+```
+
+Markers work in the overview bio, competency descriptions, timeline descriptions & highlights, FAQ
+answers, and recommendation quotes. They don't nest, and any HTML you already use (e.g. `<br>`) is
+left untouched. The marker characters (`*`, `^`, backtick) are reserved for this, so avoid them as
+literal punctuation in those fields. Keep it light — a few highlights per entry reads best; over-
+highlighting defeats the purpose.
+
 ### `data/personal.js` — header & contacts
 
 ```js
