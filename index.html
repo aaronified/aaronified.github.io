@@ -328,10 +328,10 @@
           <div class="md:col-span-2 space-y-6">
             <p id="overview-bio" class="text-lg leading-relaxed text-slate-600 dark:text-slate-300 font-medium"></p>
             
-            <!-- Global Presence Highlight Widget -->
-            <div class="p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-lg">
+            <!-- Geographic / Global Footprint Widget (heading + visibility set by JS) -->
+            <div id="footprint-widget" class="p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-lg">
               <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
-                <i data-lucide="globe" class="w-4 h-4"></i> Global Footprint
+                <i data-lucide="globe" class="w-4 h-4"></i> <span id="footprint-heading">Global Footprint</span>
               </h3>
               <p id="global-footprint-text" class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4"></p>
               
@@ -522,6 +522,78 @@
         + initials + "</text></svg>";
     }
 
+    // --- Derived profile facts (computed from TRAJECTORY_DATA) ---
+    const MONTH_IDX = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+
+    // Parse "MMM YYYY" or "YYYY" into a Date (day 1); null if unparseable.
+    function parseWhen(s) {
+      s = (s || '').trim();
+      const mo = s.match(/^([A-Za-z]{3,})\s+(\d{4})$/);
+      if (mo) return new Date(+mo[2], MONTH_IDX[mo[1].slice(0, 3).toLowerCase()] || 0, 1);
+      const yr = s.match(/^(\d{4})$/);
+      if (yr) return new Date(+yr[1], 0, 1);
+      return null;
+    }
+
+    // Split a "start - end" period; an end of Present/Current/Now (or blank) means today.
+    function parsePeriod(period) {
+      const parts = String(period || '').split(/\s*[-–—]\s*/);
+      const start = parseWhen(parts[0]);
+      const endStr = parts.length > 1 ? parts[1] : parts[0];
+      const end = /present|current|now/i.test(endStr) ? new Date() : parseWhen(endStr);
+      return { start, end };
+    }
+
+    function monthsBetween(a, b) {
+      return Math.max(0, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
+    }
+
+    // Total professional experience = summed duration of 'work' roles (Present -> today).
+    // Shown in months up to 24, then in whole years.
+    function computeExperience() {
+      let months = 0;
+      TRAJECTORY_DATA.forEach(e => {
+        if (e.type !== 'work') return;
+        const { start, end } = parsePeriod(e.period);
+        if (start && end) months += monthsBetween(start, end);
+      });
+      if (months < 24) return months + (months === 1 ? ' Month' : ' Months');
+      const years = Math.floor(months / 12);
+      return years + (years === 1 ? ' Year' : ' Years');
+    }
+
+    // The role currently held (period ending in Present), else the most recent entry.
+    function currentRole() {
+      return TRAJECTORY_DATA.find(e => /present|current|now/i.test(e.period)) || TRAJECTORY_DATA[0];
+    }
+
+    // Countries (with flag) + city count from trajectory locations ("City, Country").
+    // Heading/text adapt: "Global" for multiple countries, "Geographic" for one.
+    function deriveFootprint() {
+      const countryFlag = new Map();   // insertion order = first appearance
+      const cities = new Set();
+      TRAJECTORY_DATA.forEach(e => {
+        if (!e.location) return;
+        const parts = e.location.split(',').map(s => s.trim()).filter(Boolean);
+        if (parts.length) cities.add(parts[0]);
+        const country = parts[parts.length - 1];
+        if (country && !countryFlag.has(country)) countryFlag.set(country, e.flag || '');
+      });
+      const countries = [...countryFlag].map(([name, flag]) => ({ name, flag }));
+      const nC = countries.length, nCity = cities.size;
+      const cityWord = nCity === 1 ? 'city' : 'cities';
+      let heading, text;
+      if (nC > 1) {
+        heading = 'Global Footprint';
+        text = `Global footprint across ${nC} countries & ${nCity} ${cityWord}`;
+      } else {
+        heading = 'Geographic Footprint';
+        const only = countries[0] ? countries[0].name : '';
+        text = `Footprint across ${nCity} ${cityWord}${only ? ' in ' + only : ''}`;
+      }
+      return { countries, cities: nCity, heading, text };
+    }
+
     // Dynamic APP rendering (Modularity core)
     function initAppContent() {
       // Personal Details
@@ -581,21 +653,38 @@
 
       // Overview Summary
       document.getElementById('overview-bio').innerHTML = formatText(OVERVIEW_DATA.bio);
-      document.getElementById('global-footprint-text').textContent = OVERVIEW_DATA.globalPresence.text;
-      
-      const countriesWrapper = document.getElementById('overview-countries');
-      countriesWrapper.innerHTML = '';
-      OVERVIEW_DATA.globalPresence.countries.forEach(country => {
-        const badge = document.createElement('div');
-        badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm font-semibold';
-        badge.innerHTML = `<span>${country.flag}</span> <span class="text-slate-700 dark:text-slate-300">${country.name}</span>`;
-        countriesWrapper.appendChild(badge);
-      });
 
-      // Quick Facts (Executive Profile sidepanel)
+      // Geographic / Global Footprint — derived from trajectory locations.
+      // Hidden entirely when there's only a single city (a "footprint" needs more than one place).
+      const footprint = deriveFootprint();
+      const footprintWidget = document.getElementById('footprint-widget');
+      if (footprint.cities <= 1) {
+        footprintWidget.classList.add('hidden');
+      } else {
+        footprintWidget.classList.remove('hidden');
+        document.getElementById('footprint-heading').textContent = footprint.heading;
+        document.getElementById('global-footprint-text').textContent = footprint.text;
+
+        const countriesWrapper = document.getElementById('overview-countries');
+        countriesWrapper.innerHTML = '';
+        footprint.countries.forEach(country => {
+          const badge = document.createElement('div');
+          badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm font-semibold';
+          badge.innerHTML = `<span>${country.flag}</span> <span class="text-slate-700 dark:text-slate-300">${country.name}</span>`;
+          countriesWrapper.appendChild(badge);
+        });
+      }
+
+      // Quick Facts (Executive Profile sidepanel).
+      // Current Position + Experience are computed from TRAJECTORY_DATA; the rest are user inputs.
+      const cr = currentRole();
+      const quickFactsData = [
+        { label: 'Current Position', value: `${cr.role}, ${cr.company}`, emphasis: true },
+        { label: 'Experience', value: computeExperience() }
+      ].concat(OVERVIEW_DATA.quickFacts || []);
       const quickFacts = document.getElementById('quick-facts');
       quickFacts.innerHTML = '';
-      OVERVIEW_DATA.quickFacts.forEach(fact => {
+      quickFactsData.forEach(fact => {
         const row = document.createElement('div');
         if (fact.emphasis) {
           row.className = 'flex flex-col justify-center gap-1 min-h-[56px] pb-3 border-b border-slate-200/50 dark:border-slate-800/50';

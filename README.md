@@ -107,17 +107,13 @@ const PERSONAL_DATA = {
 ```js
 const OVERVIEW_DATA = {
   bio: "A short paragraph about you.",            // (HTML allowed)
+  // Free-form facts. "Current Position" and "Experience" are NOT listed here — they're computed
+  // automatically (see below). Set emphasis:true to render a fact as a larger, highlighted row.
   quickFacts: [
-    { label: "Current Position", value: "…", emphasis: true },  // emphasis = larger, highlighted row
-    { label: "Experience",       value: "8+ Years" }
+    { label: "Core Expertise", value: "Analytics and Insights" },
+    { label: "Function Setup", value: "Ground Up Analytics" },
+    { label: "Role Base",      value: "Hyderabad, India" }
   ],
-  globalPresence: {
-    text: "Short footprint summary",
-    countries: [
-      { name: "India", flag: "🇮🇳" },            // flag is just an emoji
-      { name: "UAE",   flag: "🇦🇪" }
-    ]
-  },
   competencies: [
     {
       title: "Skill Area",
@@ -128,10 +124,22 @@ const OVERVIEW_DATA = {
 };
 ```
 
-- The first `quickFacts` entry is usually your current role with `emphasis: true`. The rest render
-  as compact label/value rows.
 - `competencies` render as a responsive card grid; add as many as you like. `icon` is any
   [Lucide icon](https://lucide.dev/icons/) name (omit it for no icon).
+
+**Auto-computed fields** (derived from `TRAJECTORY_DATA` — you don't edit these):
+
+- **Current Position** — the role whose `period` ends in "Present" (else the most recent entry),
+  shown as `"<role>, <company>"`. Add your newest role and it updates itself.
+- **Experience** — the summed duration of all `type: "work"` roles ("Present" counts up to today).
+  Shown in **months** up to 24 months, then in whole **years**. (This is independent of any "X years"
+  you write in the `bio`, which stays exactly as you type it.)
+- **Geographic footprint** — countries (with flags) and a city count parsed from each entry's
+  `location` (`"City, Country"`). The heading reads **"Global Footprint"** for more than one country
+  and **"Geographic Footprint"** for a single country. If there's only **one city**, the whole
+  footprint widget is hidden.
+
+These three come first in the Quick Facts panel; the free-form `quickFacts` above follow them.
 
 ### `data/trajectory.js` — the career timeline
 

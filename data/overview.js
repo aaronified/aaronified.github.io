@@ -1,22 +1,15 @@
 // Overview Bio, Quick Facts and Competencies
 const OVERVIEW_DATA = {
   bio: "Data-driven analytics leader with *9+ years* spanning supply chain operations, logistics, e-commerce, and now strategic analytics. Built high-impact analytics functions from scratch, delivering insights that shape CEO-level decisions. Combine hands-on supply chain expertise with ^advanced statistical and ML^ capabilities. Proven track record designing delivery models, optimizing networks, and scaling data-informed cultures across organizations.",
-  // Quick Facts sidepanel. Set emphasis:true to render a fact as a stacked, highlighted row.
+  // Quick Facts sidepanel. NOTE: "Current Position" and "Experience" are computed automatically
+  // from TRAJECTORY_DATA (current role + summed work duration) and are prepended at render time.
+  // The facts below are free-form — edit/add/remove them to suit your profile.
   quickFacts: [
-    { label: "Current Position", value: "Associate Director, Program Analytics, ISB", emphasis: true },
-    { label: "Experience", value: "9+ Years" },
     { label: "Core Expertise", value: "Analytics and Insights" },
     { label: "Function Setup", value: "Ground Up Analytics" },
     { label: "Role Base", value: "Hyderabad, India" }
   ],
-  globalPresence: {
-    text: "Global footprint across 3 countries & 6+ cities",
-    countries: [
-      { name: "India", flag: "🇮🇳" },
-      { name: "Kuwait", flag: "🇰🇼" },
-      { name: "UAE", flag: "🇦🇪" }
-    ]
-  },
+  // Global Footprint (countries + city count) is derived from the locations in TRAJECTORY_DATA.
   competencies: [
     {
       title: "Analytics & Data Science",
