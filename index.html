@@ -31,9 +31,6 @@
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
             display: ['Plus Jakarta Sans', 'sans-serif'],
-          },
-          animation: {
-            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           }
         }
       }
@@ -90,39 +87,6 @@
         linear-gradient(to bottom, rgba(51, 65, 85, 0.12) 1px, transparent 1px);
     }
 
-    /* Radial Gradient Mask for Background Map */
-    .map-mask {
-      mask-image: radial-gradient(circle at center, black 65%, transparent 100%);
-      -webkit-mask-image: radial-gradient(circle at center, black 65%, transparent 100%);
-    }
-
-    /* Map Radar Pulse Animation */
-    @keyframes radar-pulse {
-      0% {
-        transform: scale(0.9);
-        opacity: 0.9;
-      }
-      100% {
-        transform: scale(2.4);
-        opacity: 0;
-      }
-    }
-    .pulse-ring {
-      animation: radar-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-      transform-origin: center;
-    }
-
-    /* Map Connections Flow Animation */
-    @keyframes dash-flow {
-      to {
-        stroke-dashoffset: -20;
-      }
-    }
-    .map-flow-line {
-      stroke-dasharray: 6, 4;
-      animation: dash-flow 3s linear infinite;
-    }
-
     /* Smooth Height Accordion Classes */
     .accordion-grid {
       display: grid;
@@ -147,9 +111,6 @@
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
       }
-      .pulse-ring, .map-flow-line {
-        animation: none !important;
-      }
     }
   </style>
   
@@ -159,7 +120,6 @@
   <script src="data/trajectory.js"></script>
   <script src="data/faqs.js"></script>
   <script src="data/recommendations.js"></script>
-  <script src="data/map.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 transition-colors duration-300 font-sans antialiased overflow-x-hidden relative min-h-screen">
 
@@ -174,23 +134,6 @@
   <!-- Glassmorphic Background Blur Circles -->
   <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/5 dark:bg-indigo-900/10 blur-[120px] -z-40 pointer-events-none"></div>
   <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-rose-400/5 dark:bg-rose-900/10 blur-[120px] -z-40 pointer-events-none"></div>
-
-  <!-- FIXED GEOSPATIAL WIREFRAME BACKGROUND MAP -->
-  <div class="fixed inset-0 -z-20 flex items-center justify-center pointer-events-none overflow-hidden map-mask">
-    <div class="relative w-full w-screen h-screen opacity-15 dark:opacity-25 transition-all duration-1000 transform scale-105">
-      <!-- Background Map Image -->
-      <img src="assets/wireframe-map-of-the-world-world.png" class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none mix-blend-luminosity dark:invert" alt="World Map">
-      <!-- Overlay SVG for coordinates plotting -->
-      <svg id="career-map" viewBox="0 0 840 506" class="absolute inset-0 w-full h-full">
-        <!-- Coordinate System Grid Overlay -->
-        <g id="map-grid-axes"></g>
-        <!-- Connection Flow Lines -->
-        <g id="map-connections" class="transition-opacity duration-500"></g>
-        <!-- Interactive City Markers -->
-        <g id="map-nodes"></g>
-      </svg>
-    </div>
-  </div>
 
   <!-- WRAPPER -->
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
@@ -255,7 +198,7 @@
     <main id="main-content" class="space-y-12 outline-none">
 
       <!-- SECTION: OVERVIEW -->
-      <section id="sec-overview" class="section-pane animate-fade">
+      <section id="sec-overview" class="section-pane">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           
           <!-- Bio & Global Footprint Panel -->
@@ -269,10 +212,7 @@
               </h3>
               <p id="global-footprint-text" class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4"></p>
               
-              <div class="flex flex-wrap gap-2.5 mb-4" id="overview-countries"></div>
-              
-              <!-- Mini region SVG map -->
-              <div id="overview-mini-map"></div>
+              <div class="flex flex-wrap gap-2.5" id="overview-countries"></div>
             </div>
           </div>
           
@@ -282,40 +222,7 @@
               <i data-lucide="briefcase" class="w-5 h-5 text-indigo-500"></i> Executive Profile
             </h3>
             
-            <div class="space-sm text-sm font-medium">
-              <div class="flex flex-col justify-center gap-1 min-h-[56px] pb-3 border-b border-slate-200/50 dark:border-slate-800/50">
-                <span class="text-xs font-semibold text-slate-500">Current Position</span>
-                <span class="text-slate-900 dark:text-white font-bold text-sm leading-tight">Associate Director, Program Analytics, ISB</span>
-              </div>
-
-              <div class="flex items-center min-h-[56px] py-2">
-                <span class="text-slate-500">Experience</span>
-                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
-                  9+ Years
-                </span>
-              </div>
-
-              <div class="flex items-center min-h-[56px] py-2">
-                <span class="text-slate-500">Core Expertise</span>
-                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
-                  Analytics and Insights
-                </span>
-              </div>
-
-              <div class="flex items-center min-h-[56px] py-2">
-                <span class="text-slate-500">Function Setup</span>
-                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
-                  Ground Up Analytics
-                </span>
-              </div>
-
-              <div class="flex items-center min-h-[56px] py-2">
-                <span class="text-slate-500">Role Base</span>
-                <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">
-                  Hyderabad, India
-                </span>
-              </div>
-            </div>
+            <div id="quick-facts" class="text-sm font-medium"></div>
           </div>
         </div>
 
@@ -329,7 +236,7 @@
       </section>
 
       <!-- SECTION: CAREER TRAJECTORY (Z-PATTERN TIMELINE) -->
-      <section id="sec-workex" class="section-pane hidden animate-fade">
+      <section id="sec-workex" class="section-pane hidden">
         <!-- Timeline Container -->
         <div class="relative overflow-hidden w-full px-1">
           <!-- Timeline Rail - Desktop Center, Mobile Left -->
@@ -341,12 +248,12 @@
       </section>
 
       <!-- SECTION: FAQ -->
-      <section id="sec-faq" class="section-pane hidden animate-fade">
+      <section id="sec-faq" class="section-pane hidden">
         <div id="faq-list" class="space-y-4 max-w-3xl"></div>
       </section>
 
       <!-- SECTION: RECOMMENDATIONS -->
-      <section id="sec-recommendations" class="section-pane hidden animate-fade">
+      <section id="sec-recommendations" class="section-pane hidden">
         <div id="recommendations-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
       </section>
 
@@ -354,7 +261,7 @@
 
     <!-- FOOTER -->
     <footer class="mt-20 border-t border-slate-200/50 dark:border-slate-800/50 pt-8 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-      <p class="mb-2">&copy; <span id="copyright-year"></span> Arani Das. All rights reserved.</p>
+      <p class="mb-2">&copy; <span id="copyright-year"></span> <span id="copyright-name"></span>. All rights reserved.</p>
       <p>Modular Portfolio Format &bull; Built with Tailwind CSS & Lucide Icons</p>
     </footer>
 
@@ -363,7 +270,6 @@
   <!-- APPLICATION JAVASCRIPT -->
   <script>
     // Constants & DOM Nodes
-    let activeSection = 'overview';
     const themeSun = document.getElementById('theme-sun');
     const themeMoon = document.getElementById('theme-moon');
 
@@ -371,13 +277,11 @@
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
       initAppContent();
-      if (typeof initMap === 'function') {
-        initMap();
-      }
-      setSection(activeSection);
-      
-      // Animate copyright year
+      setSection('overview');
+
+      // Footer copyright
       document.getElementById('copyright-year').textContent = new Date().getFullYear();
+      document.getElementById('copyright-name').textContent = PERSONAL_DATA.name;
     });
 
     // Theme Management (Light/Dark)
@@ -408,15 +312,10 @@
       
       // Update dynamic brand colors according to theme
       updateDynamicBrandStyles();
-      
-      // Refresh map nodes & lines for theme contrast
-      renderMap();
     }
 
     // Nav pane controller
     function setSection(sectionId) {
-      activeSection = sectionId;
-      
       // Toggle nav tab style
       document.querySelectorAll('.nav-tab').forEach(tab => {
         const id = tab.id.replace('nav-', '');
@@ -437,31 +336,6 @@
         }
       });
 
-      // Update background map behavior
-      const mapSvg = document.getElementById('career-map');
-      if (sectionId === 'workex') {
-        mapSvg.closest('.map-mask').classList.remove('opacity-15', 'dark:opacity-25');
-        mapSvg.closest('.map-mask').classList.add('opacity-30', 'dark:opacity-45');
-        
-        // Find if a card is open and highlight that city
-        const openCard = TRAJECTORY_DATA.find(c => {
-          const grid = document.getElementById(`content-grid-${c.id}`);
-          return grid && grid.classList.contains('open');
-        });
-        lucide.createIcons();
-        if (openCard) {
-          highlightMapCity(openCard.cityId);
-        } else {
-          highlightMapCity('all');
-        }
-      } else {
-        mapSvg.closest('.map-mask').classList.remove('opacity-30', 'dark:opacity-45');
-        mapSvg.closest('.map-mask').classList.add('opacity-15', 'dark:opacity-25');
-        
-        // Static view: highlight all cities subtly
-        highlightMapCity('all');
-      }
-      
       // Rerun Lucide icon rendering
       lucide.createIcons();
     }
@@ -506,43 +380,28 @@
         badge.innerHTML = `<span>${country.flag}</span> <span class="text-slate-700 dark:text-slate-300">${country.name}</span>`;
         countriesWrapper.appendChild(badge);
       });
-      
-      // // Inline mini map inside Global Footprint Card
-      // const miniMapWrapper = document.getElementById('overview-mini-map');
-      // miniMapWrapper.innerHTML = `
-      //   <div class="mt-4 w-full h-32 rounded-xl bg-slate-100/50 dark:bg-slate-950/30 border border-slate-200/50 dark:border-slate-800/50 overflow-hidden relative shadow-inner">
-      //     <svg viewBox="490 140 160 110" class="w-full h-full opacity-70 dark:opacity-90">
-      //       <!-- Subtle regional grid -->
-      //       <line x1="500" y1="140" x2="500" y2="250" class="stroke-slate-200/50 dark:stroke-slate-900/60 stroke-[0.5] stroke-dasharray-[2,2]" />
-      //       <line x1="550" y1="140" x2="550" y2="250" class="stroke-slate-200/50 dark:stroke-slate-900/60 stroke-[0.5] stroke-dasharray-[2,2]" />
-      //       <line x1="600" y1="140" x2="600" y2="250" class="stroke-slate-200/50 dark:stroke-slate-900/60 stroke-[0.5] stroke-dasharray-[2,2]" />
-            
-      //       <!-- Arabian Peninsula / Gulf -->
-      //       <path d="M 495,160 Q 515,150 528,160 T 545,175 T 562,190 T 545,215 T 520,210 Z" 
-      //             class="stroke-slate-300 dark:stroke-slate-700 fill-none stroke-[1]" />
-      //       <!-- India -->
-      //       <path d="M 565,150 Q 585,145 595,155 T 635,175 T 620,195 T 595,235 T 575,200 Z" 
-      //             class="stroke-slate-300 dark:stroke-slate-700 fill-none stroke-[1]" />
-                  
-      //       <!-- Connections -->
-      //       <path d="M 626.2,189.5 Q 608.5,189.9 590.8,190.3" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
-      //       <path d="M 590.8,190.3 Q 590.4,194.8 590.1,199.4" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
-      //       <path d="M 590.1,199.4 Q 561.0,184.9 532.0,170.4" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
-      //       <path d="M 532.0,170.4 Q 540.5,176.3 549.0,182.2" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
-      //       <path d="M 549.0,182.2 Q 569.5,190.8 590.1,199.4" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
-      //       <path d="M 590.1,199.4 Q 596.6,201.7 603.1,204.1" class="stroke-indigo-500/20 dark:stroke-amber-400/20 fill-none stroke-[0.7]" />
-            
-      //       <!-- City Nodes -->
-      //       <circle cx="626.2" cy="189.5" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
-      //       <circle cx="590.8" cy="190.3" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
-      //       <circle cx="590.1" cy="199.4" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
-      //       <circle cx="603.1" cy="204.1" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
-      //       <circle cx="532.0" cy="170.4" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
-      //       <circle cx="549.0" cy="182.2" r="2.5" class="fill-indigo-600 dark:fill-amber-400" />
-      //     </svg>
-      //   </div>
-      // `;
-      
+
+      // Quick Facts (Executive Profile sidepanel)
+      const quickFacts = document.getElementById('quick-facts');
+      quickFacts.innerHTML = '';
+      OVERVIEW_DATA.quickFacts.forEach(fact => {
+        const row = document.createElement('div');
+        if (fact.emphasis) {
+          row.className = 'flex flex-col justify-center gap-1 min-h-[56px] pb-3 border-b border-slate-200/50 dark:border-slate-800/50';
+          row.innerHTML = `
+            <span class="text-xs font-semibold text-slate-500">${fact.label}</span>
+            <span class="text-slate-900 dark:text-white font-bold text-sm leading-tight">${fact.value}</span>
+          `;
+        } else {
+          row.className = 'flex items-center min-h-[56px] py-2';
+          row.innerHTML = `
+            <span class="text-slate-500">${fact.label}</span>
+            <span class="flex-1 text-right text-slate-800 dark:text-slate-200 font-bold">${fact.value}</span>
+          `;
+        }
+        quickFacts.appendChild(row);
+      });
+
       // Competencies
       const compGrid = document.getElementById('competencies-grid');
       compGrid.innerHTML = '';
@@ -616,11 +475,10 @@
       referencesSection.innerHTML = `
         <div class="mb-6">
           <h3 class="text-xl font-bold font-display text-slate-900 dark:text-white">
-            Professional References
+            ${REFERENCES_INTRO.heading}
           </h3>
           <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Leaders and managers who have worked closely with me and can provide additional perspective on my work and impact.
-            <br/>Click for their LinkedIn profiles.
+            ${REFERENCES_INTRO.description}
           </p>
         </div>
 
@@ -910,7 +768,7 @@
     }
 
     // Timeline card expander
-    function toggleTimelineCard(cardId, forceExpand = false) {
+    function toggleTimelineCard(cardId) {
       const targetItem = TRAJECTORY_DATA.find(c => c.id === cardId);
       if (!targetItem) return;
       
@@ -923,7 +781,7 @@
       if (!grid) return;
       
       const isCurrentlyOpen = grid.classList.contains('open');
-      const shouldOpen = forceExpand ? true : !isCurrentlyOpen;
+      const shouldOpen = !isCurrentlyOpen;
       
       // Close other cards for clean visualization
       if (shouldOpen) {
@@ -967,10 +825,6 @@
           dot.querySelector('.timeline-dot-center').classList.remove('scale-75');
           dot.querySelector('.timeline-dot-center').classList.add('scale-110');
         }
-        
-        if (activeSection === 'workex') {
-          highlightMapCity(targetItem.cityId);
-        }
       } else {
         grid.classList.remove('open');
         if (chevron) chevron.classList.remove('rotate-180');
@@ -984,248 +838,8 @@
           dot.querySelector('.timeline-dot-center').classList.remove('scale-110');
           dot.querySelector('.timeline-dot-center').classList.add('scale-75');
         }
-        
-        if (activeSection === 'workex') {
-          highlightMapCity('all');
-        }
       }
     }
-
-    // // ==========================================
-    // // GEOSPATIAL MAP DRAW ENGINE
-    // // ==========================================
-    // function initMap() {
-    //   const gridGroup = document.getElementById('map-grid-axes');
-    //   gridGroup.innerHTML = '';
-      
-    //   // Draw grid lines aligning to 840x506 world dimensions
-    //   for (let x = 40; x < 840; x += 40) {
-    //     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    //     line.setAttribute('x1', x);
-    //     line.setAttribute('y1', 0);
-    //     line.setAttribute('x2', x);
-    //     line.setAttribute('y2', 506);
-    //     line.setAttribute('class', 'stroke-slate-200/5 dark:stroke-slate-800/10 stroke-[0.5]');
-    //     gridGroup.appendChild(line);
-    //   }
-    //   for (let y = 40; y < 506; y += 40) {
-    //     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    //     line.setAttribute('x1', 0);
-    //     line.setAttribute('y1', y);
-    //     line.setAttribute('x2', 840);
-    //     line.setAttribute('y2', y);
-    //     line.setAttribute('class', 'stroke-slate-200/5 dark:stroke-slate-800/10 stroke-[0.5]');
-    //     gridGroup.appendChild(line);
-    //   }
-      
-    //   renderMap();
-    // }
-
-    // function renderMap() {
-    //   // 1. Plot connection flight-path curves
-    //   const connectionsGroup = document.getElementById('map-connections');
-    //   connectionsGroup.innerHTML = '';
-      
-    //   MAP_DATA.connections.forEach(conn => {
-    //     const fromCity = MAP_DATA.cities[conn.from];
-    //     const toCity = MAP_DATA.cities[conn.to];
-    //     if (!fromCity || !toCity) return;
-        
-    //     const x1 = fromCity.x;
-    //     const y1 = fromCity.y;
-    //     const x2 = toCity.x;
-    //     const y2 = toCity.y;
-        
-    //     const dx = x2 - x1;
-    //     const dy = y2 - y1;
-    //     const mx = (x1 + x2) / 2;
-    //     const my = (y1 + y2) / 2;
-    //     const px = -dy;
-    //     const py = dx;
-    //     const len = Math.sqrt(px*px + py*py);
-        
-    //     // Offset curve factor
-    //     const offset = 0.22;
-    //     const xc = mx + (px / len) * Math.min(70, len * offset);
-    //     const yc = my + (py / len) * Math.min(70, len * offset);
-        
-    //     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    //     path.setAttribute('d', `M ${x1} ${y1} Q ${xc} ${yc} ${x2} ${y2}`);
-    //     path.setAttribute('id', `arc-${conn.from}-${conn.to}`);
-    //     path.setAttribute('class', 'map-arc stroke-indigo-500/20 dark:stroke-amber-400/10 fill-none stroke-[1.25] transition-all duration-500');
-    //     connectionsGroup.appendChild(path);
-    //   });
-      
-    //   // 2. Plot city coordinate nodes
-    //   const nodesGroup = document.getElementById('map-nodes');
-    //   nodesGroup.innerHTML = '';
-      
-    //   Object.keys(MAP_DATA.cities).forEach(key => {
-    //     const city = MAP_DATA.cities[key];
-    //     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    //     g.setAttribute('id', `node-${key}`);
-    //     g.setAttribute('class', 'map-city-group opacity-70 transition-all duration-500 cursor-pointer');
-        
-    //     // Custom click event: Highlights and focuses cards for this location
-    //     g.addEventListener('click', () => {
-    //       if (activeSection !== 'workex') {
-    //         setSection('workex');
-    //       }
-    //       const trajectoryCard = TRAJECTORY_DATA.find(item => item.cityId === key);
-    //       if (trajectoryCard) {
-    //         toggleTimelineCard(trajectoryCard.id, true);
-    //         document.getElementById(`row-${trajectoryCard.id}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
-    //       }
-    //     });
-
-    //     // Pulsing radar boundary
-    //     const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    //     ring.setAttribute('cx', city.x);
-    //     ring.setAttribute('cy', city.y);
-    //     ring.setAttribute('r', 10);
-    //     ring.setAttribute('class', 'pulse-ring fill-none stroke-indigo-500/40 dark:stroke-amber-400/30 stroke-1.5 hidden');
-    //     g.appendChild(ring);
-        
-    //     // Outer dot boundary
-    //     const outerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    //     outerCircle.setAttribute('cx', city.x);
-    //     outerCircle.setAttribute('cy', city.y);
-    //     outerCircle.setAttribute('r', 6);
-    //     outerCircle.setAttribute('class', 'fill-slate-100 dark:fill-slate-950 stroke-slate-400 dark:stroke-slate-700 stroke-[1.5] transition-all duration-300');
-    //     g.appendChild(outerCircle);
-        
-    //     // Active inner point
-    //     const innerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    //     innerCircle.setAttribute('cx', city.x);
-    //     innerCircle.setAttribute('cy', city.y);
-    //     innerCircle.setAttribute('r', 3);
-    //     innerCircle.setAttribute('class', 'fill-indigo-500 dark:fill-amber-400 transition-all duration-300');
-    //     g.appendChild(innerCircle);
-        
-    //     // Text labels with background offset to guarantee legibility
-    //     const labelG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        
-    //     // Label background shadow
-    //     const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    //     labelBg.setAttribute('x', city.x + 10);
-    //     labelBg.setAttribute('y', city.y + 3);
-    //     labelBg.setAttribute('class', 'text-[9px] font-bold fill-slate-50 dark:fill-slate-950 stroke-slate-50 dark:stroke-slate-950 stroke-[2.5] font-sans');
-    //     labelBg.textContent = `${city.flag} ${city.name}`;
-    //     labelG.appendChild(labelBg);
-        
-    //     // True text label
-    //     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    //     label.setAttribute('x', city.x + 10);
-    //     label.setAttribute('y', city.y + 3);
-    //     label.setAttribute('class', 'text-[9px] font-bold fill-slate-600 dark:fill-slate-450 font-sans transition-colors duration-300');
-    //     label.textContent = `${city.flag} ${city.name}`;
-    //     labelG.appendChild(label);
-        
-    //     g.appendChild(labelG);
-    //     nodesGroup.appendChild(g);
-    //   });
-    // }
-
-    // // Highlighting engine for background map coordinates
-    // function highlightMapCity(activeId) {
-    //   Object.keys(MAP_DATA.cities).forEach(key => {
-    //     const node = document.getElementById(`node-${key}`);
-    //     if (!node) return;
-        
-    //     const ring = node.querySelector('.pulse-ring');
-    //     const outerCircle = node.querySelector('circle:nth-child(2)');
-    //     const innerCircle = node.querySelector('circle:nth-child(3)');
-    //     const label = node.querySelector('g text:last-child');
-        
-    //     if (activeId === 'all') {
-    //       node.className = 'map-city-group opacity-70 transition-all duration-500 cursor-pointer';
-    //       if (ring) ring.classList.add('hidden');
-          
-    //       if (outerCircle) outerCircle.setAttribute('class', 'fill-slate-100 dark:fill-slate-950 stroke-slate-400 dark:stroke-slate-700 stroke-[1.5]');
-    //       if (innerCircle) innerCircle.setAttribute('class', 'fill-indigo-500 dark:fill-amber-400');
-    //       if (label) label.setAttribute('class', 'text-[9px] font-bold fill-slate-500 dark:fill-slate-400 font-sans');
-    //     } else if (key === activeId) {
-    //       node.className = 'map-city-group opacity-100 transition-all duration-500 cursor-pointer';
-    //       if (ring) ring.classList.remove('hidden');
-          
-    //       if (outerCircle) outerCircle.setAttribute('class', 'fill-indigo-500/10 dark:fill-amber-400/10 stroke-indigo-500 dark:stroke-amber-400 stroke-2 scale-125');
-    //       if (innerCircle) innerCircle.setAttribute('class', 'fill-indigo-600 dark:fill-amber-300 scale-125');
-    //       if (label) label.setAttribute('class', 'text-[9px] font-extrabold fill-indigo-600 dark:fill-amber-400 font-sans');
-    //     } else {
-    //       node.className = 'map-city-group opacity-25 transition-all duration-500 cursor-pointer';
-    //       if (ring) ring.classList.add('hidden');
-          
-    //       if (outerCircle) outerCircle.setAttribute('class', 'fill-slate-100/50 dark:fill-slate-950/50 stroke-slate-350/40 dark:stroke-slate-800/40 stroke-1');
-    //       if (innerCircle) innerCircle.setAttribute('class', 'fill-slate-400/30 dark:fill-slate-700/30');
-    //       if (label) label.setAttribute('class', 'text-[9px] font-bold fill-slate-400/20 dark:fill-slate-700/20 font-sans');
-    //     }
-    //   });
-      
-    //   // Update flight connections paths
-    //   MAP_DATA.connections.forEach(conn => {
-    //     const arc = document.getElementById(`arc-${conn.from}-${conn.to}`);
-    //     if (!arc) return;
-        
-    //     if (activeId === 'all') {
-    //       arc.setAttribute('class', 'stroke-indigo-500/15 dark:stroke-amber-400/10 fill-none stroke-[1.25]');
-    //     } else if (conn.from === activeId || conn.to === activeId) {
-    //       arc.setAttribute('class', 'map-flow-line stroke-indigo-600 dark:stroke-amber-400 fill-none stroke-[2] opacity-90 drop-shadow-[0_0_2px_rgba(99,102,241,0.5)]');
-    //     } else {
-    //       arc.setAttribute('class', 'stroke-slate-200/10 dark:stroke-slate-850/10 fill-none stroke-[0.75] opacity-20');
-    //     }
-    //   });
-    // }
-
-    // // Scroll Observer mapping coordinates (without auto accordion expanding)
-    // const observerOptions = {
-    //   root: null,
-    //   rootMargin: '-25% 0px -45% 0px',
-    //   threshold: 0.05
-    // };
-
-    // const activeCardObserver = new IntersectionObserver((entries) => {
-    //   if (activeSection !== 'workex') return;
-      
-    //   entries.forEach(entry => {
-    //     if (entry.isIntersecting) {
-    //       const rowId = entry.target.id;
-    //       const itemId = rowId.replace('row-', '');
-          
-    //       // Highlights timeline dot and corresponding map city (without auto expansion)
-    //       const targetItem = TRAJECTORY_DATA.find(c => c.id === itemId);
-    //       if (targetItem) {
-    //         highlightMapCity(targetItem.cityId);
-            
-    //         // Highlight targeted dot styling
-    //         TRAJECTORY_DATA.forEach(item => {
-    //           const dotNode = document.getElementById(`dot-${item.id}`);
-    //           if (dotNode) {
-    //             if (item.id === itemId) {
-    //               dotNode.classList.add('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
-    //               dotNode.querySelector('.timeline-dot-center').classList.remove('scale-75');
-    //               dotNode.querySelector('.timeline-dot-center').classList.add('scale-110');
-    //             } else {
-    //               // Only reset details if the card itself is NOT open
-    //               const cardGrid = document.getElementById(`content-grid-${item.id}`);
-    //               if (cardGrid && !cardGrid.classList.contains('open')) {
-    //                 dotNode.classList.remove('scale-125', 'ring-4', 'ring-[var(--node-brand-color)]/30');
-    //                 dotNode.querySelector('.timeline-dot-center').classList.remove('scale-110');
-    //                 dotNode.querySelector('.timeline-dot-center').classList.add('scale-75');
-    //               }
-    //             }
-    //           }
-    //         });
-    //       }
-    //     }
-    //   });
-    // }, observerOptions);
-
-    // window.addEventListener('load', () => {
-    //   TRAJECTORY_DATA.forEach(item => {
-    //     const row = document.getElementById(`row-${item.id}`);
-    //     if (row) activeCardObserver.observe(row);
-    //   });
-    // });
   </script>
 </body>
 </html>

@@ -220,4 +220,7 @@ __marimo__/
 #kilo
 .kilo
 changes_required.txt
+
+# Claude working notes
+notes/
 *.bak

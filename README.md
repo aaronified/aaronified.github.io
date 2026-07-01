@@ -1,174 +1,265 @@
-# Arani Das
+# Interactive Resume Template
 
-**Leading Analytics & Data Science at ISB**
+A single-page, interactive résumé / portfolio site you can host for free on **GitHub Pages**.
+No build step, no framework, no dependencies to install — just static HTML, a CDN copy of
+[Tailwind CSS](https://tailwindcss.com/), [Lucide icons](https://lucide.dev/), and a few plain
+JavaScript data files you edit to make the site your own.
 
-[das.arani@gmail.com](mailto:das.arani@gmail.com) · [+91 8017014853](tel:+918017014853) / [+91 7700927247](tel:+917700927247) · [linkedin.com/in/arani-das](https://www.linkedin.com/in/arani-das)
+It renders four sections — **Overview**, **Career Trajectory**, **FAQ**, and
+**Recommendations** — plus light/dark theming that remembers the visitor's choice.
+
+> The repo currently ships with one person's content as a worked example. To build your own,
+> replace the content in the `data/*.js` files (and a few spots in `index.html`) as described below.
+> You never need to touch the rendering logic.
 
 ---
 
-## Executive Profile
+## Quick start
 
-Data-driven analytics leader with 9+ years spanning supply chain operations, logistics, e-commerce, and strategic analytics. Built high-impact analytics functions from scratch, delivering insights that shape CEO-level decisions. Combine hands-on supply chain expertise with advanced statistical and ML capabilities. Proven track record designing delivery models, optimizing networks, and scaling data-informed cultures across organizations.
+1. **Get the files.** Fork this repo, or click *Use this template* / download it.
+2. **Preview locally.** No tooling required — either open `index.html` directly in your browser,
+   or serve the folder (so relative image paths resolve exactly like production):
+
+   ```bash
+   # from the project root, pick one:
+   python -m http.server 8000      # then visit http://localhost:8000
+   npx serve .
+   ```
+
+3. **Edit your content** in the `data/*.js` files (see [Customizing your content](#customizing-your-content)).
+4. **Update the page metadata** in `index.html` (see [Things to change in `index.html`](#things-to-change-in-indexhtml)).
+5. **Deploy** to GitHub Pages (see [Deploying to GitHub Pages](#deploying-to-github-pages)).
 
 ---
 
-## Career Journey
+## How the repo is organized
 
-```mermaid
-graph LR
-    A[Jadavpur University<br/>B.E. Chemical Engg<br/>2010 - 2014] --> B[Reliance Industries Graduate Engineer Trainee<br/>Jul 2014 - May 2015]
-    B --> C[IIM Mumbai NITIE<br/>PGDIM Operations & Analytics<br/>2015 - 2017]
-    C --> D[Landmark Group<br/>Kuwait<br/>May 2017 - Aug 2019]
-    D --> E[noon Noon.com<br/>Dubai UAE<br/>Sep 2019 - Sep 2020]
-    E --> F[Tata CLiQ<br/>Operations to Analytics Lead<br/>Sep 2020 - Dec 2023]
-    F --> G[Allcargo Gati Limited<br/>Manager Data Analytics<br/>Jan 2024 - Jan 2026]
-    G --> H[Indian School of Business ISB<br/>Associate Director<br/>Jan 2026 - Present]
+```text
+.
+├── index.html              # Markup + all rendering logic (edit metadata only)
+├── data/                   # ← Your content lives here. Edit these files.
+│   ├── personal.js         # Name, title, photo, contact links
+│   ├── overview.js         # Bio, quick facts, global footprint, competencies
+│   ├── trajectory.js       # Career/education timeline
+│   ├── faqs.js             # Frequently asked questions
+│   └── recommendations.js  # Testimonials + references
+├── assets/                 # Your photo, company/school logos, avatars
+└── README.md               # This guide
 ```
 
----
-
-## Skills & Tools
-
-| Analytics & Insights | Visualisation & Tools | Programming |
-| --- | --- | --- |
-| Pattern recognition, mentorship, supply chain analytics, customer segmentation, NLP, time series forecasting | Power BI, TIBCO Spotfire, Tableau, Linux CLI, Gen AI integration | Python, SQL, R, AWS, Advanced Excel, Linux CLI |
-
-| Python Libraries | Statistical & ML | Databases & Cloud |
-| --- | --- | --- |
-| pandas, NumPy, matplotlib, seaborn, scikit-learn, scipy, XGBoost, Prophet, NLTK, statsmodels | Advanced statistical analysis, classification, segmentation, time series forecasting | BigQuery, Power Query |
+Each file in `data/` defines one or more global `const`s (e.g. `PERSONAL_DATA`). `index.html`
+loads them with `<script>` tags and renders them into the page on load. **Editing content =
+editing a data file. Nothing else is required.**
 
 ---
 
-## Core Competencies
+## Customizing your content
 
-| Analytics & Data Science | Strategic Leadership |
-| --- | --- |
-| Python, SQL, R, pandas, NumPy, scikit-learn, XGBoost. ML projects in classification, segmentation, NLP. Advanced statistical analysis. Time series forecasting (Prophet) | Building analytics functions from ground up. Embedding data culture. CEO/C-suite engagement. Cross-functional team leadership. Stakeholder alignment on data strategy |
+All content is plain JavaScript objects/arrays. Keep the quotes and commas intact — a stray
+comma or missing quote will stop the page from rendering. Fields marked *(HTML allowed)* accept
+inline HTML such as `<br>` or `<strong>` for light formatting.
 
-| Analytics Infrastructure | Supply Chain & Operations |
-| --- | --- |
-| TIBCO Spotfire, Power BI, Tableau. AWS. Data governance. Dashboard design. Reporting automation. Analytics platform architecture | Network optimization. Delivery model design. Cost reduction. Operational efficiency. Logistics. Warehouse management. 3PL coordination |
+### `data/personal.js` — header & contacts
 
-| Technical Tools | Cross-Functional Impact |
-| --- | --- |
-| Python, SQL, R, AWS, Advanced Excel. Linux CLI. BigQuery. Power Query. Geofencing and mapping APIs. Gen AI integration | Data literacy programs. Mentorship. Process automation. Revenue opportunity identification. Cost optimization. Strategic reporting to leadership |
+```js
+const PERSONAL_DATA = {
+  name: "Your Name",
+  title: "Your Headline / Current Role",
+  profileImage: "assets/your-photo.jpg",
+  contacts: [
+    { type: "phone",    label: "+1 555 123 4567",        href: "tel:+15551234567",              icon: "phone" },
+    { type: "email",    label: "you@example.com",         href: "mailto:you@example.com",         icon: "mail" },
+    { type: "linkedin", label: "linkedin.com/in/you",     href: "https://linkedin.com/in/you",    icon: "contact-round" }
+  ]
+};
+```
+
+- `icon` is any [Lucide icon](https://lucide.dev/icons/) name.
+- `type: "linkedin"` (or any external link) opens in a new tab; other types open in the same tab.
+- Add or remove contact entries freely.
+
+### `data/overview.js` — bio, quick facts, footprint, competencies
+
+```js
+const OVERVIEW_DATA = {
+  bio: "A short paragraph about you.",            // (HTML allowed)
+  quickFacts: [
+    { label: "Current Position", value: "…", emphasis: true },  // emphasis = larger, highlighted row
+    { label: "Experience",       value: "8+ Years" }
+  ],
+  globalPresence: {
+    text: "Short footprint summary",
+    countries: [
+      { name: "India", flag: "🇮🇳" },            // flag is just an emoji
+      { name: "UAE",   flag: "🇦🇪" }
+    ]
+  },
+  competencies: [
+    { title: "Skill Area", description: "What you do in this area." }
+  ]
+};
+```
+
+- The first `quickFacts` entry is usually your current role with `emphasis: true`. The rest render
+  as compact label/value rows.
+- `competencies` render as a responsive card grid; add as many as you like.
+
+### `data/trajectory.js` — the career timeline
+
+`TRAJECTORY_DATA` is an **array in reverse-chronological order** — the first entry appears at the
+top of the timeline (most recent) and the last at the bottom.
+
+**Standard entry (single role):**
+
+```js
+{
+  id: "unique-slug",                 // must be unique across all entries
+  role: "Your Title",
+  company: "Company / School",
+  location: "City, Country",
+  flag: "🇮🇳",                        // emoji flag for the location
+  period: "Jan 2024 - Present",
+  type: "work",                      // "work" | "education" | "internship" (sets the badge icon)
+  colors: { light: "#C62828", dark: "#EF5350" },  // brand accent per theme
+  logo: "assets/company-logo.jpg",   // optional; omit for no logo
+  description: "One or two sentences of context.",
+  highlights: [                      // optional; bullet list. Use [] for none.
+    "An achievement with a number.",
+    "Another achievement."
+  ],
+  score: "8.18/10"                   // optional; typically for education entries
+}
+```
+
+**Merged entry (multiple roles at the same organization):** set `isMerged: true` and provide a
+`roles` array instead of a top-level `description`/`highlights`:
+
+```js
+{
+  id: "acme",
+  role: "Multiple",
+  company: "Acme Corp",
+  location: "City, Country",
+  flag: "🇮🇳",
+  period: "Sep 2020 - Dec 2023",
+  type: "work",
+  colors: { light: "#C20068", dark: "#FF6B9D" },
+  logo: "assets/acme-logo.jpg",
+  isMerged: true,
+  roles: [
+    {
+      role: "Senior Role",
+      period: "Jul 2022 - Dec 2023",
+      description: "Context for this role.",
+      highlights: ["…", "…"]
+    },
+    {
+      role: "Earlier Role",
+      period: "Sep 2020 - Jul 2022",
+      description: "Context for this role.",
+      highlights: ["…"]
+    }
+  ]
+}
+```
+
+- `type` controls the badge icon: `work` → briefcase, `education` → graduation cap,
+  `internship` → award.
+- `colors` sets the card's accent in light and dark themes — use the org's brand color, or any
+  hex you like.
+
+### `data/faqs.js` — FAQ accordion
+
+```js
+const FAQS_DATA = [
+  { question: "A question about your work or philosophy?",
+    answer: "Your answer. <br><br> Use <br> for paragraph breaks." }   // (HTML allowed)
+];
+```
+
+### `data/recommendations.js` — testimonials & references
+
+Three exports:
+
+```js
+// 1. Testimonials with full quote text
+const RECOMMENDATIONS_DATA = [
+  {
+    author: "Person Name",
+    title: "Their Title",
+    relationship: "How they know you (e.g. Reported to me at …)",
+    avatarImage: "assets/their-avatar.jpg",
+    text: "The full recommendation quote.",
+    linkedin: "https://linkedin.com/in/them"
+  }
+];
+
+// 2. Heading + blurb shown above the References grid
+const REFERENCES_INTRO = {
+  heading: "Professional References",
+  description: "Short intro line.<br/>Can include HTML."               // (HTML allowed)
+};
+
+// 3. Reference contacts (name + link, no quote)
+const REFERENCES_DATA = [
+  {
+    name: "Person Name",
+    title: "Their Title",
+    relationship: "e.g. Direct Manager at …",
+    avatarImage: "assets/their-avatar.jpg",
+    linkedin: "https://linkedin.com/in/them"
+  }
+];
+```
+
+### Images (`assets/`)
+
+Put your photo, company/school logos, and recommender avatars in `assets/` and reference them by
+relative path (e.g. `"assets/my-photo.jpg"`). Square images work best for the profile photo,
+logos, and avatars. Filenames are case-sensitive on GitHub Pages — match them exactly.
 
 ---
 
-## Professional Experience
+## Things to change in `index.html`
 
-### Indian School of Business (ISB) — Hyderabad, India
-**Associate Director, Program Analytics** · Jan 2026 – Present
-- Leading analytics function for academic programs, driving data-informed decision-making for program strategy, execution, and market positioning
+You only edit the `<head>` — leave the markup and scripts alone. Update these for your own SEO and
+browser-tab identity:
 
----
+- **`<title>`** — the browser tab / search-result title.
+- **`<meta name="description">`** — one-sentence summary for search engines and link previews.
+- **`<meta name="keywords">`** — a few relevant keywords.
+- **`<link rel="icon" …>`** — the favicon. It's an inline SVG emoji (`📊` by default); swap the
+  emoji for one you prefer.
 
-### Allcargo Gati Limited — Mumbai, India
-**Manager – Data Analytics** · Jan 2024 – Jan 2026
-- Built analytics function from ground up and led a nationwide team supporting Sales and Operations. Worked closely with CEO, COO, CFO, and C-suite to embed data into key strategic decisions
-- Designed and rolled out nationwide delivery model, saving ₹0.05/kg (~₹50 lakh/month in cost reduction)
-- Created primary KRA tool now used across India for operational KPI tracking
-- Leading initiative to revamp mid-mile routes, targeting 5-10% cost savings and reducing delays to <10%
-- Mapped pincodes to nearest operating units using geofencing and Google Maps API to improve serviceability
-- Reduced delivery promise times by 20% using performance data, with minimal impact on on-time delivery
-- Identified opportunities leading to 2-4% top-line improvement without increasing bottom-line costs
-- Introduced TIBCO Spotfire across organization for analytics delivery
-- First hire to establish newly created analytics division; designed team structure, tools, and delivery processes
+Your name in the footer copyright is filled in automatically from `PERSONAL_DATA.name`.
 
 ---
 
-### Tata CLiQ (Tata Unistore) — Mumbai, India
-**Lead Data Analyst** · Jul 2022 – Dec 2023
-- Led analytics team mentoring three analysts; worked closely with CEO, CBO, and COO on data capabilities
-- Led ML projects on age classification, customer segmentation, and NLP analysis of call data
-- Developed TAT Automation logic to optimize customer promise while maintaining operational adherence
-- Optimized data structure and ticketing system: 20% reduction in analytics requests, 25% TAT reduction
-- Improved retargeting algorithms, expanding eligible customer base without reducing CTR
-- Conducted 5+ company-wide data literacy sessions (4.7/5 average satisfaction)
-- Awarded Q1 FY2024 Fast & Frugal Tech Champion for building the Analytics & Insights team
+## Deploying to GitHub Pages
 
-**Category Operations Manager** · Sep 2020 – Jul 2022
-- Managed supply chain processes for Electronics category; developed process guides and automated business intelligence
-- ~200% increase in <3-day delivery promises YoY (FY22); ~20% increase in <7-day promises
-- 4% increase in adherence to aggressively improved promises (FY22 vs FY21)
-- B2B order contribution increased to >15% with <5% cancellations through GST invoicing
-- ~10% man-hour reduction in PO creation through SAP process re-engineering
-- Improved revenue ~₹25 lakh/year through 20% seller rejection decrease
+1. Push your edited repo to GitHub.
+2. For a **personal site**, name the repo `your-username.github.io`; it will publish at
+   `https://your-username.github.io/`. For a **project site**, use any repo name; it publishes at
+   `https://your-username.github.io/<repo-name>/`.
+3. In the repo, go to **Settings → Pages**, set **Source** to *Deploy from a branch*, choose your
+   default branch (e.g. `main`) and the `/ (root)` folder, and save.
+4. Wait a minute for the build, then visit your URL.
+
+Because the site is fully static, there is nothing to build — GitHub serves the files as-is.
 
 ---
 
-### noon (Noon.com) — Dubai, UAE
-**Assistant Manager, Operations** · Sep 2019 – Sep 2020
-- On-boarded and trained vendors, devised SOPs, forecasted supply using SQL and R, and supervised 4 3PL warehouses. Helped design and set up e-commerce grocery warehouse
-- Developed SQL (BigQuery) and R dashboards and data models for operations team
-- Negotiated 3PL pricing and SLA models, achieving 10% operational cost reduction
-- Devised SOPs for all Outbound and Packaging processes; standardized materials
-- Designed expiry handling and return-to-vendor process; 90% wastage reduction
+## Notes & tips
 
----
-
-### Landmark Group — Kuwait
-**Logistics Associate** · May 2017 – Aug 2019
-- Led MIS team for Kuwait Centrepoint and Max warehouses, catering to 40+ stores in the Kuwait territory; served as internal consultant for supply chain initiatives
-- Improved Labour Management System via compartmentalization and automatic validation for error-free operations
-- Worked with IT department and TCS consultants for improving WMS system and maintaining infrastructure
-- Developed R and Power Query tools to automate report generation and streamline reporting processes
-- Implemented GDMS system in Babyshop Nursery catering to 250+ daily deliveries with 100% accuracy
-- Prepared cost-benefit and ROI analyses for all operational process changes in the distribution centre
-- Achieved 90% daily replenishment across 40+ stores through route and capacity optimization
-
-**Warehouse Manager (additional responsibility)** · Sep 2018 – Aug 2019
-- Led logistics function (team of 28) for Kuwait Centrepoint and Max e-com operations
-- Managed day-to-day warehousing operations for 2 brands (5 stores, 10 staff)
-
----
-
-### General Mills — Mumbai, India
-**Summer Intern** · Mar 2016 – May 2016
-- Affinity analysis on POS data from 5k stores using R; identified cross-selling opportunities with up to 10% potential sales increase from SKU substitutes
-- Published and presented research paper at SPJIMR-POMS India Chapter Conference 2016
-
----
-
-### Reliance Industries Limited — Vadodara, India
-**Graduate Engineer Trainee** · Jul 2014 – May 2015
-- Provided technical support for process optimization in rubber manufacturing (PBR II Plant)
-- Carried out risk assessment of routine maintenance jobs and managed SAP-based work permits
-- Led project to identify and eliminate defects in rubber bales
-- Recognized by Process HOD for resolving leakage issues in the ammonia plant
-
----
-
-### Indian Oil Corporation — Kolkata, India
-**Summer Intern** · May 2013
-- Study of industrial equipment and processes
-
----
-
-## Education
-
-**IIM Mumbai (NITIE)** — Mumbai, India  
-PGDIM (MBA equivalent), Operations & Analytics | 2015 – 2017  
-Post Graduate Diploma in Industrial Management. Score: 8.18/10
-
-**Jadavpur University** — Kolkata, India  
-B.Tech, Chemical Engineering | 2010 – 2014  
-Bachelor of Technology in Chemical Engineering. Score: 7.86/10
-
----
-
-## Certifications
-
-- Python for Data Science and Machine Learning Boot-camp: via Udemy
-- Six Sigma Green Belt: Certified by KPMG - 2015
-
----
-
-## Hobbies & Interests
-
-- **Quizzing:** Multi-time champion in school; active member of college and post-grad quizzing societies
-- **Football:** Represented departmental teams in both academic institutions and corporate tournaments
-- **Reading:** Avid reader of mythology, fantasy, sci-fi, history, and popular science; led the book society at Tata Unistore
-- **Gaming:** Enjoy MOBA, RPG, turn-based strategy, and Soulslike titles; also interested in board games
-- **World Cinema:** Passionate about global films and series, with a deep appreciation for cinematic craft
-- Also interested in chess, photography, debating, visual arts, linguistics, history, and music
+- **No build / no install.** Tailwind and Lucide load from a CDN, so there's no `npm install`.
+  The trade-off is a small runtime cost and a dependency on those CDNs being reachable.
+- **Theming.** Light/dark is toggled by the button in the nav and saved to `localStorage`; it
+  defaults to the visitor's system preference. Per-entry accent colors come from each timeline
+  entry's `colors` field.
+- **Validate your JSON-ish data.** After editing a `data/*.js` file, a quick
+  `node --check data/that-file.js` catches syntax mistakes (missing comma/quote) before you deploy.
+- **Encoding.** Files are UTF-8. Keep emoji flags and symbols as real UTF-8 characters; avoid
+  editors/tools that re-save as a different code page.
+- **Accessibility.** The template includes a skip-to-content link, focus rings, ARIA attributes on
+  the accordions, and honors `prefers-reduced-motion`. Try to preserve these if you customize the
+  markup.

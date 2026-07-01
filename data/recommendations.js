@@ -34,6 +34,12 @@ const RECOMMENDATIONS_DATA = [
   }
 ];
 
+// Intro block shown above the References grid. `description` may contain HTML (e.g. <br/>).
+const REFERENCES_INTRO = {
+  heading: "Professional References",
+  description: "Leaders and managers who have worked closely with me and can provide additional perspective on my work and impact.<br/>Click for their LinkedIn profiles."
+};
+
 const REFERENCES_DATA = [
   {
     name: "Avinash Kumar Singh",
