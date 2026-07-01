@@ -14,37 +14,37 @@ const OVERVIEW_DATA = {
     {
       title: "Analytics & Data Science",
       icon: "brain-circuit",
-      description: "Python, SQL, R, pandas, NumPy, scikit-learn, XGBoost. ML projects in classification, segmentation, NLP. Advanced statistical analysis. Time series forecasting (Prophet).",
+      description: "`Python` (^pandas^, ^NumPy^, ^scikit-learn^, ^XGBoost^), `SQL`, `R`. ML projects in classification, segmentation, ^NLP^. Advanced statistical analysis. ^Time series forecasting^ (^Prophet^).",
       skills: ["Python", "SQL", "R", "pandas", "NumPy", "scikit-learn", "XGBoost", "Classification", "Segmentation", "NLP", "Prophet", "Statistical analysis"]
     },
     {
       title: "Strategic Leadership",
       icon: "target",
-      description: "Building analytics functions from ground up. Embedding data culture. CEO/C-suite engagement. Cross-functional team leadership. Stakeholder alignment on data strategy.",
+      description: "^Building analytics functions from ground up^. Embedding data culture. ^CEO/C-suite engagement^. Cross-functional team leadership. Stakeholder alignment on data strategy.",
       skills: ["Function building", "Data culture", "C-suite engagement", "Team leadership", "Data strategy", "Stakeholder alignment"]
     },
     {
       title: "Analytics Infrastructure",
       icon: "layout-dashboard",
-      description: "TIBCO Spotfire, Power BI, Tableau. AWS. Data governance. Dashboard design. Reporting automation. Analytics platform architecture.",
+      description: "`TIBCO Spotfire`, `Power BI`, `Tableau` (dashboard design, reporting automation). `AWS` (^data governance^, ^analytics platform architecture^).",
       skills: ["TIBCO Spotfire", "Power BI", "Tableau", "AWS", "Data governance", "Dashboard design", "Reporting automation"]
     },
     {
       title: "Supply Chain & Operations",
       icon: "package",
-      description: "Network optimization. Delivery model design. Cost reduction. Operational efficiency. Logistics. Warehouse management. 3PL coordination.",
+      description: "^Network optimization^. ^Delivery model design^. Cost reduction. Operational efficiency. Logistics. Warehouse management. 3PL coordination.",
       skills: ["Network optimization", "Delivery model design", "Cost reduction", "Logistics", "Warehouse management", "3PL coordination"]
     },
     {
       title: "Technical Tools",
       icon: "wrench",
-      description: "Python, SQL, R, AWS, Advanced Excel. Linux CLI. BigQuery. Power Query. Geofencing and mapping APIs. Gen AI integration.",
+      description: "`Python`, `SQL`, `R`, `AWS`, `Advanced Excel`. `Linux CLI`. `BigQuery`. `Power Query`. Geofencing and mapping APIs. ^Gen AI integration^.",
       skills: ["Python", "SQL", "R", "AWS", "Advanced Excel", "Linux CLI", "BigQuery", "Power Query", "Geofencing APIs", "Gen AI"]
     },
     {
       title: "Cross-Functional Impact",
       icon: "users",
-      description: "Data literacy programs. Mentorship. Process automation. Revenue opportunity identification. Cost optimization. Strategic reporting to leadership.",
+      description: "^Data literacy programs^. Mentorship. Process automation. Revenue opportunity identification. Cost optimization. ^Strategic reporting to leadership^.",
       skills: ["Data literacy", "Mentorship", "Process automation", "Revenue opportunities", "Cost optimization", "Strategic reporting"]
     }
   ]

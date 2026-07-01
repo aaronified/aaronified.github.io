@@ -83,6 +83,12 @@ left untouched. The marker characters (`*`, `^`, backtick) are reserved for this
 literal punctuation in those fields. Keep it light — a few highlights per entry reads best; over-
 highlighting defeats the purpose.
 
+**Guidance for dense skill lists (e.g. competencies):** pill only **standalone software** (languages,
+platforms, apps — `Python`, `Power BI`, `AWS`); put **libraries/packages** and a couple of *signature*
+skills in the highlight (`^pandas^`, `^NLP^`) rather than pilling everything; and **group each tool
+with its own packages/features** — e.g. `` `Python` (^pandas^, ^NumPy^, ^scikit-learn^) `` rather than
+listing all tools first and all packages after.
+
 ### `data/personal.js` — header & contacts
 
 ```js
