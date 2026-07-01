@@ -97,6 +97,15 @@
       grid-template-rows: 1fr;
     }
 
+    /* Sticky-bar condensed identity: fade its content in/out with the accordion reveal */
+    .mini-identity-inner {
+      opacity: 0;
+      transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #mini-identity.open .mini-identity-inner {
+      opacity: 1;
+    }
+
     /* Accessibility Skip Link styling */
     .skip-to-content:focus {
       top: 1rem;
@@ -193,7 +202,7 @@
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
 
     <!-- HEADER / HERO -->
-    <header class="mb-10 rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl p-6 sm:p-10 shadow-xl dark:shadow-slate-950/20 relative overflow-hidden group">
+    <header id="hero" class="mb-10 rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl p-6 sm:p-10 shadow-xl dark:shadow-slate-950/20 relative overflow-hidden group">
       <!-- Ambient card illumination -->
       <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 dark:bg-indigo-400/5 blur-[80px] pointer-events-none group-hover:bg-indigo-500/15 transition-all duration-700"></div>
       
@@ -227,35 +236,55 @@
       </div>
     </header>
 
-    <!-- STICKY NAVIGATION BAR -->
-    <nav class="sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md p-2 shadow-lg dark:shadow-slate-950/20 flex items-center justify-between gap-2 overflow-x-auto print:hidden">
-      <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
-        <button onclick="setSection('overview')" id="nav-overview" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
-          Overview
-        </button>
-        <button onclick="setSection('workex')" id="nav-workex" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
-          Career Trajectory
-        </button>
-        <button onclick="setSection('faq')" id="nav-faq" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
-          FAQ
-        </button>
-        <button onclick="setSection('recommendations')" id="nav-recommendations" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
-          Recommendations
+    <!-- STICKY NAVIGATION BAR (identity tier + section tabs tier) -->
+    <nav class="sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md shadow-lg dark:shadow-slate-950/20 overflow-hidden print:hidden">
+
+      <!-- Tier 1: Condensed identity — revealed once the hero scrolls out of view -->
+      <div id="mini-identity" class="accordion-grid">
+        <div class="mini-identity-inner overflow-hidden">
+          <div class="flex items-center justify-between gap-3 px-3 pt-2.5 pb-2">
+            <!-- Avatar + name (click to return to top) -->
+            <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Back to top" class="group flex items-center gap-2.5 min-w-0 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+              <img id="mini-avatar" src="" alt="" class="w-8 h-8 rounded-lg object-cover object-top border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex-shrink-0">
+              <span id="mini-name" class="font-display font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-amber-400 transition-colors duration-200"></span>
+            </button>
+            <!-- Contact icons + résumé (populated by JS) -->
+            <div id="mini-contacts" class="flex items-center gap-0.5 flex-shrink-0"></div>
+          </div>
+          <div class="mx-3 border-t border-slate-200/60 dark:border-slate-800/60"></div>
+        </div>
+      </div>
+
+      <!-- Tier 2: Section tabs + theme toggle (always visible) -->
+      <div class="flex items-center justify-between gap-2 p-2 overflow-x-auto">
+        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
+          <button onclick="setSection('overview')" id="nav-overview" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+            Overview
+          </button>
+          <button onclick="setSection('workex')" id="nav-workex" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+            Career Trajectory
+          </button>
+          <button onclick="setSection('faq')" id="nav-faq" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+            FAQ
+          </button>
+          <button onclick="setSection('recommendations')" id="nav-recommendations" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+            Recommendations
+          </button>
+        </div>
+
+        <!-- Theme Toggle Button -->
+        <button onclick="toggleTheme()" aria-label="Toggle visual theme" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
+          <!-- Sun Icon (Light Mode) -->
+          <svg id="theme-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>
+          <!-- Moon Icon (Dark Mode) -->
+          <svg id="theme-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
         </button>
       </div>
-      
-      <!-- Theme Toggle Button -->
-      <button onclick="toggleTheme()" aria-label="Toggle visual theme" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
-        <!-- Sun Icon (Light Mode) -->
-        <svg id="theme-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
-        </svg>
-        <!-- Moon Icon (Dark Mode) -->
-        <svg id="theme-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-        </svg>
-      </button>
     </nav>
 
     <!-- MAIN CONTENT SECTIONS -->
@@ -342,11 +371,28 @@
       initTheme();
       initAppContent();
       setSection('overview');
+      initStickyIdentity();
 
       // Footer copyright
       document.getElementById('copyright-year').textContent = new Date().getFullYear();
       document.getElementById('copyright-name').textContent = PERSONAL_DATA.name;
     });
+
+    // Reveal the condensed identity in the sticky bar once the hero scrolls out of view.
+    function initStickyIdentity() {
+      const hero = document.getElementById('hero');
+      const miniIdentity = document.getElementById('mini-identity');
+      if (!hero || !miniIdentity || !('IntersectionObserver' in window)) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          // Hero visible -> hide condensed identity; hero gone -> reveal it.
+          miniIdentity.classList.toggle('open', !entry.isIntersecting);
+        });
+      }, { threshold: 0 });
+
+      observer.observe(hero);
+    }
 
     // Theme Management (Light/Dark)
     function initTheme() {
@@ -426,7 +472,32 @@
       document.getElementById('profile-title').textContent = PERSONAL_DATA.title;
       document.getElementById('profile-img').src = PERSONAL_DATA.profileImage;
       document.getElementById('profile-img').alt = `Professional profile photo of ${PERSONAL_DATA.name}`;
-      
+
+      // Condensed identity in the sticky bar (avatar, name, contact icons + résumé)
+      document.getElementById('mini-avatar').src = PERSONAL_DATA.profileImage;
+      document.getElementById('mini-avatar').alt = PERSONAL_DATA.name;
+      document.getElementById('mini-name').textContent = PERSONAL_DATA.name;
+      const miniContacts = document.getElementById('mini-contacts');
+      miniContacts.innerHTML = '';
+      const miniItemClass = 'p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-200';
+      PERSONAL_DATA.contacts.forEach(contact => {
+        const a = document.createElement('a');
+        a.href = contact.href;
+        if (contact.type === 'linkedin') a.target = '_blank';
+        a.setAttribute('aria-label', contact.label);
+        a.title = contact.label;
+        a.className = miniItemClass;
+        a.innerHTML = `<i data-lucide="${contact.icon}" class="w-4 h-4"></i>`;
+        miniContacts.appendChild(a);
+      });
+      const miniPdf = document.createElement('button');
+      miniPdf.setAttribute('onclick', 'downloadResume()');
+      miniPdf.setAttribute('aria-label', 'Download résumé as PDF (beta)');
+      miniPdf.title = 'Download résumé (PDF) — Beta';
+      miniPdf.className = miniItemClass + ' ml-0.5 border-l border-slate-200/60 dark:border-slate-700/60 pl-2 rounded-l-none';
+      miniPdf.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i>`;
+      miniContacts.appendChild(miniPdf);
+
       // Contact info
       const contactGrid = document.getElementById('contact-grid');
       contactGrid.innerHTML = '';
