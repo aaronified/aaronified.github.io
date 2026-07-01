@@ -112,6 +112,60 @@
         scroll-behavior: auto !important;
       }
     }
+
+    /* ==========================================================
+       PRINT / PDF LAYOUT (Beta)
+       Triggered by the "Download résumé (PDF)" button, which also
+       forces light mode before printing (see downloadResume()).
+       Goal: a clean, ink-friendly, single-column CV of all sections.
+       ========================================================== */
+    @media print {
+      @page { margin: 14mm; }
+
+      body {
+        background: #fff !important;
+        color: #0f172a !important;
+        overflow: visible !important;
+      }
+
+      /* Strip glassmorphism/effects that print poorly */
+      * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      /* Show sections regardless of the active tab... */
+      .section-pane { display: block !important; margin-bottom: 1.25rem; }
+      main { display: block !important; }
+
+      /* ...but leave FAQ and Recommendations out of the printed CV */
+      #sec-faq, #sec-recommendations { display: none !important; }
+
+      /* Expand all accordions (timeline cards + FAQ answers) */
+      .accordion-grid { grid-template-rows: 1fr !important; }
+      .accordion-grid > div { overflow: visible !important; }
+
+      /* Timeline: collapse the alternating Z-pattern into a clean single column */
+      #sec-workex .absolute { display: none !important; }          /* center rail */
+      #timeline-flow > div { display: block !important; }           /* rows -> block */
+      #timeline-flow .md\:col-span-1 { display: none !important; }  /* dot + rail column */
+      #timeline-flow div:empty { display: none !important; }        /* layout spacers */
+
+      /* Keep cards/blocks from splitting across pages */
+      #timeline-flow > div,
+      #faq-list > div,
+      #recommendations-container > div,
+      #references-grid > *,
+      #competencies-grid > div { break-inside: avoid; }
+
+      /* Links: show as normal text (URLs aren't useful on paper) */
+      a { color: inherit !important; text-decoration: none !important; }
+
+      /* Render logos/photos with their real colours */
+      img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
   
   <!-- Load Sectioned Config Data -->
@@ -129,11 +183,11 @@
   </a>
 
   <!-- Ambient Backdrop Mesh Grid -->
-  <div class="fixed inset-0 bg-grid-pattern -z-30 pointer-events-none"></div>
-  
+  <div class="fixed inset-0 bg-grid-pattern -z-30 pointer-events-none print:hidden"></div>
+
   <!-- Glassmorphic Background Blur Circles -->
-  <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/5 dark:bg-indigo-900/10 blur-[120px] -z-40 pointer-events-none"></div>
-  <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-rose-400/5 dark:bg-rose-900/10 blur-[120px] -z-40 pointer-events-none"></div>
+  <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/5 dark:bg-indigo-900/10 blur-[120px] -z-40 pointer-events-none print:hidden"></div>
+  <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-rose-400/5 dark:bg-rose-900/10 blur-[120px] -z-40 pointer-events-none print:hidden"></div>
 
   <!-- WRAPPER -->
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
@@ -144,19 +198,29 @@
       <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 dark:bg-indigo-400/5 blur-[80px] pointer-events-none group-hover:bg-indigo-500/15 transition-all duration-700"></div>
       
       <div class="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-        <!-- Profile Picture with Elegant Outer Border -->
-        <div class="relative flex-shrink-0 group/img">
-          <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-60 blur-md group-hover/img:opacity-100 transition-opacity duration-500"></div>
-          <div class="relative w-40 h-40 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 shadow-lg">
-            <img id="profile-img" src="" alt="" class="w-full h-full object-cover object-top transition-transform duration-700 group-hover/img:scale-105" width="160" height="160">
+        <!-- Profile Picture + résumé download -->
+        <div class="flex flex-col items-center gap-3 flex-shrink-0">
+          <!-- Profile Picture with Elegant Outer Border -->
+          <div class="relative group/img">
+            <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-60 blur-md group-hover/img:opacity-100 transition-opacity duration-500"></div>
+            <div class="relative w-40 h-40 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 shadow-lg">
+              <img id="profile-img" src="" alt="" class="w-full h-full object-cover object-top transition-transform duration-700 group-hover/img:scale-105" width="160" height="160">
+            </div>
           </div>
+
+          <!-- Download résumé (PDF) — subtle, beta -->
+          <button onclick="downloadResume()" aria-label="Download résumé as PDF (beta)" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Résumé (PDF)</span>
+            <span class="text-[8px] font-bold uppercase tracking-wider opacity-70">Beta</span>
+          </button>
         </div>
-        
+
         <!-- Header Info -->
         <div class="flex-1 text-center md:text-left">
           <h1 id="profile-name" class="text-4xl sm:text-5xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white mb-2"></h1>
           <p id="profile-title" class="text-lg sm:text-xl font-semibold tracking-wide text-indigo-600 dark:text-amber-400 mb-6"></p>
-          
+
           <!-- Contact Grid -->
           <div id="contact-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl text-sm font-medium"></div>
         </div>
@@ -164,7 +228,7 @@
     </header>
 
     <!-- STICKY NAVIGATION BAR -->
-    <nav class="sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md p-2 shadow-lg dark:shadow-slate-950/20 flex items-center justify-between gap-2 overflow-x-auto">
+    <nav class="sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md p-2 shadow-lg dark:shadow-slate-950/20 flex items-center justify-between gap-2 overflow-x-auto print:hidden">
       <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
         <button onclick="setSection('overview')" id="nav-overview" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
           Overview
@@ -314,6 +378,21 @@
       updateDynamicBrandStyles();
     }
 
+    // Download résumé as PDF (Beta) via the browser's print -> Save as PDF.
+    // Forces light mode for the printout (regardless of on-screen theme), then restores it.
+    function downloadResume() {
+      const wasDark = document.documentElement.classList.contains('dark');
+      if (wasDark) {
+        document.documentElement.classList.remove('dark');
+        const restore = () => {
+          document.documentElement.classList.add('dark');
+          window.removeEventListener('afterprint', restore);
+        };
+        window.addEventListener('afterprint', restore);
+      }
+      window.print();
+    }
+
     // Nav pane controller
     function setSection(sectionId) {
       // Toggle nav tab style
@@ -409,7 +488,14 @@
         const block = document.createElement('div');
         block.className = 'p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-md hover:shadow-lg hover:border-indigo-500/30 dark:hover:border-amber-400/30 transition-all duration-300 group';
         block.innerHTML = `
-          <h4 class="text-base font-bold font-display text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-amber-400 transition-colors duration-300">${comp.title}</h4>
+          <div class="flex items-center gap-3 mb-3">
+            ${comp.icon ? `
+              <div class="flex-shrink-0 p-2 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10 text-indigo-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300">
+                <i data-lucide="${comp.icon}" class="w-5 h-5"></i>
+              </div>
+            ` : ''}
+            <h4 class="text-base font-bold font-display text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-amber-400 transition-colors duration-300">${comp.title}</h4>
+          </div>
           <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400 font-medium">${comp.description}</p>
         `;
         compGrid.appendChild(block);
@@ -448,11 +534,14 @@
         card.innerHTML = `
           <div>
             <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 rounded-xl overflow-hidden shadow-md border border-slate-200/50 dark:border-slate-800/50 bg-slate-100 dark:bg-slate-800 flex-shrink-0">
+              <a href="${rec.linkedin}" target="_blank" rel="noopener" aria-label="${rec.author} on LinkedIn (opens in a new tab)" class="block w-12 h-12 rounded-xl overflow-hidden shadow-md border border-slate-200/50 dark:border-slate-800/50 bg-slate-100 dark:bg-slate-800 flex-shrink-0 ring-0 ring-indigo-500 dark:ring-amber-400 hover:ring-2 transition-all duration-300 focus-visible:ring-2 outline-none">
                 <img src="${rec.avatarImage}" alt="${rec.author}" class="w-full h-full object-cover">
-              </div>
+              </a>
               <div class="min-w-0">
-                <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${rec.author}</h4>
+                <a href="${rec.linkedin}" target="_blank" rel="noopener" class="group/name inline-flex items-center gap-1 max-w-full text-sm font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-amber-400 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 rounded outline-none">
+                  <span class="truncate">${rec.author}</span>
+                  <i data-lucide="linkedin" class="w-3 h-3 flex-shrink-0 opacity-40 group-hover/name:opacity-100 transition-opacity duration-200"></i>
+                </a>
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium line-clamp-1">${rec.title}</p>
                 <p class="text-[10px] text-indigo-600 dark:text-amber-400 font-semibold tracking-wider uppercase mt-0.5">${rec.relationship}</p>
               </div>
@@ -460,11 +549,6 @@
             <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 italic font-medium">
               "${rec.text}"
             </p>
-          </div>
-          <div class="mt-4 pt-4 border-t border-slate-200/30 dark:border-slate-800/30 flex justify-end">
-            <a href="${rec.linkedin}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 transition-colors duration-300 focus-visible:ring-1 focus-visible:ring-indigo-500 rounded px-1">
-              <i data-lucide="linkedin" class="w-3.5 h-3.5"></i> linkedin
-            </a>
           </div>
         `;
         recsGrid.appendChild(card);
@@ -600,12 +684,27 @@
       if (item.type === 'education') typeIcon = 'graduation-cap';
       if (item.type === 'internship') typeIcon = 'award';
       
-      // Determine logo rendering
-      const logoHTML = item.logo ? `
-        <div class="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-sm">
-          <img src="${item.logo}" alt="${item.company} logo" class="w-full h-full object-cover">
-        </div>
-      ` : '';
+      // Company link (opens in a new tab). stopPropagation so it doesn't toggle the card accordion.
+      const hasLink = !!item.link;
+      const linkAttrs = hasLink
+        ? `href="${item.link}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="Visit ${item.company} (opens in a new tab)"`
+        : '';
+
+      // Determine logo rendering (a subtle brand ring on hover cues that a linked logo is clickable)
+      const logoInner = `<img src="${item.logo}" alt="${item.company} logo" class="w-full h-full object-cover">`;
+      const logoHTML = item.logo
+        ? (hasLink
+            ? `<a ${linkAttrs} class="group/logo block flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-sm ring-0 ring-[var(--brand-color)] hover:ring-2 hover:border-[var(--brand-color)] transition-all duration-300 focus-visible:ring-2 outline-none">${logoInner}</a>`
+            : `<div class="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-sm">${logoInner}</div>`)
+        : '';
+
+      // Company name: linked variant gets a dashed underline on hover + a small external-link glyph.
+      const companyHTML = hasLink
+        ? `<a ${linkAttrs} class="group/company inline-flex items-center gap-1 font-bold text-slate-850 dark:text-slate-200 hover:text-[var(--brand-color)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[var(--brand-color)] rounded outline-none">
+            <span class="border-b border-dashed border-slate-300/60 dark:border-slate-600/60 group-hover/company:border-[var(--brand-color)] transition-colors duration-200">${item.company}</span>
+            <i data-lucide="arrow-up-right" class="w-3 h-3 opacity-40 group-hover/company:opacity-100 transition-opacity duration-200"></i>
+          </a>`
+        : `<span class="font-bold text-slate-850 dark:text-slate-200">${item.company}</span>`;
 
       if (item.isMerged) {
         // Merged Multiple-Role Segments (Tata CLiQ)
@@ -633,7 +732,7 @@
                     ${item.role}
                   </h3>
                   <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span class="font-bold text-slate-850 dark:text-slate-200">${item.company}</span>
+                    ${companyHTML}
                     <span class="text-slate-400">•</span>
                     <span class="flex items-center gap-0.5">${item.flag} ${item.location}</span>
                   </div>
@@ -693,7 +792,7 @@
                   ${item.role}
                 </h3>
                 <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span class="font-bold text-slate-850 dark:text-slate-200">${item.company}</span>
+                  ${companyHTML}
                   <span class="text-slate-400">•</span>
                   <span class="flex items-center gap-0.5">${item.flag} ${item.location}</span>
                 </div>

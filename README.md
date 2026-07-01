@@ -95,14 +95,19 @@ const OVERVIEW_DATA = {
     ]
   },
   competencies: [
-    { title: "Skill Area", description: "What you do in this area." }
+    {
+      title: "Skill Area",
+      icon: "brain-circuit",                       // optional; any Lucide icon name
+      description: "What you do in this area."
+    }
   ]
 };
 ```
 
 - The first `quickFacts` entry is usually your current role with `emphasis: true`. The rest render
   as compact label/value rows.
-- `competencies` render as a responsive card grid; add as many as you like.
+- `competencies` render as a responsive card grid; add as many as you like. `icon` is any
+  [Lucide icon](https://lucide.dev/icons/) name (omit it for no icon).
 
 ### `data/trajectory.js` — the career timeline
 
@@ -122,6 +127,7 @@ top of the timeline (most recent) and the last at the bottom.
   type: "work",                      // "work" | "education" | "internship" (sets the badge icon)
   colors: { light: "#C62828", dark: "#EF5350" },  // brand accent per theme
   logo: "assets/company-logo.jpg",   // optional; omit for no logo
+  link: "https://www.linkedin.com/company/...",   // optional; makes the logo + name clickable
   description: "One or two sentences of context.",
   highlights: [                      // optional; bullet list. Use [] for none.
     "An achievement with a number.",
@@ -167,6 +173,9 @@ top of the timeline (most recent) and the last at the bottom.
   `internship` → award.
 - `colors` sets the card's accent in light and dark themes — use the org's brand color, or any
   hex you like.
+- `link` (optional) turns the logo and company name into a link that opens in a new tab. Convention:
+  use the org's **LinkedIn company page** for employers and the **official website** for schools.
+  Omit it and the logo/name simply render as plain, non-clickable text.
 
 ### `data/faqs.js` — FAQ accordion
 

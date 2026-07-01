@@ -10,6 +10,7 @@ const TRAJECTORY_DATA = [
     type: "work",
     colors: { light: "#0066A1", dark: "#4A9FD9" },
     logo: "assets/indian_school_of_business_logo.jpg",
+    link: "https://www.linkedin.com/school/indian-school-of-business/",
     description: "Leading analytics function for academic programs. Driving data-informed decision-making for program strategy, execution, and market positioning.",
     highlights: []
   },
@@ -23,6 +24,7 @@ const TRAJECTORY_DATA = [
     type: "work",
     colors: { light: "#C62828", dark: "#EF5350" },
     logo: "assets/allcargogati_logo.jpg",
+    link: "https://www.linkedin.com/company/allcargogati",
     description: "Built the analytics function from the ground up and led a team of experienced analysts supporting Sales and Operations nationwide. Worked closely with CEO, COO, CFO, and other national leaders to embed data into key strategic decisions.",
     highlights: [
       "Designed and rolled out nationwide delivery model, saving ₹0.05/kg (~₹50 lakh/month in cost reduction)",
@@ -46,6 +48,7 @@ const TRAJECTORY_DATA = [
     type: "work",
     colors: { light: "#C20068", dark: "#FF6B9D" },
     logo: "assets/tatacliqfashion_logo.jpg",
+    link: "https://www.linkedin.com/company/tatacliq",
     isMerged: true,
     roles: [
       {
@@ -86,6 +89,7 @@ const TRAJECTORY_DATA = [
     type: "work",
     colors: { light: "#C49800", dark: "#F6BE00" },
     logo: "assets/nooncom_logo.jpg",
+    link: "https://www.linkedin.com/company/nooncom",
     description: "On-boarded and trained vendors, devised SOPs, forecasted supply using SQL and R, and supervised 4 3PL warehouses. Helped design and set up e-commerce grocery warehouse.",
     highlights: [
       "Developed SQL (BigQuery) and R dashboards and data models for operations team",
@@ -105,6 +109,7 @@ const TRAJECTORY_DATA = [
   type: "work",
   colors: { light: "#005396", dark: "#4A90D9" },
   logo: "assets/landmark_group_logo.jpg",
+  link: "https://www.linkedin.com/company/landmark-group",
   isMerged: true,
   roles: [
     {
@@ -141,6 +146,7 @@ const TRAJECTORY_DATA = [
     type: "internship",
     colors: { light: "#0655A3", dark: "#5C8AE6" },
     logo: "assets/1631339395596.jpg",
+    link: "https://www.linkedin.com/company/general-mills",
     description: "Affinity analysis on POS data from 5k stores using R. Identified cross-selling and up-selling opportunities; up to 10% potential sales increase from SKU substitutes. Published and presented research paper at SPJIMR-POMS India Chapter Conference 2016.",
     highlights: []
   },
@@ -154,6 +160,7 @@ const TRAJECTORY_DATA = [
     type: "education",
     colors: { light: "#003366", dark: "#4A90D9" },
     logo: "assets/1734438341229.jpg",
+    link: "https://iimmumbai.ac.in/",
     description: "Post Graduate Diploma in Industrial Management, equivalent to an MBA degree, specializing in Operations and Analytics.",
     score: "8.18/10"
   },
@@ -167,6 +174,7 @@ const TRAJECTORY_DATA = [
     type: "work",
     colors: { light: "#9A7B3D", dark: "#D4B877" },
     logo: "assets/reliance_logo.jpg",
+    link: "https://www.linkedin.com/company/reliance",
     description: "Provided technical support for process optimization in rubber manufacturing (PBR II Plant).",
     highlights: [
       "Carried out risk assessment of routine maintenance jobs and managed SAP-based work permits",
@@ -184,6 +192,7 @@ const TRAJECTORY_DATA = [
     type: "education",
     colors: { light: "#800000", dark: "#CD5C5C" },
     logo: "assets/jadavpur_university_logo.jpg",
+    link: "https://jadavpuruniversity.in/",
     description: "Bachelor of Engineering in Chemical Engineering from Jadavpur University.",
     score: "7.86/10"
   },
@@ -197,6 +206,7 @@ const TRAJECTORY_DATA = [
     type: "internship",
     colors: { light: "#D84315", dark: "#FF8A50" },
     logo: "assets/indian_oil_corp_limited_logo.jpg",
+    link: "https://www.linkedin.com/company/indian-oil-corp-limited",
     description: "Study of industrial equipment and processes.",
     highlights: []
   }
