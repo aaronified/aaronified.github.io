@@ -218,9 +218,12 @@
       table.pr-traj { width: 100%; border-collapse: collapse; }
       table.pr-traj td { vertical-align: top; padding: 1px 0; }
       .pr-traj tbody.pr-entry { break-inside: avoid; }
-      .pr-traj .co { font-weight: 700; white-space: nowrap; padding-right: 8px; }
-      .pr-traj .role { padding-right: 8px; }
-      .pr-traj .period { text-align: right; white-space: nowrap; }
+      /* Company + role share one flexible cell; each stays whole (nowrap) so the line only breaks
+         between them, and only when it can't fit — company on line 1, role on line 2. */
+      .pr-traj .who { padding-right: 8px; }
+      .pr-traj .co { font-weight: 700; white-space: nowrap; }
+      .pr-traj .role { white-space: nowrap; }
+      .pr-traj .period { text-align: right; white-space: nowrap; padding-left: 10px; }
       .pr-traj .detail td { padding: 0 0 5px; }
       .pr-traj .lead { margin-bottom: 1px; }
       .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }  /* real bullets (override CDN reset) */
@@ -653,8 +656,8 @@
           d += `<ul>${highlights.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
         }
         return '<tbody class="pr-entry">'
-          + `<tr><td class="co">${logoImg(logo)}${co}</td><td class="role">${role}</td><td class="period">${period}</td></tr>`
-          + `<tr class="detail"><td colspan="3">${d}</td></tr>`
+          + `<tr><td class="who">${logoImg(logo)}<span class="co">${co}</span> <span class="role">— ${role}</span></td><td class="period">${period}</td></tr>`
+          + `<tr class="detail"><td colspan="2">${d}</td></tr>`
           + '</tbody>';
       };
 
