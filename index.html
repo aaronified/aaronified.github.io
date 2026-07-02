@@ -163,7 +163,7 @@
     @media print {
       @page { margin: 12mm; }
 
-      /* Hide the on-screen app entirely; show only the compact résumé */
+      /* Hide the on-screen app entirely; show only the compact resume */
       body > *:not(#print-resume) { display: none !important; }
       #print-resume { display: block !important; }
 
@@ -262,7 +262,7 @@
       <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 dark:bg-indigo-400/5 blur-[80px] pointer-events-none group-hover:bg-indigo-500/15 transition-all duration-700"></div>
 
       <div class="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-        <!-- Profile Picture + résumé download -->
+        <!-- Profile Picture + resume download -->
         <div class="flex flex-col items-center gap-3 flex-shrink-0">
           <!-- Profile Picture with Elegant Outer Border -->
           <div class="relative group/img">
@@ -272,10 +272,10 @@
             </div>
           </div>
 
-          <!-- Download résumé (PDF) — subtle, beta -->
-          <button onclick="downloadResume()" aria-label="Download résumé as PDF (beta)" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
+          <!-- Download resume (PDF) — subtle, beta -->
+          <button onclick="downloadResume()" aria-label="Download resume as PDF (beta)" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span>Résumé (PDF)</span>
+            <span>Resume (PDF)</span>
             <span class="text-[8px] font-bold uppercase tracking-wider opacity-70">Beta</span>
           </button>
         </div>
@@ -303,7 +303,7 @@
               <img id="mini-avatar" src="" alt="" class="w-8 h-8 rounded-lg object-cover object-top border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex-shrink-0">
               <span id="mini-name" class="font-display font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-amber-400 transition-colors duration-200"></span>
             </button>
-            <!-- Contact icons + résumé (populated by JS) -->
+            <!-- Contact icons + resume (populated by JS) -->
             <div id="mini-contacts" class="flex items-center gap-0.5 flex-shrink-0"></div>
           </div>
           <div class="mx-3 border-t border-slate-200/60 dark:border-slate-800/60"></div>
@@ -367,7 +367,7 @@
           <!-- Quick Facts Sidepanel -->
           <div class="rounded-3xl bg-gradient-to-b from-indigo-500/5 to-purple-500/5 dark:from-indigo-950/10 dark:to-purple-950/10 border border-slate-200/60 dark:border-slate-800/60 p-6 space-y-6">
             <h3 class="text-lg font-bold font-display text-slate-900 dark:text-white flex items-center gap-2">
-              <i data-lucide="briefcase" class="w-5 h-5 text-indigo-500"></i> Executive Profile
+              <i data-lucide="briefcase" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> Executive Profile
             </h3>
             
             <div id="quick-facts" class="text-sm font-medium"></div>
@@ -377,7 +377,7 @@
         <!-- Competencies Section -->
         <div class="mt-12">
           <h3 class="text-xl font-bold font-display tracking-tight text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-            <i data-lucide="grid" class="w-5 h-5 text-indigo-500"></i> Core Competencies
+            <i data-lucide="grid" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> Core Competencies
           </h3>
           <div id="competencies-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
@@ -483,7 +483,7 @@
       updateDynamicBrandStyles();
     }
 
-    // Download résumé as PDF (Beta) via the browser's print -> Save as PDF.
+    // Download resume as PDF (Beta) via the browser's print -> Save as PDF.
     // Forces light mode for the printout (regardless of on-screen theme), then restores it.
     function downloadResume() {
       const wasDark = document.documentElement.classList.contains('dark');
@@ -623,7 +623,7 @@
       return { countries, cities: nCity, heading, text };
     }
 
-    // Build the compact print/PDF résumé (hidden on screen; shown only when printing).
+    // Build the compact print/PDF resume (hidden on screen; shown only when printing).
     // Purpose-built layout — independent of the screen DOM. Reuses the same data + helpers.
     function buildPrintResume() {
       const el = document.getElementById('print-resume');
@@ -632,7 +632,7 @@
       const cityOf = loc => (loc || '').split(',')[0].trim();
       const base = (OVERVIEW_DATA.quickFacts || []).find(f => /base/i.test(f.label));
 
-      // Live web-résumé URL for the hero: explicit PERSONAL_DATA.website, else auto-derived from
+      // Live web-resume URL for the hero: explicit PERSONAL_DATA.website, else auto-derived from
       // the host (e.g. "aaronified.github.io"; skipped on local/file previews).
       const wloc = window.location || {};
       let webUrl = PERSONAL_DATA.website || '';
@@ -733,11 +733,26 @@
       document.getElementById('profile-img').src = PERSONAL_DATA.profileImage;
       document.getElementById('profile-img').alt = `Professional profile photo of ${PERSONAL_DATA.name}`;
 
+      // SEO / browser-tab identity — authored in data/personal.js (seo); applied here so you don't
+      // edit index.html. Overrides the static fallback tags in <head>.
+      if (PERSONAL_DATA.seo) {
+        const seo = PERSONAL_DATA.seo;
+        if (seo.title) document.title = seo.title;
+        const setMeta = (name, val) => {
+          if (!val) return;
+          let m = document.querySelector(`meta[name="${name}"]`);
+          if (!m) { m = document.createElement('meta'); m.setAttribute('name', name); document.head.appendChild(m); }
+          m.setAttribute('content', val);
+        };
+        setMeta('description', seo.description);
+        setMeta('keywords', seo.keywords);
+      }
+
       // Brand monogram — used for the favicon/tab icon only (auto initials from name)
       const monogram = monogramSVG(initialsFrom(PERSONAL_DATA.name));
       document.getElementById('favicon').setAttribute('href', 'data:image/svg+xml,' + encodeURIComponent(monogram));
 
-      // Condensed identity in the sticky bar (avatar, name, contact icons + résumé)
+      // Condensed identity in the sticky bar (avatar, name, contact icons + resume)
       document.getElementById('mini-avatar').src = PERSONAL_DATA.profileImage;
       document.getElementById('mini-avatar').alt = PERSONAL_DATA.name;
       document.getElementById('mini-name').textContent = PERSONAL_DATA.name;
@@ -756,8 +771,8 @@
       });
       const miniPdf = document.createElement('button');
       miniPdf.setAttribute('onclick', 'downloadResume()');
-      miniPdf.setAttribute('aria-label', 'Download résumé as PDF (beta)');
-      miniPdf.title = 'Download résumé (PDF) — Beta';
+      miniPdf.setAttribute('aria-label', 'Download resume as PDF (beta)');
+      miniPdf.title = 'Download resume (PDF) — Beta';
       miniPdf.className = miniItemClass + ' ml-0.5 border-l border-slate-200/60 dark:border-slate-700/60 pl-2 rounded-l-none';
       miniPdf.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i>`;
       miniContacts.appendChild(miniPdf);

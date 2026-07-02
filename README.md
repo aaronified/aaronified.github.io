@@ -1,6 +1,6 @@
 # Interactive Resume Template
 
-A single-page, interactive résumé / portfolio site you can host for free on **GitHub Pages**.
+A single-page, interactive resume / portfolio site you can host for free on **GitHub Pages**.
 No build step, no framework, no dependencies to install — just static HTML, a CDN copy of
 [Tailwind CSS](https://tailwindcss.com/), [Lucide icons](https://lucide.dev/), and a few plain
 JavaScript data files you edit to make the site your own.
@@ -27,7 +27,7 @@ It renders four sections — **Overview**, **Career Trajectory**, **FAQ**, and
    ```
 
 3. **Edit your content** in the `data/*.js` files (see [Customizing your content](#customizing-your-content)).
-4. **Update the page metadata** in `index.html` (see [Things to change in `index.html`](#things-to-change-in-indexhtml)).
+4. **Set your title & SEO** in `data/personal.js` (see [Page title, SEO & favicon](#page-title-seo--favicon)).
 5. **Deploy** to GitHub Pages (see [Deploying to GitHub Pages](#deploying-to-github-pages)).
 
 ---
@@ -267,18 +267,16 @@ logos, and avatars. Filenames are case-sensitive on GitHub Pages — match them 
 
 ---
 
-## Things to change in `index.html`
+## Page title, SEO & favicon
 
-You only edit the `<head>` — leave the markup and scripts alone. Update these for your own SEO and
-browser-tab identity:
+You **don't need to touch `index.html`** for any of this — it's all data-driven:
 
-- **`<title>`** — the browser tab / search-result title.
-- **`<meta name="description">`** — one-sentence summary for search engines and link previews.
-- **`<meta name="keywords">`** — a few relevant keywords.
-- **`<link rel="icon" …>`** — the favicon. It's an inline SVG emoji (`📊` by default); swap the
-  emoji for one you prefer.
-
-Your name in the footer copyright is filled in automatically from `PERSONAL_DATA.name`.
+- **Browser-tab title, search description, keywords** — set them in `data/personal.js` under `seo`
+  (`title`, `description`, `keywords`). They're applied on load. (The matching tags in the `<head>`
+  are only a no-JS fallback; the values in `seo` are what render.)
+- **Favicon** — auto-generated: a monogram of your initials (derived from `PERSONAL_DATA.name`) on a
+  gradient tile. Nothing to configure.
+- **Footer copyright name** — filled automatically from `PERSONAL_DATA.name`.
 
 ---
 
@@ -296,9 +294,9 @@ Because the site is fully static, there is nothing to build — GitHub serves th
 
 ---
 
-## Downloadable PDF résumé (Beta)
+## Downloadable PDF Resume (Beta)
 
-The **Download résumé (PDF)** button (under the profile photo) opens your browser's print dialog —
+The **Resume (PDF)** button (under the profile photo) opens your browser's print dialog —
 choose *Save as PDF*. This prints a **separate, compact one/two-page layout** (built from the same
 data), not the on-screen page:
 
