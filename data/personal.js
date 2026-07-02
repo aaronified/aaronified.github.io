@@ -2,6 +2,9 @@
 const PERSONAL_DATA = {
   name: "Arani Das",
   title: "Leading Analytics & Data Science at ISB",
+  // Live résumé URL shown in the PDF footer. Optional — if omitted, it's auto-detected from the
+  // host the site is served on (e.g. your-username.github.io). Set it to show a link in local previews too.
+  website: "aaronified.github.io",
   profileImage: "assets/Arani_professional.JPG",
   contacts: [
     { type: "phone", label: "+91 8017014853", href: "tel:+918017014853", icon: "phone" },

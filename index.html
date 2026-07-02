@@ -154,56 +154,78 @@
 
     /* ==========================================================
        PRINT / PDF LAYOUT (Beta)
-       Triggered by the "Download résumé (PDF)" button, which also
-       forces light mode before printing (see downloadResume()).
-       Goal: a clean, ink-friendly, single-column CV of all sections.
+       The screen app is hidden for print; a compact, purpose-built
+       #print-resume block (populated by buildPrintResume()) is shown.
+       downloadResume() forces light mode before window.print().
        ========================================================== */
+    #print-resume { display: none; }
+
     @media print {
-      @page { margin: 14mm; }
+      @page { margin: 12mm; }
 
-      body {
-        background: #fff !important;
-        color: #0f172a !important;
-        overflow: visible !important;
+      /* Hide the on-screen app entirely; show only the compact résumé */
+      body > *:not(#print-resume) { display: none !important; }
+      #print-resume { display: block !important; }
+
+      /* Colour system: body = very dark grey, headers = black, highlights = bold blue */
+      #print-resume {
+        font-family: 'Inter', Arial, sans-serif;
+        color: #2d2d2d;
+        font-size: 9.5pt;
+        line-height: 1.32;
+      }
+      #print-resume * { box-shadow: none !important; }
+      #print-resume img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #print-resume .pr-logo { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
+
+      #print-resume .pr-name,
+      #print-resume .pr-section-h,
+      #print-resume .pr-traj .co,
+      #print-resume .pr-traj .role,
+      #print-resume .pr-comp .t,
+      #print-resume .pr-edu .t { color: #000; }
+
+      /* All inline highlights render as bold blue (no pills/backgrounds) on paper */
+      #print-resume .hl-num,
+      #print-resume .hl-skill,
+      #print-resume .hl-sw {
+        color: #1d4ed8 !important; font-weight: 700;
+        background: none !important; border: none !important; padding: 0 !important;
+        border-radius: 0 !important; font-size: inherit; white-space: normal;
       }
 
-      /* Strip glassmorphism/effects that print poorly */
-      * {
-        box-shadow: none !important;
-        text-shadow: none !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
+      /* Hero: photo left, details right */
+      .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: 9px; }
+      .pr-hero img { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; object-position: top; flex: 0 0 auto; }
+      .pr-name { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 18pt; font-weight: 800; line-height: 1.08; }
+      .pr-title { font-weight: 600; font-size: 10pt; margin-top: 1px; }
+      .pr-meta { font-size: 8.5pt; margin-top: 3px; }
+      .pr-meta a { color: inherit; text-decoration: none; }
+
+      .pr-section-h {
+        font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 11pt; font-weight: 700;
+        margin: 10px 0 4px; border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
       }
+      .pr-summary { margin: 0; }
+      .pr-comp p { margin: 2.5px 0; }
+      .pr-comp .t, .pr-edu .t { font-weight: 700; }
+      .pr-edu p { margin: 2px 0; }
+      .pr-edu .pr-sub { margin: 1px 0 1px 14px; font-size: 9pt; }   /* internship header nested under its college */
+      .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 8.7pt; }   /* internship description/bullets */
+      .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
 
-      /* Show sections regardless of the active tab... */
-      .section-pane { display: block !important; margin-bottom: 1.25rem; }
-      main { display: block !important; }
-
-      /* ...but leave FAQ and Recommendations out of the printed CV */
-      #sec-faq, #sec-recommendations { display: none !important; }
-
-      /* Expand all accordions (timeline cards + FAQ answers) */
-      .accordion-grid { grid-template-rows: 1fr !important; }
-      .accordion-grid > div { overflow: visible !important; }
-
-      /* Timeline: collapse the alternating Z-pattern into a clean single column */
-      #sec-workex .absolute { display: none !important; }          /* center rail */
-      #timeline-flow > div { display: block !important; }           /* rows -> block */
-      #timeline-flow .md\:col-span-1 { display: none !important; }  /* dot + rail column */
-      #timeline-flow div:empty { display: none !important; }        /* layout spacers */
-
-      /* Keep cards/blocks from splitting across pages */
-      #timeline-flow > div,
-      #faq-list > div,
-      #recommendations-container > div,
-      #references-grid > *,
-      #competencies-grid > div { break-inside: avoid; }
-
-      /* Links: show as normal text (URLs aren't useful on paper) */
-      a { color: inherit !important; text-decoration: none !important; }
-
-      /* Render logos/photos with their real colours */
-      img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      /* Career trajectory: invisible-border table; each ROLE is a block with a separator between */
+      table.pr-traj { width: 100%; border-collapse: collapse; }
+      table.pr-traj td { vertical-align: top; padding: 1px 0; }
+      .pr-traj tbody.pr-entry { break-inside: avoid; }
+      .pr-traj .co { font-weight: 700; white-space: nowrap; padding-right: 8px; }
+      .pr-traj .role { padding-right: 8px; }
+      .pr-traj .period { text-align: right; white-space: nowrap; }
+      .pr-traj .detail td { padding: 0 0 5px; }
+      .pr-traj .lead { margin-bottom: 1px; }
+      .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }  /* real bullets (override CDN reset) */
+      .pr-traj li { margin: 0.5px 0; }
+      .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: 6px; }
     }
   </style>
   
@@ -390,6 +412,9 @@
 
   </div>
 
+  <!-- COMPACT PRINT / PDF RÉSUMÉ (hidden on screen; populated by buildPrintResume()) -->
+  <div id="print-resume" aria-hidden="true"></div>
+
   <!-- APPLICATION JAVASCRIPT -->
   <script>
     // Constants & DOM Nodes
@@ -402,6 +427,7 @@
       initAppContent();
       setSection('overview');
       initStickyIdentity();
+      buildPrintResume();
 
       // Footer copyright
       document.getElementById('copyright-year').textContent = new Date().getFullYear();
@@ -592,6 +618,108 @@
         text = `Footprint across ${nCity} ${cityWord}${only ? ' in ' + only : ''}`;
       }
       return { countries, cities: nCity, heading, text };
+    }
+
+    // Build the compact print/PDF résumé (hidden on screen; shown only when printing).
+    // Purpose-built layout — independent of the screen DOM. Reuses the same data + helpers.
+    function buildPrintResume() {
+      const el = document.getElementById('print-resume');
+      if (!el) return;
+
+      const cityOf = loc => (loc || '').split(',')[0].trim();
+      const base = (OVERVIEW_DATA.quickFacts || []).find(f => /base/i.test(f.label));
+
+      // Live web-résumé URL for the hero: explicit PERSONAL_DATA.website, else auto-derived from
+      // the host (e.g. "aaronified.github.io"; skipped on local/file previews).
+      const wloc = window.location || {};
+      let webUrl = PERSONAL_DATA.website || '';
+      if (!webUrl && wloc.hostname && !/^(localhost$|127\.|0\.0\.0\.0)/.test(wloc.hostname)) {
+        webUrl = wloc.hostname + (wloc.pathname || '').replace(/index\.html?$/i, '').replace(/\/$/, '');
+      }
+      const webItem = webUrl ? `<a href="https://${webUrl.replace(/^https?:\/\//, '')}">${webUrl}</a>` : '';
+
+      const contacts = PERSONAL_DATA.contacts
+        .map(c => `<a href="${c.href}">${c.label}</a>`)
+        .concat(webItem ? [webItem] : [])
+        .join(' &middot; ');
+
+      const logoImg = src => src ? `<img class="pr-logo" src="${src}" alt="">` : '';
+
+      // Each ROLE is its own break-avoid block (so a multi-role org can span a page break, and a
+      // separator rule falls between every role — including two roles at the same org).
+      const roleBlock = (logo, co, role, period, desc, highlights) => {
+        let d = desc ? `<div class="lead">${formatText(desc)}</div>` : '';
+        if (highlights && highlights.length) {
+          d += `<ul>${highlights.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
+        }
+        return '<tbody class="pr-entry">'
+          + `<tr><td class="co">${logoImg(logo)}${co}</td><td class="role">${role}</td><td class="period">${period}</td></tr>`
+          + `<tr class="detail"><td colspan="3">${d}</td></tr>`
+          + '</tbody>';
+      };
+
+      const workRows = TRAJECTORY_DATA.filter(e => e.type === 'work').map(e => {
+        const co = `${e.company}, ${cityOf(e.location)}`;
+        if (e.isMerged && e.roles && e.roles.length) {
+          return e.roles.map(r => roleBlock(e.logo, co, r.role, r.period, r.description, r.highlights)).join('');
+        }
+        return roleBlock(e.logo, co, e.role, e.period, e.description, e.highlights);
+      }).join('');
+
+      // Education, with internships nested under the college attended at the time (matched by date).
+      const eduList = TRAJECTORY_DATA.filter(e => e.type === 'education');
+      const interns = TRAJECTORY_DATA.filter(e => e.type === 'internship');
+      const startMs = p => { const d = parsePeriod(p).start; return d ? d.getTime() : 0; };
+      const rangeMs = p => { const r = parsePeriod(p); return { s: r.start ? r.start.getTime() : 0, e: r.end ? r.end.getTime() : 0 }; };
+      const nested = eduList.map(() => []);
+      interns.forEach(intn => {
+        const t = startMs(intn.period);
+        let idx = eduList.findIndex(e => { const r = rangeMs(e.period); return t >= r.s && t <= r.e; });
+        if (idx < 0) {   // fallback: college whose start date is closest
+          let best = -1, diff = Infinity;
+          eduList.forEach((e, i) => { const dd = Math.abs(rangeMs(e.period).s - t); if (dd < diff) { diff = dd; best = i; } });
+          idx = best;
+        }
+        if (idx >= 0) nested[idx].push(intn);
+      });
+      const eduHTML = eduList.map((e, i) => {
+        const subs = nested[i].map(intn => {
+          let s = `<p class="pr-sub">↳ ${logoImg(intn.logo)}<span class="t">${intn.company}</span> — ${intn.role} &middot; ${intn.period}</p>`;
+          if (intn.description) s += `<div class="pr-sub-desc">${formatText(intn.description)}</div>`;
+          if (intn.highlights && intn.highlights.length) {
+            s += `<ul class="pr-sub-desc">${intn.highlights.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
+          }
+          return s;
+        }).join('');
+        return `<p>${logoImg(e.logo)}<span class="t">${e.company}</span> — ${e.role}${e.score ? ` (${e.score})` : ''} &middot; ${e.period}</p>${subs}`;
+      }).join('');
+
+      const comp = OVERVIEW_DATA.competencies.map(c =>
+        `<p><span class="t">${c.title}</span> — ${formatText(c.description)}</p>`
+      ).join('');
+
+      el.innerHTML = `
+        <div class="pr-hero">
+          <img src="${PERSONAL_DATA.profileImage}" alt="">
+          <div>
+            <div class="pr-name">${PERSONAL_DATA.name}</div>
+            <div class="pr-title">${PERSONAL_DATA.title}</div>
+            <div class="pr-meta">${contacts}</div>
+            <div class="pr-meta"><strong>Experience:</strong> ${computeExperience()}${base ? '  &middot;  <strong>Base:</strong> ' + base.value : ''}</div>
+          </div>
+        </div>
+
+        <div class="pr-section-h">Summary</div>
+        <p class="pr-summary">${formatText(OVERVIEW_DATA.bio)}</p>
+
+        <div class="pr-section-h">Core Competencies</div>
+        <div class="pr-comp">${comp}</div>
+
+        <div class="pr-section-h">Career Trajectory</div>
+        <table class="pr-traj">${workRows}</table>
+
+        ${eduHTML ? `<div class="pr-section-h">Education</div><div class="pr-edu">${eduHTML}</div>` : ''}
+      `;
     }
 
     // Dynamic APP rendering (Modularity core)

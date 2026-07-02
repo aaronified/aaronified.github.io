@@ -5,9 +5,9 @@ const OVERVIEW_DATA = {
   // from TRAJECTORY_DATA (current role + summed work duration) and are prepended at render time.
   // The facts below are free-form — edit/add/remove them to suit your profile.
   quickFacts: [
-    { label: "Core Expertise", value: "Analytics and Insights" },
-    { label: "Function Setup", value: "Ground Up Analytics" },
-    { label: "Role Base", value: "Hyderabad, India" }
+    { label: "Function", value: "Analytics and Insights" },
+    { label: "Core Expertise", value: "Ground Up Analytics" },
+    { label: "Base Location", value: "Hyderabad, India" }
   ],
   // Global Footprint (countries + city count) is derived from the locations in TRAJECTORY_DATA.
   competencies: [
