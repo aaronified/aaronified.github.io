@@ -220,6 +220,7 @@ __marimo__/
 #kilo
 .kilo
 changes_required.txt
+.vscode/
 
 # Claude working notes
 notes/
