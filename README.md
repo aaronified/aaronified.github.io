@@ -280,17 +280,55 @@ You **don't need to touch `index.html`** for any of this — it's all data-drive
 
 ---
 
-## Deploying to GitHub Pages
+## Hosting on GitHub Pages
 
-1. Push your edited repo to GitHub.
-2. For a **personal site**, name the repo `your-username.github.io`; it will publish at
-   `https://your-username.github.io/`. For a **project site**, use any repo name; it publishes at
-   `https://your-username.github.io/<repo-name>/`.
-3. In the repo, go to **Settings → Pages**, set **Source** to *Deploy from a branch*, choose your
-   default branch (e.g. `main`) and the `/ (root)` folder, and save.
-4. Wait a minute for the build, then visit your URL.
+The site is fully static (no build step), so GitHub serves the files as-is and hosting is free.
 
-Because the site is fully static, there is nothing to build — GitHub serves the files as-is.
+### Get a clean root URL with no folder — the `username.github.io` trick
+
+GitHub Pages has two kinds of sites, and the **repository name** decides the URL:
+
+| Repo name | Site type | Published URL |
+|---|---|---|
+| **`your-username.github.io`** (exactly your username) | **User/organization site** | **`https://your-username.github.io/`** — root, **no folder** |
+| anything else, e.g. `resume` | Project site | `https://your-username.github.io/resume/` — served from a `/resume/` subfolder |
+
+So to get a bare `https://your-username.github.io/` link with **no subfolder**, the repository **must
+be named exactly `your-username.github.io`** (all lowercase, matching your GitHub username). That is
+why this repo is named `aaronified.github.io` → it serves at `https://aaronified.github.io/`.
+Because the app derives its own live URL from `window.location` and uses **relative** asset paths
+(`assets/…`, `data/…`), it works at either kind of URL without edits — but the root URL is cleanest
+for a résumé.
+
+### Step-by-step
+
+1. **Create the repo.** On GitHub, create a new **public** repository named **exactly**
+   `your-username.github.io` (replace `your-username` with your real username, lowercase).
+2. **Push the files.** Point this project at that repo and push to `main` (or upload the files through
+   **Add file → Upload files** in the GitHub web UI):
+
+   ```bash
+   git remote add origin git@github.com:your-username/your-username.github.io.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+3. **Enable Pages.** In the repo: **Settings → Pages → Build and deployment**. Set **Source** to
+   *Deploy from a branch*, choose branch **`main`** and folder **`/ (root)`**, then **Save**.
+4. **Wait for the first deploy** (~1 minute; a green check appears on the commit). Visit
+   `https://your-username.github.io/`. HTTPS is on automatically.
+5. **Update anytime** by pushing to `main` (or editing files in the web UI) — Pages redeploys within a
+   minute. A hard refresh (Ctrl/Cmd-Shift-R) clears any cached copy.
+
+A few notes:
+
+- Only **one** user/organization site per account (the single `username.github.io` repo). Everything
+  else is a project site under a `/subfolder/`.
+- **Custom domain (optional):** Settings → Pages → *Custom domain*, add e.g. `resume.example.com`,
+  create the matching DNS record at your registrar, and tick *Enforce HTTPS*. GitHub writes a `CNAME`
+  file to the repo.
+- No Jekyll processing is needed here; if you ever see build quirks, add an empty `.nojekyll` file at
+  the repo root to disable Jekyll entirely.
 
 ---
 
@@ -321,27 +359,32 @@ Everything below tailors the **PDF only** — the on-screen page never changes �
 per export. If you later edit `data/*.js`, saved choices are **reconciled** against the new data
 (added items appear, removed ones drop, out-of-range picks reset) and a short notice lists what changed.
 
-- **Contact Details** — toggle the **profile photo**, and reorder (▲/▼ arrows or drag) / include each
-  header contact line (phone, GitHub, email, LinkedIn, and the derived live web URL).
-- **Summary** — an include toggle plus an editor to rewrite the opening paragraph for this export
-  (same highlight markers, live preview).
-- **Core Competencies** — shown as reorderable pills. Drag, or use the ▲/▼ arrows, to set the export
-  order; the toggle includes/excludes each one; the pencil expands an editor to rewrite the text using
-  the highlight markers (`` `software` `` → pill, `^skill^` → highlight, `*number*` → key figure). Each
-  editor shows a one-line help strip (with the *rendered* result of each marker) above the field, plus a
-  live preview.
-- **Work Experience** and **Education & Internships** — per role/entry you can hide the whole entry,
-  hide its description, and choose **how many achievements** to show (− / +). When you show fewer than
-  all, a *Choose which to hide* list lets you pick exactly which to drop (default: from the last
-  backward). Education entries add a **Show score** toggle; their descriptions are off by default (they
-  duplicate the degree title) but can be switched on.
-- **References** — **off by default.** Appends your recommenders *and* professional references
-  (from `RECOMMENDATIONS_DATA` + `REFERENCES_DATA`) as a single combined contacts list — the
-  recommendation quote text is never included. Reorder the people, include/exclude each, toggle and
-  **edit** their title and relationship, toggle LinkedIn / photo, and add a **mobile number** per person.
+Each section is laid out as two columns: a **left column** with the section name, a count, and its
+**universal ("All items") toggles** — which stays **pinned** as you scroll that section, then gives
+way to the next section — and a **right column** with the individual items. Everything is **fully per-item customisable** — the universal toggles are simply bulk switches
+that flip all of a section's child toggles at once (e.g. hide every logo, or every reference photo).
+Per-item toggles are packed into compact rows to keep scrolling short.
 
-Use **Reset to defaults** to clear all choices. Quality depends on the browser's print engine, so
-preview before sharing.
+- **Contact Details** — universal: profile photo. Per line (reorderable via ▲/▼ arrows or drag):
+  include phone, GitHub, email, LinkedIn, and the derived live web URL.
+- **Summary** — include toggle plus an editor to rewrite the opening paragraph for this export.
+- **Core Competencies** — reorderable pills (arrows or drag); include toggle; the pencil expands an
+  editor to rewrite the text with the highlight markers (`` `software` `` → pill, `^skill^` →
+  highlight, `*number*` → key figure). A one-line help strip above the field shows each marker's
+  *rendered* result, and a live preview sits below it.
+- **Work Experience** and **Education & Internships** — universal: Logos, Descriptions (+ Scores for
+  education). Per entry: include, compact Description / Logo / (Score) toggles, and an achievement
+  count (− / +) with a *Choose which to hide* pick-list (default: drop from the last backward).
+  Education descriptions are off by default (they duplicate the degree title) but can be switched on.
+- **References** — **off by default.** Universal: Photos, Titles, Relationships, Contacts. Merges your
+  recommenders *and* professional references (`RECOMMENDATIONS_DATA` + `REFERENCES_DATA`) into one
+  combined list — the recommendation quote text is never included. Per person (reorderable): include,
+  show/**edit** title, show/**edit** relationship, show photo, show **contact info** (LinkedIn +
+  editable **email** + editable **mobile**).
+
+Use **Reset to defaults** to clear all choices — it **highlights** whenever your current selection
+differs from the defaults, so you can always tell (and undo) at a glance. Quality depends on the
+browser's print engine, so preview before sharing.
 
 **Browser furniture:** the running header/footer on each page (URL, date, page number) is the
 **browser's own**, toggled by the *Headers and footers* checkbox in the print dialog. We deliberately
