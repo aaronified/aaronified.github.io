@@ -294,11 +294,12 @@ Because the site is fully static, there is nothing to build — GitHub serves th
 
 ---
 
-## Downloadable PDF Resume (Beta)
+## Downloadable PDF Resume
 
-The **Resume (PDF)** button (under the profile photo) opens your browser's print dialog —
-choose *Save as PDF*. This prints a **separate, compact one/two-page layout** (built from the same
-data), not the on-screen page:
+The **Print PDF** button (under the profile photo, and in the sticky bar) opens a **selection
+screen** where you curate exactly what goes into the export, then **Generate PDF** hands off to your
+browser's print dialog — choose *Save as PDF*. This prints a **separate, compact one/two-page layout**
+(built from the same data), not the on-screen page:
 
 - **Hero** — photo left; name, tagline, contacts (incl. the live web URL from `PERSONAL_DATA.website`
   or the auto-detected host), and computed **Experience · Base** on the right.
@@ -313,7 +314,34 @@ data), not the on-screen page:
   **bold blue** (no pills/backgrounds).
 - FAQ and Recommendations are omitted.
 
-It's labelled *Beta* — quality depends on the browser's print engine, so preview before sharing.
+### The selection screen
+
+Everything below tailors the **PDF only** — the on-screen page never changes — and your choices are
+**saved to `localStorage`** (`pdfExportConfig`), so they persist across sessions rather than resetting
+per export. If you later edit `data/*.js`, saved choices are **reconciled** against the new data
+(added items appear, removed ones drop, out-of-range picks reset) and a short notice lists what changed.
+
+- **Contact Details** — toggle the **profile photo**, and reorder (▲/▼ arrows or drag) / include each
+  header contact line (phone, GitHub, email, LinkedIn, and the derived live web URL).
+- **Summary** — an include toggle plus an editor to rewrite the opening paragraph for this export
+  (same highlight markers, live preview).
+- **Core Competencies** — shown as reorderable pills. Drag, or use the ▲/▼ arrows, to set the export
+  order; the toggle includes/excludes each one; the pencil expands an editor to rewrite the text using
+  the highlight markers (`` `software` `` → pill, `^skill^` → highlight, `*number*` → key figure). Each
+  editor shows a one-line help strip (with the *rendered* result of each marker) above the field, plus a
+  live preview.
+- **Work Experience** and **Education & Internships** — per role/entry you can hide the whole entry,
+  hide its description, and choose **how many achievements** to show (− / +). When you show fewer than
+  all, a *Choose which to hide* list lets you pick exactly which to drop (default: from the last
+  backward). Education entries add a **Show score** toggle; their descriptions are off by default (they
+  duplicate the degree title) but can be switched on.
+- **References** — **off by default.** Appends your recommenders *and* professional references
+  (from `RECOMMENDATIONS_DATA` + `REFERENCES_DATA`) as a single combined contacts list — the
+  recommendation quote text is never included. Reorder the people, include/exclude each, toggle and
+  **edit** their title and relationship, toggle LinkedIn / photo, and add a **mobile number** per person.
+
+Use **Reset to defaults** to clear all choices. Quality depends on the browser's print engine, so
+preview before sharing.
 
 **Browser furniture:** the running header/footer on each page (URL, date, page number) is the
 **browser's own**, toggled by the *Headers and footers* checkbox in the print dialog. We deliberately

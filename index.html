@@ -136,6 +136,45 @@
       opacity: 1;
     }
 
+    /* ==========================================================
+       PDF EXPORT SELECTION MODAL — screen-only controls.
+       These style the on-screen curation modal ONLY. They must never
+       reach the printed page: the modal is a body-level sibling hidden
+       by the print rule `body > *:not(#print-resume){display:none}`,
+       plus its own `print:hidden`/`hidden` classes. Do NOT move any of
+       this into the @media print block.
+       ========================================================== */
+    .pdf-switch {
+      position: relative;
+      width: 2.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      background-color: rgb(203 213 225);   /* slate-300 (off) */
+      flex: 0 0 auto;
+      transition: background-color 200ms ease;
+      cursor: pointer;
+    }
+    .dark .pdf-switch { background-color: rgb(51 65 85); }   /* slate-700 (off) */
+    .pdf-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 9999px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: transform 200ms ease;
+    }
+    .pdf-switch[aria-checked="true"] { background-color: var(--accent); }
+    .pdf-switch[aria-checked="true"]::after { transform: translateX(1rem); }
+    .pdf-switch:focus-visible { outline: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+
+    /* Drag-reorder insertion indicator (competencies, contacts, references) */
+    .pdf-drag-top { box-shadow: inset 0 3px 0 0 var(--accent); }
+    .pdf-drag-bottom { box-shadow: inset 0 -3px 0 0 var(--accent); }
+
     /* Accessibility Skip Link styling */
     .skip-to-content:focus {
       top: 1rem;
@@ -153,7 +192,7 @@
     }
 
     /* ==========================================================
-       PRINT / PDF LAYOUT (Beta)
+       PRINT / PDF LAYOUT
        The screen app is hidden for print; a compact, purpose-built
        #print-resume block (populated by buildPrintResume()) is shown.
        downloadResume() forces light mode before window.print().
@@ -210,6 +249,7 @@
       .pr-comp p { margin: 2.5px 0; }
       .pr-comp .t, .pr-edu .t { font-weight: 700; }
       .pr-edu p { margin: 2px 0; }
+      .pr-edu .pr-edu-desc { margin: 0 0 3px 18px; font-size: 8.7pt; }   /* optional education description (toggled in the selection screen) */
       .pr-edu .pr-sub { margin: 1px 0 1px 14px; font-size: 9pt; }   /* internship header nested under its college */
       .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 8.7pt; }   /* internship description/bullets */
       .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
@@ -229,6 +269,13 @@
       .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }  /* real bullets (override CDN reset) */
       .pr-traj li { margin: 0.5px 0; }
       .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: 6px; }
+
+      /* References / recommenders as professional contacts (quote text omitted) */
+      .pr-reco .pr-reco-item { margin: 3px 0; break-inside: avoid; }
+      .pr-reco .pr-reco-item p { margin: 0; }
+      .pr-reco .pr-reco-img { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
+      .pr-reco .name { font-weight: 700; color: #000; }
+      .pr-reco .pr-reco-meta { margin: 1px 0 0 18px; font-size: 8.7pt; }
     }
   </style>
   
@@ -254,7 +301,7 @@
   <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-rose-400/5 dark:bg-rose-900/10 blur-[120px] -z-40 pointer-events-none print:hidden"></div>
 
   <!-- WRAPPER -->
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+  <div id="app-shell" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
 
     <!-- HEADER / HERO -->
     <header id="hero" class="mb-10 rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl p-6 sm:p-10 shadow-xl dark:shadow-slate-950/20 relative overflow-hidden group">
@@ -272,11 +319,10 @@
             </div>
           </div>
 
-          <!-- Download resume (PDF) — subtle, beta -->
-          <button onclick="downloadResume()" aria-label="Download resume as PDF (beta)" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
+          <!-- Print PDF — opens the export selection screen -->
+          <button onclick="openPdfModal()" aria-label="Customise and print resume as PDF" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span>Resume (PDF)</span>
-            <span class="text-[8px] font-bold uppercase tracking-wider opacity-70">Beta</span>
+            <span>Print PDF</span>
           </button>
         </div>
 
@@ -418,6 +464,42 @@
   <!-- COMPACT PRINT / PDF RÉSUMÉ (hidden on screen; populated by buildPrintResume()) -->
   <div id="print-resume" aria-hidden="true"></div>
 
+  <!-- PDF EXPORT SELECTION SCREEN (screen-only; body-level sibling so the print rule
+       `body > *:not(#print-resume){display:none}` hides it — plus print:hidden + hidden). -->
+  <div id="pdf-modal" class="hidden fixed inset-0 z-[60] print:hidden" role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title" aria-hidden="true">
+    <div class="absolute inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm"></div>
+    <div class="relative min-h-full flex items-start sm:items-center justify-center p-4 sm:p-6" onclick="if(event.target===this)closePdfModal()">
+      <div id="pdf-modal-panel" class="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-3 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
+          <div>
+            <h2 id="pdf-modal-title" class="text-lg font-bold font-display text-slate-900 dark:text-white">Customise your PDF</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Choose what appears in the exported PDF. Your on-screen page is unchanged, and your choices are saved for next time.</p>
+          </div>
+          <button id="pdf-modal-close" onclick="closePdfModal()" aria-label="Close" class="flex-shrink-0 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Body (sections injected by renderPdfModal()) -->
+        <div id="pdf-modal-body" class="flex-1 overflow-y-auto px-6 py-5 space-y-8"></div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
+          <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
+          <div class="flex items-center gap-2">
+            <button id="pdf-cancel" onclick="closePdfModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
+            <button id="pdf-generate" onclick="generatePdf()" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
+              <i data-lucide="download" class="w-4 h-4"></i>Generate PDF
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- APPLICATION JAVASCRIPT -->
   <script>
     // Constants & DOM Nodes
@@ -431,6 +513,7 @@
       setSection('overview');
       initStickyIdentity();
       buildPrintResume();
+      attachPdfModalHandlers();
 
       // Footer copyright
       document.getElementById('copyright-year').textContent = new Date().getFullYear();
@@ -483,7 +566,8 @@
       updateDynamicBrandStyles();
     }
 
-    // Download resume as PDF (Beta) via the browser's print -> Save as PDF.
+    // Print the resume as PDF via the browser's print -> Save as PDF. Reached from generatePdf()
+    // after the selection screen builds the curated #print-resume.
     // Forces light mode for the printout (regardless of on-screen theme), then restores it.
     function downloadResume() {
       const wasDark = document.documentElement.classList.contains('dark');
@@ -625,26 +709,72 @@
 
     // Build the compact print/PDF resume (hidden on screen; shown only when printing).
     // Purpose-built layout — independent of the screen DOM. Reuses the same data + helpers.
-    function buildPrintResume() {
+    function buildPrintResume(config) {
       const el = document.getElementById('print-resume');
       if (!el) return;
+
+      // Curate from the persisted selection config (defaults = full résumé when storage is empty).
+      config = config || reconcilePdfConfig(loadPdfConfig()).config;
+      const compCfg = config.competencies;
+      const entCfg = config.entries;
+
+      // Drop the highlight indices the user hid (dropped is reconciled to satisfy the chosen count).
+      const pickHighlights = (all, cfg) => {
+        all = all || [];
+        if (!cfg || !cfg.dropped || !cfg.dropped.length) return all;
+        const drop = new Set(cfg.dropped);
+        return all.filter((_, i) => !drop.has(i));
+      };
+      // Competency text: user override (HTML-escaped, then formatted) if present, else the authored description.
+      const compText = (title, c) => {
+        const t = compCfg.items[title] && compCfg.items[title].text;
+        return (t != null && t !== '') ? formatText(escapeHtml(t)) : formatText(c.description);
+      };
 
       const cityOf = loc => (loc || '').split(',')[0].trim();
       const base = (OVERVIEW_DATA.quickFacts || []).find(f => /base/i.test(f.label));
 
-      // Live web-resume URL for the hero: explicit PERSONAL_DATA.website, else auto-derived from
-      // the host (e.g. "aaronified.github.io"; skipped on local/file previews).
-      const wloc = window.location || {};
-      let webUrl = PERSONAL_DATA.website || '';
-      if (!webUrl && wloc.hostname && !/^(localhost$|127\.|0\.0\.0\.0)/.test(wloc.hostname)) {
-        webUrl = wloc.hostname + (wloc.pathname || '').replace(/index\.html?$/i, '').replace(/\/$/, '');
-      }
-      const webItem = webUrl ? `<a href="https://${webUrl.replace(/^https?:\/\//, '')}">${webUrl}</a>` : '';
-
-      const contacts = PERSONAL_DATA.contacts
-        .map(c => `<a href="${c.href}">${c.label}</a>`)
-        .concat(webItem ? [webItem] : [])
+      // Hero contacts — kept lines, in the user's chosen order (incl. the derived web URL).
+      const contactCfg = (config.contacts && config.contacts.items) || {};
+      const choiceByKey = {};
+      pdfContactChoices().forEach(cc => { choiceByKey[cc.key] = cc; });
+      const contactOrder = (config.contacts && config.contacts.order && config.contacts.order.length)
+        ? config.contacts.order : pdfContactChoices().map(cc => cc.key);
+      const contacts = contactOrder
+        .map(k => choiceByKey[k])
+        .filter(cc => cc && !(contactCfg[cc.key] && contactCfg[cc.key].include === false))
+        .map(cc => `<a href="${cc.href}">${cc.label}</a>`)
         .join(' &middot; ');
+
+      const heroShowImage = !(config.hero && config.hero.showImage === false);
+
+      // Summary — honour include toggle + optional text override.
+      const sumCfg = config.summary || { include: true, text: null };
+      const summaryHtml = (sumCfg.text != null && sumCfg.text !== '') ? formatText(escapeHtml(sumCfg.text)) : formatText(OVERVIEW_DATA.bio);
+
+      // References — recommenders shown as professional contacts (never the quote text). Off unless enabled.
+      const recoCfg = config.recommendations || { enabled: false, order: [], items: {} };
+      let recoHTML = '';
+      if (recoCfg.enabled) {
+        const recoByKey = {};
+        pdfRecoList().forEach(r => { recoByKey[r.key] = r; });
+        const rOrder = (recoCfg.order && recoCfg.order.length) ? recoCfg.order : pdfRecoList().map(r => r.key);
+        recoHTML = rOrder.map(k => {
+          const r = recoByKey[k]; if (!r) return '';
+          const ic = recoCfg.items[k] || {};
+          if (ic.include === false) return '';
+          const img = (ic.showImage !== false && r.avatarImage) ? `<img class="pr-reco-img" src="${r.avatarImage}" alt="">` : '';
+          const titleText = (ic.showTitle !== false) ? ((ic.title != null && ic.title !== '') ? ic.title : r.title) : '';
+          const relText = (ic.showRelationship !== false) ? ((ic.relationship != null && ic.relationship !== '') ? ic.relationship : r.relationship) : '';
+          const headBits = [];
+          if (titleText) headBits.push(escapeHtml(titleText));
+          if (relText) headBits.push(escapeHtml(relText));
+          const metaBits = [];
+          if (ic.showLinkedin !== false && r.linkedin) metaBits.push(escapeHtml(r.linkedin.replace(/^https?:\/\/(www\.)?/, '')));
+          if (ic.mobile) metaBits.push(escapeHtml(ic.mobile));
+          return `<div class="pr-reco-item"><p>${img}<span class="name">${escapeHtml(r.author)}</span>${headBits.length ? ' — ' + headBits.join(' &middot; ') : ''}</p>${metaBits.length ? `<div class="pr-reco-meta">${metaBits.join(' &middot; ')}</div>` : ''}</div>`;
+        }).join('');
+      }
 
       const logoImg = src => src ? `<img class="pr-logo" src="${src}" alt="">` : '';
 
@@ -664,64 +794,71 @@
       const workRows = TRAJECTORY_DATA.filter(e => e.type === 'work').map(e => {
         const co = `${e.company}, ${cityOf(e.location)}`;
         if (e.isMerged && e.roles && e.roles.length) {
-          return e.roles.map(r => roleBlock(e.logo, co, r.role, r.period, r.description, r.highlights)).join('');
+          return e.roles.map((r, i) => {
+            const cfg = entCfg[e.id + '#' + i];
+            if (cfg && !cfg.include) return '';
+            return roleBlock(e.logo, co, r.role, r.period,
+              (cfg && !cfg.showDescription) ? '' : r.description,
+              pickHighlights(r.highlights, cfg));
+          }).join('');
         }
-        return roleBlock(e.logo, co, e.role, e.period, e.description, e.highlights);
+        const cfg = entCfg[e.id];
+        if (cfg && !cfg.include) return '';
+        return roleBlock(e.logo, co, e.role, e.period,
+          (cfg && !cfg.showDescription) ? '' : e.description,
+          pickHighlights(e.highlights, cfg));
       }).join('');
 
       // Education, with internships nested under the college attended at the time (matched by date).
+      // Internships excluded in the selection screen are filtered out BEFORE nesting so they never
+      // occupy a college's nest slot; excluded colleges drop their nested internships with them.
       const eduList = TRAJECTORY_DATA.filter(e => e.type === 'education');
-      const interns = TRAJECTORY_DATA.filter(e => e.type === 'internship');
-      const startMs = p => { const d = parsePeriod(p).start; return d ? d.getTime() : 0; };
-      const rangeMs = p => { const r = parsePeriod(p); return { s: r.start ? r.start.getTime() : 0, e: r.end ? r.end.getTime() : 0 }; };
-      const nested = eduList.map(() => []);
-      interns.forEach(intn => {
-        const t = startMs(intn.period);
-        let idx = eduList.findIndex(e => { const r = rangeMs(e.period); return t >= r.s && t <= r.e; });
-        if (idx < 0) {   // fallback: college whose start date is closest
-          let best = -1, diff = Infinity;
-          eduList.forEach((e, i) => { const dd = Math.abs(rangeMs(e.period).s - t); if (dd < diff) { diff = dd; best = i; } });
-          idx = best;
-        }
-        if (idx >= 0) nested[idx].push(intn);
-      });
+      const interns = TRAJECTORY_DATA.filter(e => e.type === 'internship' && !(entCfg[e.id] && !entCfg[e.id].include));
+      const nested = nestInternships(eduList, interns);
       const eduHTML = eduList.map((e, i) => {
+        if (entCfg[e.id] && !entCfg[e.id].include) return '';
+        const eCfg = entCfg[e.id] || {};
         const subs = nested[i].map(intn => {
+          const iCfg = entCfg[intn.id] || {};
           let s = `<p class="pr-sub">↳ ${logoImg(intn.logo)}<span class="t">${intn.company}</span> — ${intn.role} &middot; ${intn.period}</p>`;
-          if (intn.description) s += `<div class="pr-sub-desc">${formatText(intn.description)}</div>`;
-          if (intn.highlights && intn.highlights.length) {
-            s += `<ul class="pr-sub-desc">${intn.highlights.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
+          if (intn.description && iCfg.showDescription !== false) s += `<div class="pr-sub-desc">${formatText(intn.description)}</div>`;
+          const ih = pickHighlights(intn.highlights, iCfg);
+          if (ih.length) {
+            s += `<ul class="pr-sub-desc">${ih.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
           }
           return s;
         }).join('');
-        return `<p>${logoImg(e.logo)}<span class="t">${e.company}</span> — ${e.role}${e.score ? ` (${e.score})` : ''} &middot; ${e.period}</p>${subs}`;
+        const scoreStr = (eCfg.showScore !== false && e.score) ? ` (${e.score})` : '';
+        const descLine = (eCfg.showDescription !== false && e.description) ? `<div class="pr-edu-desc">${formatText(e.description)}</div>` : '';
+        return `<p>${logoImg(e.logo)}<span class="t">${e.company}</span> — ${e.role}${scoreStr} &middot; ${e.period}</p>${descLine}${subs}`;
       }).join('');
 
-      const comp = OVERVIEW_DATA.competencies.map(c =>
-        `<p><span class="t">${c.title}</span> — ${formatText(c.description)}</p>`
-      ).join('');
+      const comp = compCfg.order
+        .map(t => ({ c: OVERVIEW_DATA.competencies.find(x => x.title === t), item: compCfg.items[t] }))
+        .filter(o => o.c && o.item && o.item.include)
+        .map(o => `<p><span class="t">${escapeHtml(o.c.title)}</span> — ${compText(o.c.title, o.c)}</p>`)
+        .join('');
 
       el.innerHTML = `
         <div class="pr-hero">
-          <img src="${PERSONAL_DATA.profileImage}" alt="">
+          ${heroShowImage ? `<img src="${PERSONAL_DATA.profileImage}" alt="">` : ''}
           <div>
             <div class="pr-name">${PERSONAL_DATA.name}</div>
             <div class="pr-title">${PERSONAL_DATA.title}</div>
-            <div class="pr-meta">${contacts}</div>
+            ${contacts ? `<div class="pr-meta">${contacts}</div>` : ''}
             <div class="pr-meta"><strong>Experience:</strong> ${computeExperience()}${base ? '  &middot;  <strong>Base:</strong> ' + base.value : ''}</div>
           </div>
         </div>
 
-        <div class="pr-section-h">Summary</div>
-        <p class="pr-summary">${formatText(OVERVIEW_DATA.bio)}</p>
+        ${sumCfg.include !== false ? `<div class="pr-section-h">Summary</div><p class="pr-summary">${summaryHtml}</p>` : ''}
 
-        <div class="pr-section-h">Core Competencies</div>
-        <div class="pr-comp">${comp}</div>
+        ${comp ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${comp}</div>` : ''}
 
-        <div class="pr-section-h">Career Trajectory</div>
-        <table class="pr-traj">${workRows}</table>
+        ${workRows ? `<div class="pr-section-h">Career Trajectory</div><table class="pr-traj">${workRows}</table>` : ''}
 
         ${eduHTML ? `<div class="pr-section-h">Education</div><div class="pr-edu">${eduHTML}</div>` : ''}
+
+        ${recoHTML ? `<div class="pr-section-h">References</div><div class="pr-reco">${recoHTML}</div>` : ''}
       `;
     }
 
@@ -770,9 +907,9 @@
         miniContacts.appendChild(a);
       });
       const miniPdf = document.createElement('button');
-      miniPdf.setAttribute('onclick', 'downloadResume()');
-      miniPdf.setAttribute('aria-label', 'Download resume as PDF (beta)');
-      miniPdf.title = 'Download resume (PDF) — Beta';
+      miniPdf.setAttribute('onclick', 'openPdfModal()');
+      miniPdf.setAttribute('aria-label', 'Customise and print resume as PDF');
+      miniPdf.title = 'Print PDF';
       miniPdf.className = miniItemClass + ' ml-0.5 border-l border-slate-200/60 dark:border-slate-700/60 pl-2 rounded-l-none';
       miniPdf.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i>`;
       miniContacts.appendChild(miniPdf);
@@ -1305,6 +1442,1041 @@
           dot.querySelector('.timeline-dot-center').classList.add('scale-75');
         }
       }
+    }
+
+    /* ============================================================
+       PDF EXPORT SELECTION SCREEN
+       An intermediate modal (opened by the "Print PDF" triggers) that
+       curates what buildPrintResume() renders — competency order/text,
+       and per-role include / description / achievement selection. All
+       choices persist in localStorage ('pdfExportConfig') and are
+       reconciled against the live data on every load/open so they
+       survive edits to data/*.js. Affects the PDF path ONLY; the
+       on-screen page is untouched.
+       ============================================================ */
+    const PDF_STORAGE_KEY = 'pdfExportConfig';
+    const PDF_CONFIG_VERSION = 1;
+    let pdfConfig = null;
+    let pdfLastFocused = null;
+    let pdfKeydownHandler = null;
+    let pdfDrag = null;
+    let pdfSectionKeys = { work: [], edu: [] };
+    let _pdfSaveTimer = null;
+    const pdfUi = { expandedComps: new Set() };
+
+    // --- Small utilities ---
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+    function pdfCssAttr(s) { return String(s).replace(/(["\\])/g, '\\$1'); }   // for [data-x="..."] selectors
+    function pdfHasUnbalancedMarkers(s) {
+      s = String(s || '');
+      const odd = ch => (s.split(ch).length - 1) % 2 === 1;
+      return odd('`') || odd('^') || odd('*');
+    }
+
+    // Live web-resume URL for the hero: explicit PERSONAL_DATA.website, else auto-derived from the
+    // host (skipped on local/file previews). Shared by buildPrintResume + the contacts choices.
+    function pdfWebUrl() {
+      const wloc = window.location || {};
+      let webUrl = PERSONAL_DATA.website || '';
+      if (!webUrl && wloc.hostname && !/^(localhost$|127\.|0\.0\.0\.0)/.test(wloc.hostname)) {
+        webUrl = wloc.hostname + (wloc.pathname || '').replace(/index\.html?$/i, '').replace(/\/$/, '');
+      }
+      return webUrl;
+    }
+    function pdfContactKey(c, i) { return (c && c.type) ? String(c.type) : ('contact-' + i); }
+    // Ordered hero-contact choices: each PERSONAL_DATA contact + the derived web URL ('__web').
+    function pdfContactChoices() {
+      const list = (PERSONAL_DATA.contacts || []).map((c, i) => ({ key: pdfContactKey(c, i), label: c.label, icon: c.icon, href: c.href }));
+      const web = pdfWebUrl();
+      if (web) list.push({ key: '__web', label: web, icon: 'globe', href: 'https://' + web.replace(/^https?:\/\//, '') });
+      return list;
+    }
+    // Reusable formatText marker help — one compact line, ABOVE the editor, showing each marker's
+    // rendered end-look (via formatText) so the effect is obvious. Screen-only (uses the theme accent).
+    function pdfMarkerHelpHTML() {
+      const chip = (code, rendered) => '<span class="inline-flex items-center gap-1 whitespace-nowrap"><code class="px-1 rounded bg-slate-200/70 dark:bg-slate-700/60">' + code + '</code><span aria-hidden="true">→</span>' + rendered + '</span>';
+      return '<div class="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1 leading-relaxed">' +
+        '<span class="font-semibold uppercase tracking-wide">Format:</span>' +
+        chip('`text`', formatText('`software`')) +
+        chip('^text^', formatText('^skill^')) +
+        chip('*text*', formatText('*9+ yrs*')) +
+        '<span class="italic">no nesting · all print bold blue</span>' +
+      '</div>';
+    }
+
+    // Live people for the References section: recommenders (RECOMMENDATIONS_DATA) + professional
+    // references (REFERENCES_DATA), normalised to one shape. Quote text is never used. Keys are
+    // source-prefixed ('rec:' / 'ref:') so the two datasets can't collide.
+    function pdfRecoList() {
+      const out = [];
+      (typeof RECOMMENDATIONS_DATA !== 'undefined' ? RECOMMENDATIONS_DATA : []).forEach((r, i) => out.push({
+        key: 'rec:' + (r.author || i), author: r.author, title: r.title, relationship: r.relationship, linkedin: r.linkedin, avatarImage: r.avatarImage
+      }));
+      (typeof REFERENCES_DATA !== 'undefined' ? REFERENCES_DATA : []).forEach((r, i) => out.push({
+        key: 'ref:' + (r.name || i), author: r.name, title: r.title, relationship: r.relationship, linkedin: r.linkedin, avatarImage: r.avatarImage
+      }));
+      return out;
+    }
+
+    // --- Persistence ---
+    function loadPdfConfig() {
+      try { const raw = localStorage.getItem(PDF_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+      catch (e) { return null; }
+    }
+    function savePdfConfig(cfg) {
+      try { localStorage.setItem(PDF_STORAGE_KEY, JSON.stringify(cfg || pdfConfig)); } catch (e) {}
+    }
+    function savePdfConfigDebounced() {
+      clearTimeout(_pdfSaveTimer);
+      _pdfSaveTimer = setTimeout(() => { _pdfSaveTimer = null; savePdfConfig(pdfConfig); }, 150);
+    }
+    // Write any pending debounced save immediately (on modal close / page hide) so an interim edit
+    // can't be lost inside the 150ms window.
+    function flushPdfSave() {
+      if (_pdfSaveTimer && pdfConfig) { clearTimeout(_pdfSaveTimer); _pdfSaveTimer = null; savePdfConfig(pdfConfig); }
+    }
+
+    // Date-match internships to the college attended at the time. Extracted from buildPrintResume
+    // so the selection modal groups internships identically to the printed output.
+    function nestInternships(eduList, interns) {
+      const startMs = p => { const d = parsePeriod(p).start; return d ? d.getTime() : 0; };
+      const rangeMs = p => { const r = parsePeriod(p); return { s: r.start ? r.start.getTime() : 0, e: r.end ? r.end.getTime() : 0 }; };
+      const nested = eduList.map(() => []);
+      interns.forEach(intn => {
+        const t = startMs(intn.period);
+        let idx = eduList.findIndex(e => { const r = rangeMs(e.period); return t >= r.s && t <= r.e; });
+        if (idx < 0) {   // fallback: college whose start date is closest
+          let best = -1, diff = Infinity;
+          eduList.forEach((e, i) => { const dd = Math.abs(rangeMs(e.period).s - t); if (dd < diff) { diff = dd; best = i; } });
+          idx = best;
+        }
+        if (idx >= 0) nested[idx].push(intn);
+      });
+      return nested;
+    }
+
+    // Live entry keys + metadata. Merged sub-roles are keyed `${id}#${index}` (roles[] have no id).
+    function pdfEntryList() {
+      const list = [];
+      TRAJECTORY_DATA.forEach(e => {
+        if (e.isMerged && e.roles && e.roles.length) {
+          e.roles.forEach((r, i) => list.push({ key: e.id + '#' + i, type: e.type, total: (r.highlights || []).length, roleTitle: r.role }));
+        } else {
+          list.push({ key: e.id, type: e.type, total: (e.highlights || []).length, roleTitle: null, hasScore: !!e.score });
+        }
+      });
+      return list;
+    }
+
+    // Rebuild a clean config against the LIVE data, overlaying any still-valid saved choices.
+    // Returns { config, changes } — changes describes what drifted (shown as a notice on open).
+    function reconcilePdfConfig(saved) {
+      const changes = [];
+      if (!saved || saved.v !== PDF_CONFIG_VERSION) saved = {};
+      const sComp = saved.competencies || {};
+      const sItems = sComp.items || {};
+      const sEntries = saved.entries || {};
+      const hadComp = Array.isArray(sComp.order);
+      const hadEntries = sEntries && Object.keys(sEntries).length > 0;
+
+      // Competencies — keyed by title (the only stable handle; they have no id).
+      const liveTitles = OVERVIEW_DATA.competencies.map(c => c.title);
+      let order = hadComp ? sComp.order.filter(t => liveTitles.indexOf(t) >= 0) : [];
+      if (hadComp) sComp.order.forEach(t => { if (liveTitles.indexOf(t) < 0) changes.push('Competency “' + t + '” was removed'); });
+      liveTitles.forEach(t => { if (order.indexOf(t) < 0) { order.push(t); if (hadComp) changes.push('New competency “' + t + '” added'); } });
+      const items = {};
+      order.forEach(t => {
+        const s = sItems[t] || {};
+        items[t] = {
+          include: typeof s.include === 'boolean' ? s.include : true,
+          text: typeof s.text === 'string' ? s.text : null
+        };
+      });
+
+      // Entries — keyed by id / id#index; best-effort re-match merged sub-roles by roleTitle.
+      const entries = {};
+      const byRoleTitle = {};
+      Object.keys(sEntries).forEach(k => { const v = sEntries[k]; if (v && v.roleTitle) byRoleTitle[v.roleTitle] = v; });
+      pdfEntryList().forEach(meta => {
+        let s = sEntries[meta.key];
+        if (!s && meta.roleTitle && byRoleTitle[meta.roleTitle]) s = byRoleTitle[meta.roleTitle];
+        s = s || {};
+        const total = meta.total;
+        const include = typeof s.include === 'boolean' ? s.include : true;
+        // Education descriptions are redundant with the degree title, so they default OFF (preserving
+        // the existing compact PDF); work/internship descriptions default ON as before.
+        const defShowDesc = meta.type !== 'education';
+        const showDescription = typeof s.showDescription === 'boolean' ? s.showDescription : defShowDesc;
+        const savedDropped = Array.isArray(s.dropped) ? s.dropped : [];
+        let dropped = Array.from(new Set(savedDropped.filter(i => Number.isInteger(i) && i >= 0 && i < total))).sort((a, b) => a - b);
+        let count = Number.isInteger(s.count) ? Math.max(0, Math.min(s.count, total)) : total;
+        if (dropped.length) { count = total - dropped.length; }
+        else if (count < total) { dropped = []; for (let i = count; i < total; i++) dropped.push(i); }   // default: drop from last backward
+        if (hadEntries && savedDropped.some(i => !(Number.isInteger(i) && i >= 0 && i < total))) {
+          changes.push('Some achievement choices for “' + (meta.roleTitle || meta.key) + '” no longer apply');
+        }
+        const node = { include: include, showDescription: showDescription, count: count, dropped: dropped };
+        if (meta.type === 'education') node.showScore = typeof s.showScore === 'boolean' ? s.showScore : true;
+        if (meta.roleTitle != null) node.roleTitle = meta.roleTitle;
+        entries[meta.key] = node;
+      });
+
+      // Hero profile photo toggle.
+      const sHero = saved.hero || {};
+      const hero = { showImage: typeof sHero.showImage === 'boolean' ? sHero.showImage : true };
+
+      // Contacts — reorderable; keyed by contact.type (stable), plus the derived web URL as '__web'.
+      const sContacts = saved.contacts || {};
+      const sContactItems = sContacts.items || {};
+      const liveContactKeys = pdfContactChoices().map(cc => cc.key);
+      let contactOrder = Array.isArray(sContacts.order) ? sContacts.order.filter(k => liveContactKeys.indexOf(k) >= 0) : [];
+      liveContactKeys.forEach(k => { if (contactOrder.indexOf(k) < 0) contactOrder.push(k); });
+      const contactItems = {};
+      contactOrder.forEach(k => {
+        const s = sContactItems[k] || {};
+        contactItems[k] = { include: typeof s.include === 'boolean' ? s.include : true };
+      });
+
+      // Summary — include toggle + optional text override (escaped, then formatText'd, like competencies).
+      const sSummary = saved.summary || {};
+      const summary = {
+        include: typeof sSummary.include === 'boolean' ? sSummary.include : true,
+        text: typeof sSummary.text === 'string' ? sSummary.text : null
+      };
+
+      // References (from recommendations; quote text excluded). OFF by default. Reorderable; per-person
+      // include + show/edit title + show relationship/linkedin/photo + an optional user-entered mobile.
+      const sReco = saved.recommendations || {};
+      const sRecoItems = sReco.items || {};
+      const liveReco = pdfRecoList();
+      const liveRecoKeys = liveReco.map(r => r.key);
+      let recoOrder = Array.isArray(sReco.order) ? sReco.order.filter(k => liveRecoKeys.indexOf(k) >= 0) : [];
+      liveRecoKeys.forEach(k => { if (recoOrder.indexOf(k) < 0) recoOrder.push(k); });
+      const recoItems = {};
+      recoOrder.forEach(k => {
+        const s = sRecoItems[k] || {};
+        recoItems[k] = {
+          include: typeof s.include === 'boolean' ? s.include : true,
+          showTitle: typeof s.showTitle === 'boolean' ? s.showTitle : true,
+          title: typeof s.title === 'string' ? s.title : null,
+          showRelationship: typeof s.showRelationship === 'boolean' ? s.showRelationship : true,
+          relationship: typeof s.relationship === 'string' ? s.relationship : null,
+          showLinkedin: typeof s.showLinkedin === 'boolean' ? s.showLinkedin : true,
+          showImage: typeof s.showImage === 'boolean' ? s.showImage : true,
+          mobile: typeof s.mobile === 'string' ? s.mobile : ''
+        };
+      });
+      const recommendations = { enabled: sReco.enabled === true, order: recoOrder, items: recoItems };
+
+      return { config: { v: PDF_CONFIG_VERSION, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, recommendations: recommendations }, changes: changes };
+    }
+
+    // --- Modal open / close / generate / reset ---
+    function openPdfModal() {
+      const rec = reconcilePdfConfig(loadPdfConfig());
+      pdfConfig = rec.config;
+      savePdfConfig(pdfConfig);            // self-heal storage against any drift
+      pdfUi.expandedComps.clear();
+      renderPdfModal(rec.changes);
+      const modal = document.getElementById('pdf-modal');
+      if (!modal) return;
+      pdfLastFocused = document.activeElement;
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      document.documentElement.style.overflow = 'hidden';
+      const shell = document.getElementById('app-shell');
+      if (shell) { shell.setAttribute('inert', ''); shell.setAttribute('aria-hidden', 'true'); }
+      pdfKeydownHandler = function (e) {
+        if (e.key === 'Escape') { e.preventDefault(); closePdfModal(); return; }
+        if (e.key === 'Tab') pdfTrapFocus(e);
+      };
+      modal.addEventListener('keydown', pdfKeydownHandler);
+      const closeBtn = document.getElementById('pdf-modal-close');
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closePdfModal() {
+      const modal = document.getElementById('pdf-modal');
+      if (!modal) return;
+      flushPdfSave();
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+      document.documentElement.style.overflow = '';
+      const shell = document.getElementById('app-shell');
+      if (shell) { shell.removeAttribute('inert'); shell.removeAttribute('aria-hidden'); }
+      if (pdfKeydownHandler) { modal.removeEventListener('keydown', pdfKeydownHandler); pdfKeydownHandler = null; }
+      if (pdfLastFocused && typeof pdfLastFocused.focus === 'function') pdfLastFocused.focus();
+    }
+
+    function pdfTrapFocus(e) {
+      const panel = document.getElementById('pdf-modal-panel');
+      if (!panel) return;
+      const nodes = panel.querySelectorAll('button:not([disabled]), textarea:not([disabled]), input:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])');
+      const list = Array.prototype.filter.call(nodes, el => {
+        if (el.offsetParent === null && el !== document.activeElement) return false;   // display:none / hidden
+        if (el.closest('[inert]')) return false;   // excluded entry/summary controls (unfocusable)
+        const acc = el.closest('.accordion-grid');   // clipped-but-not-hidden collapsed editor
+        return !acc || acc.classList.contains('open');
+      });
+      if (!list.length) return;
+      const first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    // The ONLY path that prints. downloadResume() stays the sole owner of the light-mode force + restore.
+    function generatePdf() {
+      savePdfConfig(pdfConfig);
+      buildPrintResume(pdfConfig);
+      closePdfModal();
+      requestAnimationFrame(() => downloadResume());
+    }
+
+    function resetPdfConfig() {
+      pdfConfig = reconcilePdfConfig(null).config;
+      savePdfConfig(pdfConfig);
+      pdfUi.expandedComps.clear();
+      renderPdfModal([]);
+    }
+
+    // --- Rendering ---
+    function renderPdfModal(changes) {
+      const body = document.getElementById('pdf-modal-body');
+      if (!body) return;
+      let html = '';
+      if (changes && changes.length) {
+        html += '<div class="rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-300 text-xs p-3 flex items-start gap-2">' +
+          '<i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>' +
+          '<div><p class="font-semibold mb-1">Your saved choices were updated</p><ul class="list-disc pl-4 space-y-0.5">' +
+          changes.map(c => '<li>' + escapeHtml(c) + '</li>').join('') + '</ul></div></div>';
+      }
+      html += renderContactsSectionHTML();
+      html += renderSummarySectionHTML();
+      html += renderCompetencySectionHTML();
+      html += renderEntrySectionsHTML();
+      html += renderRecommendationsSectionHTML();
+      body.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderContactsSectionHTML() {
+      const choices = pdfContactChoices();
+      if (!choices.length) return '';
+      const order = pdfConfig.contacts.order;
+      const items = pdfConfig.contacts.items;
+      const inc = order.filter(k => items[k] && items[k].include !== false).length;
+      const showImg = !(pdfConfig.hero && pdfConfig.hero.showImage === false);
+      const photoRow = '<div class="flex items-center gap-2.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-2.5 mb-2">' +
+        '<span class="p-1.5 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10 text-indigo-600 dark:text-amber-400 flex-shrink-0"><i data-lucide="image" class="w-4 h-4"></i></span>' +
+        '<span class="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">Profile photo</span>' +
+        pdfSwitchHTML('pdf-hero-image', showImg, 'Show profile photo in PDF') +
+      '</div>';
+      return '<section>' +
+        '<div class="flex items-center justify-between mb-1.5">' +
+          '<h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">Contact Details</h3>' +
+          '<span id="pdf-contact-badge" class="text-xs text-slate-500 dark:text-slate-400">' + inc + ' of ' + order.length + ' included</span>' +
+        '</div>' +
+        '<p class="text-xs text-slate-500 dark:text-slate-400 mb-2.5">Toggle the profile photo, and reorder (arrows or drag) / include the contact lines in the PDF header.</p>' +
+        photoRow +
+        '<ul id="pdf-contact-list" data-sort-list="contact" class="space-y-2">' + pdfContactListHTML() + '</ul>' +
+      '</section>';
+    }
+
+    function pdfContactListHTML() {
+      const order = pdfConfig.contacts.order;
+      const byKey = {};
+      pdfContactChoices().forEach(cc => { byKey[cc.key] = cc; });
+      return order.map((k, i) => pdfContactRowHTML(k, byKey[k], i, order.length)).filter(Boolean).join('');
+    }
+
+    function pdfContactRowHTML(key, cc, idx, total) {
+      if (!cc) return '';
+      const item = pdfConfig.contacts.items[key];
+      const included = !(item && item.include === false);
+      return '<li data-contact-key="' + escapeAttr(key) + '" data-sort-kind="contact" data-sort-key="' + escapeAttr(key) + '" draggable="true" class="pdf-contact-row pdf-sortable flex items-center gap-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-2.5' + (included ? '' : ' opacity-60') + '">' +
+        pdfSortHandleHTML('contact', key, idx, total, cc.label) +
+        '<span class="p-1.5 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10 text-indigo-600 dark:text-amber-400 flex-shrink-0"><i data-lucide="' + (cc.icon || 'link') + '" class="w-4 h-4"></i></span>' +
+        '<span class="pdf-contact-label flex-1 text-sm font-medium text-slate-700 dark:text-slate-300 truncate' + (included ? '' : ' line-through decoration-slate-400') + '">' + escapeHtml(cc.label) + '</span>' +
+        pdfSwitchHTML('pdf-contact-include', included, 'Include ' + cc.label + ' in PDF') +
+      '</li>';
+    }
+
+    function renderContactList() {
+      const ul = document.getElementById('pdf-contact-list');
+      if (!ul) return;
+      ul.innerHTML = pdfContactListHTML();
+      updateContactsBadge();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderSummarySectionHTML() {
+      const sum = pdfConfig.summary;
+      const included = sum.include !== false;
+      const curText = sum.text != null ? sum.text : OVERVIEW_DATA.bio;
+      return '<section>' +
+        '<div class="flex items-center justify-between mb-1.5">' +
+          '<h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">Summary</h3>' +
+          pdfSwitchHTML('pdf-summary-include', included, 'Include the summary in PDF') +
+        '</div>' +
+        '<p class="text-xs text-slate-500 dark:text-slate-400 mb-2.5">The opening paragraph. Toggle it off, or edit the text just for this export.</p>' +
+        '<div class="pdf-summary-controls space-y-2' + (included ? '' : ' opacity-50 pointer-events-none') + '"' + (included ? '' : ' inert aria-hidden="true"') + '>' +
+          pdfMarkerHelpHTML() +
+          '<textarea class="pdf-summary-text w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 p-2.5 font-mono focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" rows="4">' + escapeHtml(curText) + '</textarea>' +
+          '<p class="pdf-summary-warn text-xs text-amber-600 dark:text-amber-400' + (pdfHasUnbalancedMarkers(curText) ? '' : ' hidden') + '">Unclosed marker — it will print literally.</p>' +
+          '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Preview</div>' +
+          '<div class="pdf-summary-preview text-sm leading-relaxed rounded-xl bg-slate-100/50 dark:bg-slate-800/40 p-2.5 text-slate-700 dark:text-slate-300">' + formatText(escapeHtml(curText)) + '</div>' +
+          '<button type="button" class="pdf-summary-reset text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-1">Reset to original</button>' +
+        '</div>' +
+      '</section>';
+    }
+
+    // --- References (from recommendations; off by default; quote text never shown) ---
+    function recoIncludedCount() {
+      const reco = pdfConfig.recommendations;
+      return reco.order.filter(k => reco.items[k] && reco.items[k].include !== false).length;
+    }
+
+    function renderRecommendationsSectionHTML() {
+      const list = pdfRecoList();
+      if (!list.length) return '';
+      const reco = pdfConfig.recommendations;
+      const enabled = reco.enabled === true;
+      return '<section>' +
+        '<div class="flex items-center justify-between mb-1.5">' +
+          '<h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">References</h3>' +
+          pdfSwitchHTML('pdf-reco-enabled', enabled, 'Include the references section in PDF') +
+        '</div>' +
+        '<p class="text-xs text-slate-500 dark:text-slate-400 mb-2.5">Off by default. Appends your recommenders and professional references as a contacts list — recommendation quote text is never included. Reorder, pick fields, edit the title and relationship, and add a phone number per person.</p>' +
+        '<div class="pdf-reco-body space-y-2' + (enabled ? '' : ' opacity-50 pointer-events-none') + '"' + (enabled ? '' : ' inert aria-hidden="true"') + '>' +
+          '<div class="flex justify-end"><span id="pdf-reco-badge" class="text-xs text-slate-500 dark:text-slate-400">' + recoIncludedCount() + ' of ' + reco.order.length + ' included</span></div>' +
+          '<ul id="pdf-reco-list" data-sort-list="reco" class="space-y-2">' + pdfRecoListHTML() + '</ul>' +
+        '</div>' +
+      '</section>';
+    }
+
+    function pdfRecoListHTML() {
+      const order = pdfConfig.recommendations.order;
+      const byKey = {};
+      pdfRecoList().forEach(r => { byKey[r.key] = r; });
+      return order.map((k, i) => pdfRecoRowHTML(k, byKey[k], i, order.length)).filter(Boolean).join('');
+    }
+
+    function pdfRecoFieldSwitch(field, on, label) {
+      return '<button type="button" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="' + escapeAttr(label) + '" class="pdf-switch pdf-reco-field" data-field="' + field + '"></button>';
+    }
+
+    function pdfRecoRowHTML(key, r, idx, total) {
+      if (!r) return '';
+      const it = pdfConfig.recommendations.items[key];
+      const included = !(it && it.include === false);
+      const titleVal = (it.title != null && it.title !== '') ? it.title : (r.title || '');
+      const relVal = (it.relationship != null && it.relationship !== '') ? it.relationship : (r.relationship || '');
+      const avatar = r.avatarImage ? '<img class="w-6 h-6 rounded-md object-cover flex-shrink-0" src="' + escapeAttr(r.avatarImage) + '" alt="">' : '';
+      const row = (label, sw) => '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300">' + label + '</span>' + sw + '</label>';
+      return '<li data-reco-key="' + escapeAttr(key) + '" data-sort-kind="reco" data-sort-key="' + escapeAttr(key) + '" draggable="true" class="pdf-reco-row pdf-sortable rounded-2xl border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md' + (included ? '' : ' opacity-60') + '">' +
+        '<div class="flex items-center gap-2 p-2.5">' +
+          pdfSortHandleHTML('reco', key, idx, total, r.author) +
+          avatar +
+          '<span class="pdf-reco-name flex-1 text-sm font-semibold text-slate-800 dark:text-slate-200 truncate' + (included ? '' : ' line-through decoration-slate-400') + '">' + escapeHtml(r.author) + '</span>' +
+          pdfSwitchHTML('pdf-reco-include', included, 'Include ' + r.author + ' in references') +
+        '</div>' +
+        '<div class="pdf-reco-controls px-3 pb-3 pl-9 space-y-2' + (included ? '' : ' opacity-50 pointer-events-none') + '"' + (included ? '' : ' inert aria-hidden="true"') + '>' +
+          row('Show title', pdfRecoFieldSwitch('showTitle', it.showTitle !== false, 'Show title for ' + r.author)) +
+          '<input type="text" class="pdf-reco-title w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" placeholder="Title" value="' + escapeAttr(titleVal) + '">' +
+          row('Show relationship', pdfRecoFieldSwitch('showRelationship', it.showRelationship !== false, 'Show relationship for ' + r.author)) +
+          '<input type="text" class="pdf-reco-rel w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" placeholder="Relationship" value="' + escapeAttr(relVal) + '">' +
+          row('Show LinkedIn', pdfRecoFieldSwitch('showLinkedin', it.showLinkedin !== false, 'Show LinkedIn for ' + r.author)) +
+          row('Show photo', pdfRecoFieldSwitch('showImage', it.showImage !== false, 'Show photo for ' + r.author)) +
+          '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Mobile number</span><input type="tel" class="pdf-reco-mobile w-40 text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" placeholder="+91 …" value="' + escapeAttr(it.mobile || '') + '"></label>' +
+        '</div>' +
+      '</li>';
+    }
+
+    function renderRecoList() {
+      const ul = document.getElementById('pdf-reco-list');
+      if (!ul) return;
+      ul.innerHTML = pdfRecoListHTML();
+      updateRecoBadge();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateRecoBadge() {
+      const badge = document.getElementById('pdf-reco-badge');
+      if (!badge) return;
+      badge.textContent = recoIncludedCount() + ' of ' + pdfConfig.recommendations.order.length + ' included';
+    }
+
+    function renderCompetencySectionHTML() {
+      const order = pdfConfig.competencies.order;
+      const inc = order.filter(t => pdfConfig.competencies.items[t] && pdfConfig.competencies.items[t].include).length;
+      return '<section>' +
+        '<div class="flex items-center justify-between mb-1.5">' +
+          '<h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">Core Competencies</h3>' +
+          '<span id="pdf-comp-badge" class="text-xs text-slate-500 dark:text-slate-400">' + inc + ' of ' + order.length + ' included</span>' +
+        '</div>' +
+        '<p class="text-xs text-slate-500 dark:text-slate-400 mb-2.5">Reorder with the arrows (or drag), toggle to include, and use the pencil to edit each competency\'s text.</p>' +
+        '<ul id="pdf-comp-list" data-sort-list="comp" class="space-y-2">' + order.map((t, i) => pdfCompRowHTML(t, i, order.length)).join('') + '</ul>' +
+      '</section>';
+    }
+
+    function pdfCompRowHTML(title, idx, total) {
+      const c = OVERVIEW_DATA.competencies.find(x => x.title === title);
+      if (!c) return '';
+      const item = pdfConfig.competencies.items[title];
+      const included = item.include;
+      const expanded = pdfUi.expandedComps.has(title);
+      const curText = item.text != null ? item.text : c.description;
+      const editorId = 'pdf-comp-editor-' + idx;
+      const icon = c.icon ? '<i data-lucide="' + c.icon + '" class="w-4 h-4 text-indigo-600 dark:text-amber-400 flex-shrink-0"></i>' : '';
+      return '' +
+      '<li data-comp-key="' + escapeAttr(title) + '" data-sort-kind="comp" data-sort-key="' + escapeAttr(title) + '" draggable="true" class="pdf-comp-row pdf-sortable rounded-2xl border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md transition-all' + (included ? '' : ' opacity-60') + '">' +
+        '<div class="flex items-center gap-2 p-2.5">' +
+          pdfSortHandleHTML('comp', title, idx, total, title) +
+          icon +
+          '<span class="pdf-comp-title flex-1 text-sm font-semibold text-slate-800 dark:text-slate-200 truncate' + (included ? '' : ' line-through decoration-slate-400') + '">' + escapeHtml(title) + '</span>' +
+          pdfSwitchHTML('pdf-comp-include', included, 'Include ' + title + ' in PDF') +
+          '<button type="button" class="pdf-comp-expand p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" aria-expanded="' + (expanded ? 'true' : 'false') + '" aria-controls="' + editorId + '" aria-label="Edit text for ' + escapeAttr(title) + '"><i data-lucide="pencil" class="w-4 h-4"></i></button>' +
+        '</div>' +
+        '<div id="' + editorId + '" class="pdf-comp-editor accordion-grid' + (expanded ? ' open' : '') + '"><div class="overflow-hidden"><div class="px-3 pb-3 pt-1 space-y-2">' +
+          pdfMarkerHelpHTML() +
+          '<textarea class="pdf-comp-text w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 p-2.5 font-mono focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" rows="3">' + escapeHtml(curText) + '</textarea>' +
+          '<p class="pdf-comp-warn text-xs text-amber-600 dark:text-amber-400' + (pdfHasUnbalancedMarkers(curText) ? '' : ' hidden') + '">Unclosed marker — it will print literally.</p>' +
+          '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Preview</div>' +
+          '<div class="pdf-comp-preview text-sm leading-relaxed rounded-xl bg-slate-100/50 dark:bg-slate-800/40 p-2.5 text-slate-700 dark:text-slate-300">' + formatText(escapeHtml(curText)) + '</div>' +
+          '<button type="button" class="pdf-comp-reset text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-1">Reset to original</button>' +
+        '</div></div></div>' +
+      '</li>';
+    }
+
+    function renderCompetencyList() {
+      const ul = document.getElementById('pdf-comp-list');
+      if (!ul) return;
+      const order = pdfConfig.competencies.order;
+      ul.innerHTML = order.map((t, i) => pdfCompRowHTML(t, i, order.length)).join('');
+      updateCompBadge();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateCompBadge() {
+      const badge = document.getElementById('pdf-comp-badge');
+      if (!badge) return;
+      const order = pdfConfig.competencies.order;
+      const inc = order.filter(t => pdfConfig.competencies.items[t] && pdfConfig.competencies.items[t].include).length;
+      badge.textContent = inc + ' of ' + order.length + ' included';
+    }
+
+    function pdfSwitchHTML(cls, checked, label) {
+      return '<button type="button" role="switch" aria-checked="' + (checked ? 'true' : 'false') + '" aria-label="' + escapeAttr(label) + '" class="pdf-switch ' + cls + '"></button>';
+    }
+
+    // Build the Work Experience + Education & Internships sections; records section keys for badges.
+    function renderEntrySectionsHTML() {
+      const work = TRAJECTORY_DATA.filter(e => e.type === 'work');
+      const eduList = TRAJECTORY_DATA.filter(e => e.type === 'education');
+      const allInterns = TRAJECTORY_DATA.filter(e => e.type === 'internship');
+      pdfSectionKeys = { work: [], edu: [] };
+      let html = '';
+
+      if (work.length) {
+        let rows = '';
+        work.forEach(e => {
+          if (e.isMerged && e.roles && e.roles.length) {
+            rows += '<p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide pt-1">' + escapeHtml(e.company) + ' · ' + e.roles.length + ' roles</p>';
+            e.roles.forEach((r, i) => {
+              const key = e.id + '#' + i;
+              pdfSectionKeys.work.push(key);
+              rows += pdfEntryCardHTML(key, e.logo, r.role, null, r.period, r.highlights || [], {});
+            });
+          } else {
+            pdfSectionKeys.work.push(e.id);
+            rows += pdfEntryCardHTML(e.id, e.logo, e.company, e.role, e.period, e.highlights || [], {});
+          }
+        });
+        html += pdfSectionWrap('Work Experience', 'pdf-work-badge', pdfSectionKeys.work, rows);
+      }
+
+      const nested = nestInternships(eduList, allInterns);
+      const placed = {};
+      let rows = '';
+      eduList.forEach((e, i) => {
+        pdfSectionKeys.edu.push(e.id);
+        const college = pdfEntryCardHTML(e.id, e.logo, e.company, e.role, e.period, [], { hasScore: !!e.score });
+        let subs = '';
+        nested[i].forEach(intn => {
+          placed[intn.id] = true;
+          pdfSectionKeys.edu.push(intn.id);
+          subs += pdfEntryCardHTML(intn.id, intn.logo, intn.company, intn.role, intn.period, intn.highlights || [], { isSub: true });
+        });
+        rows += '<div class="space-y-2">' + college + (subs ? '<div class="space-y-2">' + subs + '</div>' : '') + '</div>';
+      });
+      allInterns.filter(x => !placed[x.id]).forEach(intn => {
+        pdfSectionKeys.edu.push(intn.id);
+        rows += pdfEntryCardHTML(intn.id, intn.logo, intn.company, intn.role, intn.period, intn.highlights || [], {});
+      });
+      if (rows) html += pdfSectionWrap('Education & Internships', 'pdf-edu-badge', pdfSectionKeys.edu, rows);
+
+      return html;
+    }
+
+    function pdfSectionWrap(title, badgeId, keys, rowsHTML) {
+      const inc = keys.filter(k => pdfConfig.entries[k] && pdfConfig.entries[k].include).length;
+      return '<section>' +
+        '<div class="flex items-center justify-between mb-2">' +
+          '<h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">' + escapeHtml(title) + '</h3>' +
+          '<span id="' + badgeId + '" class="text-xs text-slate-500 dark:text-slate-400">' + inc + ' of ' + keys.length + ' included</span>' +
+        '</div>' +
+        '<div class="space-y-2.5">' + rowsHTML + '</div>' +
+      '</section>';
+    }
+
+    function pdfEntryCardHTML(key, logo, primary, secondary, period, highlights, opts) {
+      opts = opts || {};
+      highlights = highlights || [];
+      if (!pdfConfig.entries[key]) pdfConfig.entries[key] = { include: true, showDescription: true, count: highlights.length, dropped: [] };
+      const node = pdfConfig.entries[key];
+      const included = node.include;
+      const logoHtml = logo ? '<img class="w-6 h-6 rounded-md object-cover flex-shrink-0" src="' + escapeAttr(logo) + '" alt="">' : '';
+      const scoreToggle = opts.hasScore
+        ? '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300">Show score</span>' + pdfSwitchHTML('pdf-entry-score', node.showScore !== false, 'Show score for ' + primary) + '</label>'
+        : '';
+      const achBlock = highlights.length ? pdfAchBlockHTML(key, highlights, node) : '';
+      return '' +
+      '<div class="pdf-entry rounded-2xl' + (opts.isSub ? ' ml-4 border-l-2 border-slate-200/60 dark:border-slate-700/60 pl-3 py-1' : ' border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-3') + ' space-y-2.5" data-entry-key="' + escapeAttr(key) + '">' +
+        '<div class="flex items-center gap-2.5">' +
+          logoHtml +
+          '<span class="flex-1 min-w-0">' +
+            '<span class="block font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">' + escapeHtml(primary) + '</span>' +
+            (secondary ? '<span class="block text-xs text-slate-500 dark:text-slate-400 truncate">' + escapeHtml(secondary) + '</span>' : '') +
+          '</span>' +
+          '<span class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">' + escapeHtml(period) + '</span>' +
+          pdfSwitchHTML('pdf-entry-include', included, 'Include ' + primary + ' in PDF') +
+        '</div>' +
+        '<div class="pdf-entry-controls pl-8 space-y-2.5' + (included ? '' : ' opacity-50 pointer-events-none') + '"' + (included ? '' : ' inert aria-hidden="true"') + '>' +
+          '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300">Show description</span>' + pdfSwitchHTML('pdf-entry-desc', node.showDescription !== false, 'Show description for ' + primary) + '</label>' +
+          scoreToggle +
+          achBlock +
+        '</div>' +
+      '</div>';
+    }
+
+    function pdfAchBlockHTML(key, highlights, node) {
+      const total = highlights.length;
+      const dropped = new Set(node.dropped || []);
+      const count = total - dropped.size;
+      const items = highlights.map((h, i) =>
+        '<li><label class="flex items-start gap-2 cursor-pointer"><input type="checkbox" class="pdf-ach-keep mt-0.5" data-idx="' + i + '"' + (dropped.has(i) ? '' : ' checked') + '><span class="flex-1 leading-snug text-slate-600 dark:text-slate-300' + (dropped.has(i) ? ' line-through opacity-60' : '') + '">' + formatText(h) + '</span></label></li>'
+      ).join('');
+      const picker = '<details class="pdf-ach-picker mt-1.5 text-xs">' +
+        '<summary class="cursor-pointer font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400">Choose which to hide (' + dropped.size + ' hidden)</summary>' +
+        '<ul class="mt-1.5 space-y-1.5 list-none">' + items + '</ul>' +
+      '</details>';
+      return '' +
+      '<div class="pdf-entry-ach" data-ach-key="' + escapeAttr(key) + '">' +
+        '<div class="flex items-center justify-between gap-2 text-xs">' +
+          '<span class="pdf-ach-hdr font-medium text-slate-600 dark:text-slate-300">Achievements shown' + (count === 0 ? ' · header only' : '') + '</span>' +
+          '<div class="flex items-center gap-1.5">' +
+            '<button type="button" class="pdf-ach-minus p-1 rounded-lg border border-slate-200/60 dark:border-slate-700/60 text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" aria-label="Show fewer achievements"' + (count === 0 ? ' disabled' : '') + '><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>' +
+            '<span class="pdf-ach-num tabular-nums font-semibold w-12 text-center text-slate-700 dark:text-slate-200" aria-live="polite">' + count + ' / ' + total + '</span>' +
+            '<button type="button" class="pdf-ach-plus p-1 rounded-lg border border-slate-200/60 dark:border-slate-700/60 text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" aria-label="Show more achievements"' + (count === total ? ' disabled' : '') + '><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>' +
+          '</div>' +
+        '</div>' +
+        picker +
+      '</div>';
+    }
+
+    // --- Event delegation (attached once; survives re-renders) ---
+    function attachPdfModalHandlers() {
+      const body = document.getElementById('pdf-modal-body');
+      if (!body || body.dataset.wired) return;
+      body.dataset.wired = '1';
+
+      body.addEventListener('click', function (e) {
+        const t = e.target;
+        let el;
+        if ((el = t.closest('.pdf-sort-up')) || (el = t.closest('.pdf-sort-down'))) {
+          const up = !!el.closest('.pdf-sort-up');
+          const row = el.closest('.pdf-sortable'); const kind = row.dataset.sortKind;
+          const i = pdfOrderFor(kind).indexOf(row.dataset.sortKey);
+          pdfMove(kind, i, up ? i - 1 : i + 1, up ? -1 : 1); return;
+        }
+        if ((el = t.closest('.pdf-comp-include'))) { toggleCompInclude(el.closest('.pdf-comp-row').dataset.compKey, el); return; }
+        if ((el = t.closest('.pdf-comp-expand'))) { toggleCompEditor(el.closest('.pdf-comp-row').dataset.compKey, el); return; }
+        if ((el = t.closest('.pdf-comp-reset'))) { resetCompText(el.closest('.pdf-comp-row').dataset.compKey, el); return; }
+        if ((el = t.closest('.pdf-hero-image'))) { toggleHeroImage(el); return; }
+        if ((el = t.closest('.pdf-contact-include'))) { toggleContactInclude(el.closest('.pdf-contact-row').dataset.contactKey, el); return; }
+        if ((el = t.closest('.pdf-summary-include'))) { toggleSummaryInclude(el); return; }
+        if ((el = t.closest('.pdf-summary-reset'))) { resetSummaryText(el); return; }
+        if ((el = t.closest('.pdf-reco-enabled'))) { toggleRecoEnabled(el); return; }
+        if ((el = t.closest('.pdf-reco-include'))) { toggleRecoInclude(el.closest('.pdf-reco-row').dataset.recoKey, el); return; }
+        if ((el = t.closest('.pdf-reco-field'))) { toggleRecoField(el.closest('.pdf-reco-row').dataset.recoKey, el); return; }
+        if ((el = t.closest('.pdf-entry-include'))) { toggleEntryInclude(el.closest('.pdf-entry').dataset.entryKey, el); return; }
+        if ((el = t.closest('.pdf-entry-desc'))) { toggleEntrySwitch(el.closest('.pdf-entry').dataset.entryKey, el, 'showDescription'); return; }
+        if ((el = t.closest('.pdf-entry-score'))) { toggleEntrySwitch(el.closest('.pdf-entry').dataset.entryKey, el, 'showScore'); return; }
+        if ((el = t.closest('.pdf-ach-minus'))) { stepAch(el.closest('.pdf-entry-ach'), -1); return; }
+        if ((el = t.closest('.pdf-ach-plus'))) { stepAch(el.closest('.pdf-entry-ach'), 1); return; }
+      });
+
+      body.addEventListener('input', function (e) {
+        if (e.target.classList.contains('pdf-comp-text')) {
+          onCompTextInput(e.target.closest('.pdf-comp-row').dataset.compKey, e.target);
+        } else if (e.target.classList.contains('pdf-summary-text')) {
+          onSummaryTextInput(e.target);
+        } else if (e.target.classList.contains('pdf-reco-title')) {
+          onRecoTitleInput(e.target.closest('.pdf-reco-row').dataset.recoKey, e.target);
+        } else if (e.target.classList.contains('pdf-reco-rel')) {
+          onRecoRelationshipInput(e.target.closest('.pdf-reco-row').dataset.recoKey, e.target);
+        } else if (e.target.classList.contains('pdf-reco-mobile')) {
+          onRecoMobileInput(e.target.closest('.pdf-reco-row').dataset.recoKey, e.target);
+        }
+      });
+
+      body.addEventListener('change', function (e) {
+        if (e.target.classList.contains('pdf-ach-keep')) onAchCheckboxChange(e.target);
+      });
+
+      // Drag-reorder (progressive enhancement; shares moveComp with the arrow buttons)
+      body.addEventListener('dragstart', pdfDragStart);
+      body.addEventListener('dragover', pdfDragOver);
+      body.addEventListener('drop', pdfDrop);
+      body.addEventListener('dragend', pdfDragEnd);
+
+      // Flush a pending save if the tab is hidden/closed mid-edit (pagehide fires on bfcache too).
+      window.addEventListener('pagehide', flushPdfSave);
+    }
+
+    // Generic reorder shared by competencies / contacts / references (data-sort-kind on each row).
+    function pdfOrderFor(kind) {
+      if (kind === 'comp') return pdfConfig.competencies.order;
+      if (kind === 'contact') return pdfConfig.contacts.order;
+      if (kind === 'reco') return pdfConfig.recommendations.order;
+      return null;
+    }
+    function pdfRerenderList(kind) {
+      if (kind === 'comp') renderCompetencyList();
+      else if (kind === 'contact') renderContactList();
+      else if (kind === 'reco') renderRecoList();
+    }
+    function pdfMove(kind, fromIdx, toIdx, focusDir) {
+      const order = pdfOrderFor(kind);
+      if (!order || fromIdx < 0 || fromIdx >= order.length) return;
+      const moved = order.splice(fromIdx, 1)[0];
+      toIdx = Math.max(0, Math.min(toIdx, order.length));
+      order.splice(toIdx, 0, moved);
+      savePdfConfigDebounced();
+      pdfRerenderList(kind);
+      const row = document.querySelector('[data-sort-list="' + kind + '"] [data-sort-key="' + pdfCssAttr(moved) + '"]');
+      if (row) {
+        let btn = row.querySelector(focusDir < 0 ? '.pdf-sort-up' : '.pdf-sort-down');
+        if (!btn || btn.disabled) btn = row.querySelector('.pdf-sort-up:not([disabled]), .pdf-sort-down:not([disabled])');
+        (btn || row).focus();
+      }
+    }
+    // Compact grip + up/down reorder cluster for any sortable row.
+    function pdfSortHandleHTML(kind, key, idx, total, label) {
+      return '<span class="pdf-grip cursor-grab select-none p-1 text-slate-400 dark:text-slate-500" aria-hidden="true"><i data-lucide="grip-vertical" class="w-4 h-4"></i></span>' +
+        '<div class="flex flex-col">' +
+          '<button type="button" class="pdf-sort-up p-0.5 rounded text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" aria-label="Move ' + escapeAttr(label) + ' up"' + (idx === 0 ? ' disabled aria-disabled="true"' : '') + '><i data-lucide="chevron-up" class="w-4 h-4"></i></button>' +
+          '<button type="button" class="pdf-sort-down p-0.5 rounded text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" aria-label="Move ' + escapeAttr(label) + ' down"' + (idx === total - 1 ? ' disabled aria-disabled="true"' : '') + '><i data-lucide="chevron-down" class="w-4 h-4"></i></button>' +
+        '</div>';
+    }
+
+    function toggleCompInclude(title, btn) {
+      const item = pdfConfig.competencies.items[title];
+      if (!item) return;
+      item.include = !item.include;
+      btn.setAttribute('aria-checked', item.include ? 'true' : 'false');
+      const row = btn.closest('.pdf-comp-row');
+      row.classList.toggle('opacity-60', !item.include);
+      const titleEl = row.querySelector('.pdf-comp-title');
+      titleEl.classList.toggle('line-through', !item.include);
+      titleEl.classList.toggle('decoration-slate-400', !item.include);
+      updateCompBadge();
+      savePdfConfigDebounced();
+    }
+
+    function toggleCompEditor(title, btn) {
+      const editor = btn.closest('.pdf-comp-row').querySelector('.pdf-comp-editor');
+      const open = editor.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) pdfUi.expandedComps.add(title); else pdfUi.expandedComps.delete(title);
+    }
+
+    function toggleContactInclude(key, btn) {
+      const item = pdfConfig.contacts.items[key];
+      if (!item) return;
+      item.include = !item.include;
+      btn.setAttribute('aria-checked', item.include ? 'true' : 'false');
+      const row = btn.closest('.pdf-contact-row');
+      row.classList.toggle('opacity-60', !item.include);
+      const label = row.querySelector('.pdf-contact-label');
+      label.classList.toggle('line-through', !item.include);
+      label.classList.toggle('decoration-slate-400', !item.include);
+      updateContactsBadge();
+      savePdfConfigDebounced();
+    }
+
+    function updateContactsBadge() {
+      const badge = document.getElementById('pdf-contact-badge');
+      if (!badge) return;
+      const order = pdfConfig.contacts.order;
+      const items = pdfConfig.contacts.items;
+      const inc = order.filter(k => items[k] && items[k].include !== false).length;
+      badge.textContent = inc + ' of ' + order.length + ' included';
+    }
+
+    function toggleHeroImage(btn) {
+      pdfConfig.hero.showImage = !pdfConfig.hero.showImage;
+      btn.setAttribute('aria-checked', pdfConfig.hero.showImage ? 'true' : 'false');
+      savePdfConfigDebounced();
+    }
+
+    function toggleRecoEnabled(btn) {
+      const reco = pdfConfig.recommendations;
+      reco.enabled = !reco.enabled;
+      btn.setAttribute('aria-checked', reco.enabled ? 'true' : 'false');
+      const body = btn.closest('section').querySelector('.pdf-reco-body');
+      if (body) {
+        body.classList.toggle('opacity-50', !reco.enabled);
+        body.classList.toggle('pointer-events-none', !reco.enabled);
+        if (reco.enabled) { body.removeAttribute('inert'); body.removeAttribute('aria-hidden'); }
+        else { body.setAttribute('inert', ''); body.setAttribute('aria-hidden', 'true'); }
+      }
+      savePdfConfigDebounced();
+    }
+
+    function toggleRecoInclude(key, btn) {
+      const it = pdfConfig.recommendations.items[key];
+      if (!it) return;
+      it.include = !it.include;
+      btn.setAttribute('aria-checked', it.include ? 'true' : 'false');
+      const row = btn.closest('.pdf-reco-row');
+      row.classList.toggle('opacity-60', !it.include);
+      row.querySelector('.pdf-reco-name').classList.toggle('line-through', !it.include);
+      row.querySelector('.pdf-reco-name').classList.toggle('decoration-slate-400', !it.include);
+      const controls = row.querySelector('.pdf-reco-controls');
+      if (controls) {
+        controls.classList.toggle('opacity-50', !it.include);
+        controls.classList.toggle('pointer-events-none', !it.include);
+        if (it.include) { controls.removeAttribute('inert'); controls.removeAttribute('aria-hidden'); }
+        else { controls.setAttribute('inert', ''); controls.setAttribute('aria-hidden', 'true'); }
+      }
+      updateRecoBadge();
+      savePdfConfigDebounced();
+    }
+
+    function toggleRecoField(key, btn) {
+      const it = pdfConfig.recommendations.items[key];
+      if (!it) return;
+      const field = btn.dataset.field;
+      const cur = it[field] !== false;
+      it[field] = !cur;
+      btn.setAttribute('aria-checked', it[field] ? 'true' : 'false');
+      savePdfConfigDebounced();
+    }
+
+    function onRecoTitleInput(key, input) {
+      const it = pdfConfig.recommendations.items[key];
+      if (it) { it.title = input.value; savePdfConfigDebounced(); }
+    }
+
+    function onRecoRelationshipInput(key, input) {
+      const it = pdfConfig.recommendations.items[key];
+      if (it) { it.relationship = input.value; savePdfConfigDebounced(); }
+    }
+
+    function onRecoMobileInput(key, input) {
+      const it = pdfConfig.recommendations.items[key];
+      if (it) { it.mobile = input.value; savePdfConfigDebounced(); }
+    }
+
+    function toggleSummaryInclude(btn) {
+      const sum = pdfConfig.summary;
+      sum.include = !sum.include;
+      btn.setAttribute('aria-checked', sum.include ? 'true' : 'false');
+      const controls = btn.closest('section').querySelector('.pdf-summary-controls');
+      if (controls) {
+        controls.classList.toggle('opacity-50', !sum.include);
+        controls.classList.toggle('pointer-events-none', !sum.include);
+        if (sum.include) { controls.removeAttribute('inert'); controls.removeAttribute('aria-hidden'); }
+        else { controls.setAttribute('inert', ''); controls.setAttribute('aria-hidden', 'true'); }
+      }
+      savePdfConfigDebounced();
+    }
+
+    function onSummaryTextInput(textarea) {
+      const val = textarea.value;
+      pdfConfig.summary.text = (val === OVERVIEW_DATA.bio) ? null : val;   // no-op edit clears the override
+      const section = textarea.closest('section');
+      section.querySelector('.pdf-summary-preview').innerHTML = formatText(escapeHtml(val));
+      section.querySelector('.pdf-summary-warn').classList.toggle('hidden', !pdfHasUnbalancedMarkers(val));
+      savePdfConfigDebounced();
+    }
+
+    function resetSummaryText(btn) {
+      pdfConfig.summary.text = null;
+      const section = btn.closest('section');
+      section.querySelector('.pdf-summary-text').value = OVERVIEW_DATA.bio;
+      section.querySelector('.pdf-summary-preview').innerHTML = formatText(escapeHtml(OVERVIEW_DATA.bio));
+      section.querySelector('.pdf-summary-warn').classList.add('hidden');
+      savePdfConfigDebounced();
+    }
+
+    function onCompTextInput(title, textarea) {
+      const c = OVERVIEW_DATA.competencies.find(x => x.title === title);
+      const val = textarea.value;
+      const item = pdfConfig.competencies.items[title];
+      item.text = (c && val === c.description) ? null : val;   // a no-op edit clears the override
+      const row = textarea.closest('.pdf-comp-row');
+      row.querySelector('.pdf-comp-preview').innerHTML = formatText(escapeHtml(val));
+      row.querySelector('.pdf-comp-warn').classList.toggle('hidden', !pdfHasUnbalancedMarkers(val));
+      savePdfConfigDebounced();
+    }
+
+    function resetCompText(title, btn) {
+      const c = OVERVIEW_DATA.competencies.find(x => x.title === title);
+      if (!c) return;
+      pdfConfig.competencies.items[title].text = null;
+      const row = btn.closest('.pdf-comp-row');
+      row.querySelector('.pdf-comp-text').value = c.description;
+      row.querySelector('.pdf-comp-preview').innerHTML = formatText(escapeHtml(c.description));
+      row.querySelector('.pdf-comp-warn').classList.add('hidden');
+      savePdfConfigDebounced();
+    }
+
+    function toggleEntryInclude(key, btn) {
+      const node = pdfConfig.entries[key];
+      if (!node) return;
+      node.include = !node.include;
+      btn.setAttribute('aria-checked', node.include ? 'true' : 'false');
+      const controls = btn.closest('.pdf-entry').querySelector('.pdf-entry-controls');
+      if (controls) {
+        controls.classList.toggle('opacity-50', !node.include);
+        controls.classList.toggle('pointer-events-none', !node.include);
+        if (node.include) { controls.removeAttribute('inert'); controls.removeAttribute('aria-hidden'); }
+        else { controls.setAttribute('inert', ''); controls.setAttribute('aria-hidden', 'true'); }
+      }
+      updateEntryBadges();
+      savePdfConfigDebounced();
+    }
+
+    function toggleEntrySwitch(key, btn, flag) {
+      const node = pdfConfig.entries[key];
+      if (!node) return;
+      const cur = node[flag] !== false;
+      node[flag] = !cur;
+      btn.setAttribute('aria-checked', node[flag] ? 'true' : 'false');
+      savePdfConfigDebounced();
+    }
+
+    function updateEntryBadges() {
+      [['pdf-work-badge', 'work'], ['pdf-edu-badge', 'edu']].forEach(function (pair) {
+        const badge = document.getElementById(pair[0]);
+        const keys = pdfSectionKeys[pair[1]];
+        if (!badge || !keys) return;
+        const inc = keys.filter(k => pdfConfig.entries[k] && pdfConfig.entries[k].include).length;
+        badge.textContent = inc + ' of ' + keys.length + ' included';
+      });
+    }
+
+    // Stepper: −1 drops the last still-shown achievement; +1 restores the first hidden one.
+    function stepAch(block, delta) {
+      const node = pdfConfig.entries[block.dataset.achKey];
+      if (!node) return;
+      const total = block.querySelectorAll('.pdf-ach-keep').length;
+      node.dropped = node.dropped || [];
+      if (delta < 0) {
+        const dset = new Set(node.dropped);
+        let maxKept = -1;
+        for (let i = 0; i < total; i++) if (!dset.has(i)) maxKept = i;
+        if (maxKept >= 0) node.dropped.push(maxKept);
+      } else if (node.dropped.length) {
+        const minDropped = Math.min.apply(null, node.dropped);
+        node.dropped = node.dropped.filter(i => i !== minDropped);
+      }
+      node.dropped.sort((a, b) => a - b);
+      node.count = total - node.dropped.length;
+      syncAchBlock(block, node, total);
+      savePdfConfigDebounced();
+    }
+
+    function onAchCheckboxChange(cb) {
+      const block = cb.closest('.pdf-entry-ach');
+      const node = pdfConfig.entries[block.dataset.achKey];
+      if (!node) return;
+      const total = block.querySelectorAll('.pdf-ach-keep').length;
+      const dropped = [];
+      block.querySelectorAll('.pdf-ach-keep').forEach(x => { if (!x.checked) dropped.push(+x.dataset.idx); });
+      node.dropped = dropped.sort((a, b) => a - b);
+      node.count = total - node.dropped.length;
+      syncAchBlock(block, node, total);
+      savePdfConfigDebounced();
+    }
+
+    // Reflect node.dropped onto the DOM (checkboxes, strike-through, count label, disabled bounds)
+    // without re-rendering — keeps the picker open and focus intact.
+    function syncAchBlock(block, node, total) {
+      const dset = new Set(node.dropped);
+      block.querySelectorAll('.pdf-ach-keep').forEach(cb => {
+        const i = +cb.dataset.idx;
+        const drop = dset.has(i);
+        cb.checked = !drop;
+        const span = cb.closest('label').querySelector('span');
+        span.classList.toggle('line-through', drop);
+        span.classList.toggle('opacity-60', drop);
+      });
+      const count = total - node.dropped.length;
+      const num = block.querySelector('.pdf-ach-num'); if (num) num.textContent = count + ' / ' + total;
+      const minus = block.querySelector('.pdf-ach-minus'); if (minus) minus.disabled = (count === 0);
+      const plus = block.querySelector('.pdf-ach-plus'); if (plus) plus.disabled = (count === total);
+      const sum = block.querySelector('.pdf-ach-picker summary'); if (sum) sum.textContent = 'Choose which to hide (' + node.dropped.length + ' hidden)';
+      const hdr = block.querySelector('.pdf-ach-hdr'); if (hdr) hdr.textContent = 'Achievements shown' + (count === 0 ? ' · header only' : '');
+    }
+
+    // --- Drag reorder (desktop mouse only; arrows are the accessible/touch path) ---
+    // Generic across every sortable list; a drag only moves within its own list (matching data-sort-kind).
+    function pdfDragStart(e) {
+      const row = e.target.closest ? e.target.closest('.pdf-sortable') : null;
+      if (!row) return;
+      pdfDrag = { kind: row.dataset.sortKind, key: row.dataset.sortKey };
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', pdfDrag.key); } catch (_) {} }
+      row.classList.add('opacity-50');
+    }
+    function pdfDragOver(e) {
+      if (!pdfDrag) return;
+      const row = e.target.closest ? e.target.closest('.pdf-sortable') : null;
+      if (!row || row.dataset.sortKind !== pdfDrag.kind) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const rect = row.getBoundingClientRect();
+      const after = (e.clientY - rect.top) > rect.height / 2;
+      const list = row.closest('[data-sort-list]');
+      if (list) list.querySelectorAll('.pdf-sortable').forEach(r => r.classList.remove('pdf-drag-top', 'pdf-drag-bottom'));
+      row.classList.add(after ? 'pdf-drag-bottom' : 'pdf-drag-top');
+    }
+    function pdfDrop(e) {
+      if (!pdfDrag) return;
+      const row = e.target.closest ? e.target.closest('.pdf-sortable') : null;
+      if (!row || row.dataset.sortKind !== pdfDrag.kind) { pdfDragEnd(); return; }
+      e.preventDefault();
+      const kind = pdfDrag.kind;
+      const order = pdfOrderFor(kind);
+      const from = order.indexOf(pdfDrag.key);
+      const target = order.indexOf(row.dataset.sortKey);
+      if (from < 0 || target < 0) { pdfDragEnd(); return; }
+      const rect = row.getBoundingClientRect();
+      const after = (e.clientY - rect.top) > rect.height / 2;
+      let insertAt = after ? target + 1 : target;
+      if (from < insertAt) insertAt -= 1;
+      pdfDrag = null;
+      if (insertAt !== from) pdfMove(kind, from, insertAt, 0);
+      else pdfRerenderList(kind);   // clear drag indicators
+    }
+    function pdfDragEnd() {
+      pdfDrag = null;
+      document.querySelectorAll('.pdf-sortable').forEach(r => r.classList.remove('opacity-50', 'pdf-drag-top', 'pdf-drag-bottom'));
     }
   </script>
 </body>
