@@ -200,7 +200,7 @@ const TRAJECTORY_DATA = [
     id: "indianoil",
     role: "Summer Intern",
     company: "Indian Oil Corporation",
-    location: "Kolkata, India",
+    location: "Guwahati, India",
     flag: "🇮🇳",
     period: "May 2013",
     type: "internship",
