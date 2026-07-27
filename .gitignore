@@ -229,3 +229,8 @@ notes/
 # Local smoke tests (not committed)
 ._smoke.js
 *smoke.js
+
+# Node tooling used only for local screenshots/verification (never part of the static site)
+node_modules/
+package-lock.json
+package.json

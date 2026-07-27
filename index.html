@@ -329,6 +329,7 @@
       #print-resume .pr-traj .co,
       #print-resume .pr-traj .role,
       #print-resume .pr-comp .t,
+      #print-resume .pr-projects .t,
       #print-resume .pr-edu .t { color: #000; }
 
       /* All inline highlights render as bold blue (no pills/backgrounds) on paper */
@@ -361,6 +362,15 @@
       .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 8.7pt; }   /* internship description/bullets */
       .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
 
+      /* Projects: each project is a break-avoid block — name · summary, optional tech line + bullets. */
+      .pr-projects .pr-proj-item { margin: 3px 0; break-inside: avoid; }
+      .pr-projects .pr-proj-item > p { margin: 0; }
+      .pr-projects .t { font-weight: 700; }
+      .pr-projects .pr-proj-link { color: #1d4ed8; white-space: nowrap; }
+      .pr-projects .pr-proj-tech { margin: 1px 0 0 14px; font-size: 8.5pt; color: #555; }
+      .pr-projects ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }   /* real bullets (override CDN reset) */
+      .pr-projects li { margin: 0.5px 0; }
+
       /* Career trajectory: invisible-border table; each ROLE is a block with a separator between */
       table.pr-traj { width: 100%; border-collapse: collapse; }
       table.pr-traj td { vertical-align: top; padding: 1px 0; }
@@ -390,6 +400,7 @@
   <script src="data/personal.js"></script>
   <script src="data/overview.js"></script>
   <script src="data/trajectory.js"></script>
+  <script src="data/projects.js"></script>
   <script src="data/faqs.js"></script>
   <script src="data/recommendations.js"></script>
 </head>
@@ -471,6 +482,9 @@
           </button>
           <button onclick="setSection('workex')" id="nav-workex" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
             Career Trajectory
+          </button>
+          <button onclick="setSection('projects')" id="nav-projects" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+            Projects
           </button>
           <button onclick="setSection('faq')" id="nav-faq" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
             FAQ
@@ -561,6 +575,11 @@
         </div>
       </section>
 
+      <!-- SECTION: PROJECTS -->
+      <section id="sec-projects" class="section-pane hidden">
+        <div id="projects-list" class="space-y-8"></div>
+      </section>
+
       <!-- SECTION: FAQ -->
       <section id="sec-faq" class="section-pane hidden">
         <div id="faq-list" class="space-y-4 max-w-3xl"></div>
@@ -618,6 +637,21 @@
 
       </div>
     </div>
+  </div>
+
+  <!-- SCREENSHOT LIGHTBOX (screen-only; opened from the Projects gallery). Body-level sibling so
+       the print rule `body > *:not(#print-resume){display:none}` hides it — plus print:hidden + hidden. -->
+  <div id="lightbox" class="hidden fixed inset-0 z-[70] print:hidden" role="dialog" aria-modal="true" aria-label="Screenshot preview" aria-hidden="true">
+    <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeLightbox()"></div>
+    <div class="relative min-h-full flex items-center justify-center p-4 sm:p-8 pointer-events-none">
+      <figure class="relative max-w-6xl w-full pointer-events-auto">
+        <img id="lightbox-img" src="" alt="" class="w-full max-h-[82vh] object-contain rounded-xl shadow-2xl bg-white dark:bg-slate-900">
+        <figcaption id="lightbox-caption" class="mt-3 text-center text-sm font-medium text-slate-200"></figcaption>
+      </figure>
+    </div>
+    <button id="lightbox-close" onclick="closeLightbox()" aria-label="Close preview" class="absolute top-4 right-4 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-md focus-visible:ring-2 focus-visible:ring-white outline-none transition-colors">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
   </div>
 
   <!-- APPLICATION JAVASCRIPT -->
@@ -732,6 +766,7 @@
       // Grids + lists: staggered cascades. Timeline rows reveal individually on scroll.
       registerReveals(document.getElementById('contact-grid'),            { stagger: 55, cap: 5 });
       registerReveals(document.getElementById('competencies-section'),    { stagger: 55, cap: 6 });
+      registerReveals(document.getElementById('projects-list'),           { stagger: 60, cap: 4 });
       registerReveals(document.getElementById('faq-list'),                { stagger: 45, cap: 6 });
       registerReveals(document.getElementById('recommendations-container'), { stagger: 55, cap: 4 });
       registerReveals(document.getElementById('references-grid'),         { stagger: 45, cap: 6 });
@@ -869,7 +904,7 @@
        Anchor links like #main-content (skip link) are ignored by the
        router because they aren't "#/"-prefixed.
        ============================================================ */
-    const SECTION_IDS = ['overview', 'workex', 'faq', 'recommendations'];
+    const SECTION_IDS = ['overview', 'workex', 'projects', 'faq', 'recommendations'];
     let _currentSection = 'overview';
     let _applyingRoute = false;
 
@@ -1180,6 +1215,28 @@
         .map(o => `<p><span class="t">${escapeHtml(o.c.title)}</span> — ${compText(o.c.title, o.c)}</p>`)
         .join('');
 
+      // Projects — name · summary (+ optional bullets + primary link), in the user's chosen order.
+      const projCfg = (config.projects && config.projects.items) || {};
+      const allProjects = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
+      const projById = {};
+      allProjects.forEach(p => { projById[p.id] = p; });
+      const projOrder = (config.projects && config.projects.order && config.projects.order.length)
+        ? config.projects.order : allProjects.map(p => p.id);
+      const projectsHTML = projOrder.map(id => {
+        const p = projById[id];
+        if (!p) return '';
+        const cfg = projCfg[id];
+        if (cfg && !cfg.include) return '';
+        const showDesc = !(cfg && cfg.showDescription === false);
+        const primaryLink = (p.links && p.links[0]) ? p.links[0].href : '';
+        const linkHtml = primaryLink ? ` <span class="pr-proj-link">${escapeHtml(primaryLink.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</span>` : '';
+        const descHtml = (showDesc && p.summary) ? ' — ' + formatText(p.summary) : '';
+        let body = `<p><span class="t">${escapeHtml(p.name)}</span>${descHtml}${linkHtml}</p>`;
+        const hls = pickHighlights(p.highlights, cfg);
+        if (hls.length) body += `<ul>${hls.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
+        return `<div class="pr-proj-item">${body}</div>`;
+      }).join('');
+
       return `
         <div class="pr-hero">
           ${heroShowImage ? `<img src="${PERSONAL_DATA.profileImage}" alt="">` : ''}
@@ -1196,6 +1253,8 @@
         ${comp ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${comp}</div>` : ''}
 
         ${workRows ? `<div class="pr-section-h">Career Trajectory</div><table class="pr-traj">${workRows}</table>` : ''}
+
+        ${projectsHTML ? `<div class="pr-section-h">Projects</div><div class="pr-projects">${projectsHTML}</div>` : ''}
 
         ${eduHTML ? `<div class="pr-section-h">Education</div><div class="pr-edu">${eduHTML}</div>` : ''}
 
@@ -1522,7 +1581,10 @@
         row.innerHTML = timelineItemHTML;
         timelineFlow.appendChild(row);
       });
-      
+
+      // Projects gallery
+      renderProjects();
+
       // Setup dynamic brand colors
       updateDynamicBrandStyles();
       
@@ -1697,7 +1759,149 @@
           dotNode.style.setProperty('--node-brand-color', color);
         }
       });
+
+      // Project cards carry the same brand-colour custom properties.
+      if (typeof PROJECTS_DATA !== 'undefined') {
+        PROJECTS_DATA.forEach(p => {
+          const card = document.getElementById(`project-card-${p.id}`);
+          if (card && p.colors) applyBrandColor(card, isDark ? p.colors.dark : p.colors.light);
+        });
+      }
     }
+
+    // Set the shared --brand-color / --brand-bg / --brand-bg-border custom properties on an element.
+    function applyBrandColor(el, color) {
+      el.style.setProperty('--brand-color', color);
+      el.style.setProperty('--brand-bg', color + '12');        // ~7% opacity
+      el.style.setProperty('--brand-bg-border', color + '22'); // ~13% opacity
+    }
+
+    // Projects gallery renderer. Each project → a glassmorphic card (summary → highlights → tech →
+    // screenshots → links), mirroring the timeline's brand-colour + reveal system. WIP projects
+    // (wip:true / no links) render without dead links, showing a muted "coming soon" note instead.
+    function renderProjects() {
+      const list = document.getElementById('projects-list');
+      if (!list || typeof PROJECTS_DATA === 'undefined') return;
+      const isDark = document.documentElement.classList.contains('dark');
+      list.innerHTML = '';
+
+      PROJECTS_DATA.forEach(p => {
+        const card = document.createElement('article');
+        card.id = `project-card-${p.id}`;
+        card.dataset.reveal = '';
+        card.className = 'project-card group relative rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 border-l-[3.5px] border-l-[var(--brand-color)] backdrop-blur-xl shadow-lg hover:shadow-xl hover:border-[var(--brand-color)] transition-all duration-300 overflow-hidden';
+        if (p.colors) applyBrandColor(card, isDark ? p.colors.dark : p.colors.light);
+
+        // Status badge + optional period.
+        const status = p.status
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)]">
+               <i data-lucide="${p.wip ? 'loader' : 'circle-dot'}" class="w-2.5 h-2.5"></i> ${escapeHtml(p.status)}
+             </span>` : '';
+        const period = p.period
+          ? `<span class="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/85 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 shadow-sm tracking-wide">${escapeHtml(p.period)}</span>` : '';
+
+        // Action links (buttons). WIP projects with no links show a muted note chip instead.
+        const linkBtns = (p.links || []).map((lnk, i) => {
+          const primary = i === 0;
+          const base = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all duration-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
+          const cls = primary
+            ? base + ' bg-[var(--brand-color)] text-white dark:text-slate-950 shadow-sm hover:shadow-md hover:-translate-y-0.5'
+            : base + ' border border-[var(--brand-bg-border)] bg-[var(--brand-bg)] text-[var(--brand-color)] hover:bg-[var(--brand-color)] hover:text-white dark:hover:text-slate-950';
+          return `<a href="${escapeAttr(lnk.href)}" target="_blank" rel="noopener" aria-label="${escapeAttr(p.name + ' — ' + lnk.label + ' (opens in a new tab)')}" class="${cls}">
+                    <i data-lucide="${escapeAttr(lnk.icon || 'external-link')}" class="w-3.5 h-3.5"></i>${escapeHtml(lnk.label)}
+                  </a>`;
+        }).join('');
+        const noteChip = (!linkBtns && p.note)
+          ? `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 border border-dashed border-slate-300/70 dark:border-slate-700/70">
+               <i data-lucide="clock" class="w-3.5 h-3.5"></i>${escapeHtml(p.note)}
+             </span>` : '';
+
+        // Highlights.
+        const highlights = (p.highlights && p.highlights.length)
+          ? `<ul class="mt-4 space-y-2.5">
+               ${p.highlights.map(hl => `
+                 <li class="flex items-start gap-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
+                   <span class="mt-1.5 w-1.2 h-1.2 rounded-full bg-[var(--brand-color)] flex-shrink-0"></span>
+                   <span class="flex-1">${formatText(hl)}</span>
+                 </li>`).join('')}
+             </ul>` : '';
+
+        // Tech pills.
+        const tech = (p.tech && p.tech.length)
+          ? `<div class="mt-4 flex flex-wrap gap-2">
+               ${p.tech.map(t => `<span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/50">${escapeHtml(t)}</span>`).join('')}
+             </div>` : '';
+
+        // Screenshot gallery (click → lightbox).
+        // Screenshots open a lightbox. src/alt travel as data-* attributes (read via dataset) rather
+        // than inline onclick args, so apostrophes/quotes in alt text can't break the handler.
+        const shots = (p.screenshots && p.screenshots.length)
+          ? `<div class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+               ${p.screenshots.map(s => `
+                 <button type="button" data-shot-src="${escapeAttr(s.src)}" data-shot-alt="${escapeAttr(s.alt || p.name)}" class="project-shot group/shot block overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/40 shadow-sm hover:shadow-md hover:border-[var(--brand-color)] focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300" aria-label="Enlarge screenshot: ${escapeAttr(s.alt || p.name)}">
+                   <img src="${escapeAttr(s.src)}" alt="${escapeAttr(s.alt || (p.name + ' screenshot'))}" loading="lazy" class="w-full h-40 object-cover object-top transition-transform duration-500 group-hover/shot:scale-[1.03]">
+                 </button>`).join('')}
+             </div>` : '';
+
+        card.innerHTML = `
+          <div class="p-6 sm:p-7">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2.5 mb-2 flex-wrap">${status}${period}</div>
+                <h3 class="text-2xl font-bold font-display text-slate-900 dark:text-white leading-tight group-hover:text-[var(--brand-color)] transition-colors duration-200">${escapeHtml(p.name)}</h3>
+                ${p.tagline ? `<p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">${escapeHtml(p.tagline)}</p>` : ''}
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">${linkBtns || noteChip}</div>
+            </div>
+            <p class="mt-4 text-[15px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">${formatText(p.summary || '')}</p>
+            ${highlights}
+            ${tech}
+            ${shots}
+          </div>`;
+        list.appendChild(card);
+      });
+
+      // Delegated lightbox trigger for every screenshot (wired once).
+      if (!list.dataset.lightboxWired) {
+        list.dataset.lightboxWired = '1';
+        list.addEventListener('click', e => {
+          const b = e.target.closest('.project-shot');
+          if (b) openLightbox(b.dataset.shotSrc, b.dataset.shotAlt);
+        });
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- Screenshot lightbox (opened from the Projects gallery) ---
+    let _lightboxLastFocused = null;
+    function openLightbox(src, alt) {
+      const box = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      const cap = document.getElementById('lightbox-caption');
+      if (!box || !img) return;
+      _lightboxLastFocused = document.activeElement;
+      img.src = src; img.alt = alt || '';
+      if (cap) cap.textContent = alt || '';
+      box.classList.remove('hidden');
+      box.setAttribute('aria-hidden', 'false');
+      document.documentElement.style.overflow = 'hidden';
+      const closeBtn = document.getElementById('lightbox-close');
+      if (closeBtn) closeBtn.focus();
+      document.addEventListener('keydown', lightboxKeydown);
+    }
+    function closeLightbox() {
+      const box = document.getElementById('lightbox');
+      if (!box || box.classList.contains('hidden')) return;
+      box.classList.add('hidden');
+      box.setAttribute('aria-hidden', 'true');
+      document.documentElement.style.overflow = '';
+      document.removeEventListener('keydown', lightboxKeydown);
+      const img = document.getElementById('lightbox-img');
+      if (img) img.src = '';
+      if (_lightboxLastFocused && typeof _lightboxLastFocused.focus === 'function') _lightboxLastFocused.focus();
+    }
+    function lightboxKeydown(e) { if (e.key === 'Escape') { e.preventDefault(); closeLightbox(); } }
 
     // Toggle FAQ dropdown
     function toggleFaq(index) {
@@ -1807,7 +2011,7 @@
     let pdfLastFocused = null;
     let pdfKeydownHandler = null;
     let pdfDrag = null;
-    let pdfSectionKeys = { work: [], edu: [] };
+    let pdfSectionKeys = { work: [], projects: [], edu: [] };
     let _pdfSaveTimer = null;
     const pdfUi = { expandedComps: new Set() };
 
@@ -1821,6 +2025,24 @@
       s = String(s || '');
       const odd = ch => (s.split(ch).length - 1) % 2 === 1;
       return odd('`') || odd('^') || odd('*');
+    }
+
+    // Resolve the live config node for an entry/achievement key. Projects are keyed 'proj:<id>' and
+    // live in pdfConfig.projects.items; work/education entries live in pdfConfig.entries. This lets
+    // the shared entry/achievement UI (cards, include/description toggles, achievement picker) drive
+    // projects too, without a second copy of that machinery.
+    function pdfEntryNode(key) {
+      if (typeof key === 'string' && key.indexOf('proj:') === 0) {
+        return pdfConfig.projects && pdfConfig.projects.items[key.slice(5)];
+      }
+      return pdfConfig.entries[key];
+    }
+    // Same resolution against an arbitrary config object (used to diff a row against the defaults).
+    function pdfNodeIn(cfg, key) {
+      if (typeof key === 'string' && key.indexOf('proj:') === 0) {
+        return (cfg.projects && cfg.projects.items[key.slice(5)]) || {};
+      }
+      return cfg.entries[key] || {};
     }
 
     // Live web-resume URL for the hero: explicit PERSONAL_DATA.website, else auto-derived from the
@@ -1940,10 +2162,11 @@
         mark(row.querySelector('.pdf-comp-include'), !!cur.include !== !!d.include);
       });
 
-      // Work / education entries — include + description / logo / score toggles.
+      // Work / project / education entries — include + description / logo / score toggles.
       body.querySelectorAll('[data-entry-key]').forEach(row => {
-        const cur = pdfConfig.entries[row.getAttribute('data-entry-key')] || {};
-        const d = def.entries[row.getAttribute('data-entry-key')] || {};
+        const k = row.getAttribute('data-entry-key');
+        const cur = pdfEntryNode(k) || {};
+        const d = pdfNodeIn(def, k);
         mark(row.querySelector('.pdf-entry-include'), on(cur.include) !== on(d.include));
         mark(row.querySelector('.pdf-entry-desc'), on(cur.showDescription) !== on(d.showDescription));
         mark(row.querySelector('.pdf-entry-logo'), on(cur.showLogo) !== on(d.showLogo));
@@ -2096,7 +2319,34 @@
       });
       const recommendations = { enabled: sReco.enabled === true, order: recoOrder, items: recoItems };
 
-      return { config: { v: PDF_CONFIG_VERSION, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, recommendations: recommendations }, changes: changes };
+      // Projects — reorderable; per-project include + description + achievement selection. Keyed by
+      // id (stable). Same reconcile shape as work/education entries (which drives the achievement UI).
+      const sProjects = saved.projects || {};
+      const sProjItems = sProjects.items || {};
+      const liveProjects = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
+      const liveProjIds = liveProjects.map(p => p.id);
+      let projOrder = Array.isArray(sProjects.order) ? sProjects.order.filter(id => liveProjIds.indexOf(id) >= 0) : [];
+      if (Array.isArray(sProjects.order)) sProjects.order.forEach(id => { if (liveProjIds.indexOf(id) < 0) changes.push('Project “' + id + '” was removed'); });
+      liveProjIds.forEach(id => { if (projOrder.indexOf(id) < 0) { projOrder.push(id); if (Array.isArray(sProjects.order)) changes.push('New project added'); } });
+      const projItems = {};
+      projOrder.forEach(id => {
+        const p = liveProjects.find(x => x.id === id) || {};
+        const total = (p.highlights || []).length;
+        const s = sProjItems[id] || {};
+        // Work-in-progress projects are shown on the page but default OFF in the formal PDF résumé
+        // (the user can still opt them in from the customise screen).
+        const include = typeof s.include === 'boolean' ? s.include : !p.wip;
+        const showDescription = typeof s.showDescription === 'boolean' ? s.showDescription : true;
+        const savedDropped = Array.isArray(s.dropped) ? s.dropped : [];
+        let dropped = Array.from(new Set(savedDropped.filter(i => Number.isInteger(i) && i >= 0 && i < total))).sort((a, b) => a - b);
+        let count = Number.isInteger(s.count) ? Math.max(0, Math.min(s.count, total)) : total;
+        if (dropped.length) { count = total - dropped.length; }
+        else if (count < total) { dropped = []; for (let i = count; i < total; i++) dropped.push(i); }
+        projItems[id] = { include: include, showDescription: showDescription, count: count, dropped: dropped };
+      });
+      const projects = { order: projOrder, items: projItems };
+
+      return { config: { v: PDF_CONFIG_VERSION, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
     }
 
     // --- Modal open / close / generate / reset ---
@@ -2423,7 +2673,7 @@
       const work = TRAJECTORY_DATA.filter(e => e.type === 'work');
       const eduList = TRAJECTORY_DATA.filter(e => e.type === 'education');
       const allInterns = TRAJECTORY_DATA.filter(e => e.type === 'internship');
-      pdfSectionKeys = { work: [], edu: [] };
+      pdfSectionKeys = { work: [], projects: [], edu: [] };
       let html = '';
 
       if (work.length) {
@@ -2444,6 +2694,26 @@
         const wGlobals = pdfBulkToggleHTML('work', 'showLogo', 'Logos') +
           pdfBulkToggleHTML('work', 'showDescription', 'Descriptions');
         html += pdfSectionWrap('Work Experience', 'pdf-work-badge', pdfSectionKeys.work, wGlobals, '<div class="space-y-2.5">' + rows + '</div>');
+      }
+
+      // Projects — between Work Experience and Education, matching the printed order. Reuses the
+      // shared entry card / achievement machinery (nodes resolved via pdfEntryNode → projects.items).
+      const projects = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
+      const projOrder = (pdfConfig.projects && pdfConfig.projects.order && pdfConfig.projects.order.length)
+        ? pdfConfig.projects.order : projects.map(p => p.id);
+      if (projOrder.length) {
+        const projById = {};
+        projects.forEach(p => { projById[p.id] = p; });
+        let pRows = '';
+        projOrder.forEach(id => {
+          const p = projById[id];
+          if (!p) return;
+          const key = 'proj:' + id;
+          pdfSectionKeys.projects.push(key);
+          pRows += pdfEntryCardHTML(key, null, p.name, p.tagline || '', p.period || '', p.highlights || [], {});
+        });
+        const pGlobals = pdfBulkToggleHTML('projects', 'showDescription', 'Descriptions');
+        html += pdfSectionWrap('Projects', 'pdf-proj-badge', pdfSectionKeys.projects, pGlobals, '<div class="space-y-2.5">' + pRows + '</div>');
       }
 
       const nested = nestInternships(eduList, allInterns);
@@ -2475,15 +2745,15 @@
     }
 
     function pdfSectionWrap(title, badgeId, keys, globalsHTML, rowsHTML) {
-      const inc = keys.filter(k => pdfConfig.entries[k] && pdfConfig.entries[k].include).length;
+      const inc = keys.filter(k => { const n = pdfEntryNode(k); return n && n.include; }).length;
       return pdfSectionRowHTML(title, pdfBadgeHTML(badgeId, inc, keys.length), globalsHTML, rowsHTML);
     }
 
     function pdfEntryCardHTML(key, logo, primary, secondary, period, highlights, opts) {
       opts = opts || {};
       highlights = highlights || [];
-      if (!pdfConfig.entries[key]) pdfConfig.entries[key] = { include: true, showDescription: true, showLogo: true, count: highlights.length, dropped: [] };
-      const node = pdfConfig.entries[key];
+      let node = pdfEntryNode(key);
+      if (!node) { node = pdfConfig.entries[key] = { include: true, showDescription: true, showLogo: true, count: highlights.length, dropped: [] }; }
       const included = node.include;
       const logoHtml = logo ? '<img class="w-6 h-6 rounded-md object-cover flex-shrink-0" src="' + escapeAttr(logo) + '" alt="">' : '';
       // Compact wrapping row of small toggles (description / logo / score) to minimise vertical space.
@@ -2687,7 +2957,8 @@
     // The per-item objects a bulk toggle drives (scope = work | edu | reco).
     function pdfBulkItems(scope, field) {
       if (scope === 'reco') return pdfConfig.recommendations.order.map(k => pdfConfig.recommendations.items[k]).filter(Boolean);
-      let items = (pdfSectionKeys[scope] || []).map(k => pdfConfig.entries[k]).filter(Boolean);
+      // work | projects | edu — resolve each section key to its node (projects live in projects.items).
+      let items = (pdfSectionKeys[scope] || []).map(k => pdfEntryNode(k)).filter(Boolean);
       if (field === 'showScore') items = items.filter(it => 'showScore' in it);   // only education carries a score
       return items;
     }
@@ -2824,7 +3095,7 @@
     }
 
     function toggleEntryInclude(key, btn) {
-      const node = pdfConfig.entries[key];
+      const node = pdfEntryNode(key);
       if (!node) return;
       node.include = !node.include;
       btn.setAttribute('aria-checked', node.include ? 'true' : 'false');
@@ -2834,7 +3105,7 @@
     }
 
     function toggleEntrySwitch(key, btn, flag) {
-      const node = pdfConfig.entries[key];
+      const node = pdfEntryNode(key);
       if (!node) return;
       const cur = node[flag] !== false;
       node[flag] = !cur;
@@ -2843,18 +3114,18 @@
     }
 
     function updateEntryBadges() {
-      [['pdf-work-badge', 'work'], ['pdf-edu-badge', 'edu']].forEach(function (pair) {
+      [['pdf-work-badge', 'work'], ['pdf-proj-badge', 'projects'], ['pdf-edu-badge', 'edu']].forEach(function (pair) {
         const badge = document.getElementById(pair[0]);
         const keys = pdfSectionKeys[pair[1]];
         if (!badge || !keys) return;
-        const inc = keys.filter(k => pdfConfig.entries[k] && pdfConfig.entries[k].include).length;
+        const inc = keys.filter(k => { const n = pdfEntryNode(k); return n && n.include; }).length;
         badge.textContent = inc + ' of ' + keys.length + ' shown';
       });
     }
 
     // Stepper: −1 drops the last still-shown achievement; +1 restores the first hidden one.
     function stepAch(block, delta) {
-      const node = pdfConfig.entries[block.dataset.achKey];
+      const node = pdfEntryNode(block.dataset.achKey);
       if (!node) return;
       const total = block.querySelectorAll('.pdf-ach-keep').length;
       node.dropped = node.dropped || [];
@@ -2875,7 +3146,7 @@
 
     function onAchCheckboxChange(cb) {
       const block = cb.closest('.pdf-entry-ach');
-      const node = pdfConfig.entries[block.dataset.achKey];
+      const node = pdfEntryNode(block.dataset.achKey);
       if (!node) return;
       const total = block.querySelectorAll('.pdf-ach-keep').length;
       const dropped = [];
