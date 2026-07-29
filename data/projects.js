@@ -42,7 +42,6 @@ const PROJECTS_DATA = [
     ],
     screenshots: [
       { src: "assets/projects/tippani-library-light.jpg", alt: "Tippani — book library in the paper / light theme: a grid of real book covers with genre filters" },
-      { src: "assets/projects/tippani-catalogue-dark.jpg", alt: "Tippani — film catalogue in the dark theme: a grid of movie and show posters with dialogue counts" },
       { src: "assets/projects/tippani-search-dark.jpg", alt: "Tippani — instant full-text search across books, annotations, movies and dialogues" },
       { src: "assets/projects/tippani-import-light.jpg", alt: "Tippani — import screen with cards for Markdown, Bookcision, Goodreads, IMDb and Kindle" }
     ]
