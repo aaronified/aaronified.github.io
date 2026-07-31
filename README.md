@@ -41,6 +41,7 @@ It renders four sections — **Overview**, **Career Trajectory**, **FAQ**, and
 │   ├── personal.js         # Name, title, photo, contact links
 │   ├── overview.js         # Bio, quick facts, global footprint, competencies
 │   ├── trajectory.js       # Career/education timeline
+│   ├── projects.js         # Projects gallery + section config
 │   ├── faqs.js             # Frequently asked questions
 │   └── recommendations.js  # Testimonials + references
 ├── assets/                 # Your photo, company/school logos, avatars
@@ -215,6 +216,95 @@ top of the timeline (most recent) and the last at the bottom.
   use the org's **LinkedIn company page** for employers and the **official website** for schools.
   Omit it and the logo/name simply render as plain, non-clickable text.
 
+### `data/projects.js` — projects gallery
+
+Two exports. `PROJECTS_DATA` is the list of cards; `PROJECTS_CONFIG` holds the section-wide
+switches, so behaviour is a data edit rather than a code edit.
+
+```js
+const PROJECTS_DATA = [
+  {
+    id: "my-tool",                    // unique slug — the PDF export keys its saved choices off this
+    name: "My Tool",
+    tagline: "One short line under the title",
+    featured: true,                   // pins the card to the "hero" group up top
+    status: "Active",                 // small badge: "Active" / "Live" / "Alpha" / …
+    period: "2026 – Present",
+    colors: { light: "#0d9488", dark: "#2dd4bf" },   // brand accent, like trajectory.js
+    logo: "…/mark.svg",               // mark beside the title
+    logoDark: "…/mark-dark.svg",      // optional dark-theme variant
+    icon: "wrench",                   // Lucide icon used as the mark when there's no logo file
+    repo: "you/my-tool",              // "owner/name" — source for auto-fetched README badges
+    summary: "Paragraph. Markers work here.",
+    highlights: ["Bullet. Markers work here too."],
+    tech: ["Go", "SQLite"],           // stack pills
+    links: [                          // first entry is the primary link (and the one used in the PDF)
+      { label: "GitHub", href: "https://github.com/you/my-tool", icon: "folder-git-2" }
+    ],
+    gallery: "wide",                  // tile preset name from PROJECTS_CONFIG.gallery.tiles
+    screenshots: [{ src: "…", alt: "Describe the screenshot" }]
+  },
+  {
+    id: "next-thing", name: "Next Thing", wip: true,   // work-in-progress treatment: no dead links
+    status: "Work in Progress", period: "In development",
+    note: "Repository & demo coming soon",             // muted chip shown instead of links
+    summary: "…", highlights: [], tech: [], links: [], screenshots: []
+  }
+];
+```
+
+**Pulling images straight from GitHub.** Any `src` is just a string, so besides a local
+`assets/…` path it can point at a file in one of your repos:
+
+```text
+https://raw.githubusercontent.com/<owner>/<repo>/HEAD/<path-in-repo>
+```
+
+GitHub serves those with a real image content-type, `Access-Control-Allow-Origin: *` and a
+5-minute cache, so **updating the repo updates this page** — nothing to copy or re-sync. `HEAD`
+follows the repo's default branch; pin a tag or branch instead if you'd rather the résumé not
+move when the repo does. A tile whose image fails to load drops itself rather than showing a
+broken frame, and a logo that fails falls back to the project's `icon`.
+
+**README badges.** Give a project a `repo` and its badges (build status, released version,
+licence, …) are read from that repo's README at runtime and shown under the title — so they
+never go stale. Only images from an allow-listed host count, which keeps inline screenshots out
+and means a README can't inject arbitrary content. Results are cached in `localStorage`, so
+repeat visits paint the badges immediately with no layout shift; a repo whose README has no
+badges simply shows no badge row. Set `badges: [{ alt, src, href }]` on a project to declare them
+by hand instead (used as the offline fallback either way).
+
+```js
+const PROJECTS_CONFIG = {
+  featured: { enabled: true, label: "Hero project", icon: "star" },
+  groups: {
+    featured: { heading: "Hero projects", sub: "The two I put the most into" },
+    rest:     { heading: "Other projects", sub: "" }        // "" or null hides a heading
+  },
+  badges: {
+    enabled: true,
+    source: "readme",      // "readme" = parse the repo README | "data" = only use per-project `badges`
+    branch: "HEAD",
+    headerOnly: true,      // scan only the README header, so inline screenshots stay out
+    max: 6, cacheHours: 12, height: 20,
+    allowHosts: ["img.shields.io", "github.com", …],        // safety allow-list
+    exclude: []            // drop badges whose alt text contains any of these
+  },
+  gallery: {
+    default: "wide",
+    tiles: {               // values become CSS custom properties — any valid CSS works
+      wide:   { min: "210px", max: "1fr",   aspect: "16 / 10", fit: "cover",   position: "top" },
+      poster: { min: "120px", max: "180px", aspect: "2 / 3",   fit: "cover",   position: "center" },
+      full:   { min: "210px", max: "1fr",   aspect: "16 / 10", fit: "contain", position: "center" }
+    }
+  }
+};
+```
+
+Featured projects render first, in data order, under the `groups.featured` heading; everything
+else follows under `groups.rest`. If every project is featured — or none is — the split says
+nothing, so one unheaded list is rendered instead.
+
 ### `data/faqs.js` — FAQ accordion
 
 ```js
@@ -223,6 +313,9 @@ const FAQS_DATA = [
     answer: "Your answer. <br><br> Use <br> for paragraph breaks." }   // (HTML allowed)
 ];
 ```
+
+Answers support the [inline markers](#inline-highlights-markers) as well, so you can pick out a
+figure, a method or a named tool without writing any HTML.
 
 ### `data/recommendations.js` — testimonials & references
 

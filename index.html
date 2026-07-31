@@ -160,6 +160,56 @@
     }
 
     /* ==========================================================
+       PROJECTS SECTION
+       Presentation is driven entirely by data/projects.js:
+         • gallery tiles read --gal-* custom properties supplied from
+           PROJECTS_CONFIG.gallery.tiles (min/max track width, aspect,
+           object-fit, object-position), so a new tile preset is a data edit
+         • the badge strip reuses .accordion-grid: README badges arrive
+           asynchronously, so the row eases open instead of snapping, and
+           a cached paint opens it before first paint (no shift at all)
+       ========================================================== */
+
+    /* Screenshot gallery. auto-fit tracks keep any tile size responsive
+       without per-breakpoint classes. */
+    .project-gallery {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(var(--gal-min, 210px), var(--gal-max, 1fr)));
+      justify-content: start;
+    }
+    .project-shot { aspect-ratio: var(--gal-aspect, 16 / 10); }
+    .project-shot img {
+      width: 100%;
+      height: 100%;
+      object-fit: var(--gal-fit, cover);
+      object-position: var(--gal-pos, top);
+    }
+
+    /* README badge strip — height from PROJECTS_CONFIG.badges.height. */
+    .project-badges img {
+      height: var(--badge-h, 20px);
+      width: auto;
+      display: block;
+    }
+    /* Fade the badges in with the row so the reveal reads as a single motion. */
+    .project-badges-inner {
+      opacity: 0;
+      transition: opacity 300ms var(--ease-out-soft);
+    }
+    .project-badges.open .project-badges-inner { opacity: 1; }
+
+    /* Featured ("hero") projects: a soft brand wash along the top edge. */
+    .project-card.is-featured::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--brand-color), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ==========================================================
        REUSABLE ANIMATION LIBRARY
        One small set of templates reused across the whole page:
          • keyframes + one-shot .animate-* classes (load-in accents)
@@ -577,12 +627,13 @@
 
       <!-- SECTION: PROJECTS -->
       <section id="sec-projects" class="section-pane hidden">
-        <div id="projects-list" class="space-y-8"></div>
+        <div id="projects-list" class="space-y-10"></div>
       </section>
 
       <!-- SECTION: FAQ -->
       <section id="sec-faq" class="section-pane hidden">
-        <div id="faq-list" class="space-y-4 max-w-3xl"></div>
+        <!-- Full-width, like the hero and nav: the shell's max-w-5xl is the only constraint. -->
+        <div id="faq-list" class="space-y-4"></div>
       </section>
 
       <!-- SECTION: RECOMMENDATIONS -->
@@ -974,6 +1025,10 @@
       // Rerun Lucide icon rendering
       lucide.createIcons();
 
+      // README badges cost a request per repo, so they're fetched the first time the
+      // Projects tab is actually opened. Cached ones are already on screen by now.
+      if (sectionId === 'projects') loadProjectBadges();
+
       if (!fromRoute) syncHash();     // reflect the tab in the URL (unless we're restoring it)
     }
 
@@ -1231,7 +1286,7 @@
         const primaryLink = (p.links && p.links[0]) ? p.links[0].href : '';
         const linkHtml = primaryLink ? ` <span class="pr-proj-link">${escapeHtml(primaryLink.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</span>` : '';
         const descHtml = (showDesc && p.summary) ? ' — ' + formatText(p.summary) : '';
-        let body = `<p><span class="t">${escapeHtml(p.name)}</span>${descHtml}${linkHtml}</p>`;
+        let body = `<p>${logoImg(showLogo(cfg, p.logo))}<span class="t">${escapeHtml(p.name)}</span>${descHtml}${linkHtml}</p>`;
         const hls = pickHighlights(p.highlights, cfg);
         if (hls.length) body += `<ul>${hls.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
         return `<div class="pr-proj-item">${body}</div>`;
@@ -1321,11 +1376,15 @@
         const card = document.createElement('a');
         card.href = contact.href;
         if (contact.type === 'linkedin') card.target = '_blank';
-        card.className = 'flex items-center gap-3 p-3 rounded-xl bg-white/20 dark:bg-slate-900/20 border border-slate-200/40 dark:border-slate-800/40 hover:bg-white/50 dark:hover:bg-slate-900/50 hover:border-indigo-500/40 dark:hover:border-amber-400/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-slate-700 dark:text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
+        // No lift on hover: these sit in a tight 2x2 grid, and a chip that jumped
+        // upward under the cursor read as a glitch rather than a response. The cue is
+        // the site's standard fill + border + shadow shift, plus the icon tile
+        // brightening and easing up in scale — motion, but nothing that moves the row.
+        card.className = 'group/contact flex items-center gap-3 p-3 rounded-xl bg-white/20 dark:bg-slate-900/20 border border-slate-200/40 dark:border-slate-800/40 hover:bg-white/50 dark:hover:bg-slate-900/50 hover:border-indigo-500/40 dark:hover:border-amber-400/40 hover:shadow-md transition-all duration-300 text-slate-700 dark:text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
         card.dataset.reveal = '';
 
         card.innerHTML = `
-          <div class="p-2 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10 text-indigo-600 dark:text-amber-400">
+          <div class="p-2 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10 text-indigo-600 dark:text-amber-400 transition-all duration-300 group-hover/contact:bg-indigo-500/20 dark:group-hover/contact:bg-amber-400/20 group-hover/contact:scale-105">
             <i data-lucide="${contact.icon}" class="w-4 h-4"></i>
           </div>
           <span class="truncate">${contact.label}</span>
@@ -1760,11 +1819,20 @@
         }
       });
 
-      // Project cards carry the same brand-colour custom properties.
+      // Project cards carry the same brand-colour custom properties, and swap to the
+      // dark-theme logo variant when one is supplied (logoDark in data/projects.js).
       if (typeof PROJECTS_DATA !== 'undefined') {
         PROJECTS_DATA.forEach(p => {
           const card = document.getElementById(`project-card-${p.id}`);
           if (card && p.colors) applyBrandColor(card, isDark ? p.colors.dark : p.colors.light);
+
+          if (!p.logo || !p.logoDark) return;
+          const img = document.getElementById(`project-logo-${p.id}`);
+          const want = isDark ? p.logoDark : p.logo;
+          if (img && img.dataset.logoSrc !== want) {
+            img.dataset.logoSrc = want;
+            img.src = want;
+          }
         });
       }
     }
@@ -1776,90 +1844,367 @@
       el.style.setProperty('--brand-bg-border', color + '22'); // ~13% opacity
     }
 
-    // Projects gallery renderer. Each project → a glassmorphic card (summary → highlights → tech →
-    // screenshots → links), mirroring the timeline's brand-colour + reveal system. WIP projects
-    // (wip:true / no links) render without dead links, showing a muted "coming soon" note instead.
+    // ==========================================================================
+    // PROJECTS
+    // Nothing in here is project-specific. PROJECTS_DATA supplies the cards and
+    // PROJECTS_CONFIG (both in data/projects.js) supplies the section behaviour:
+    // the featured grouping, the gallery tile presets and the README badge policy.
+    // Images and logos are plain src strings, so they can point at a local
+    // assets/… path or straight at a repo on raw.githubusercontent.com.
+    // ==========================================================================
+    function projCfg() {
+      return (typeof PROJECTS_CONFIG !== 'undefined' && PROJECTS_CONFIG) ? PROJECTS_CONFIG : {};
+    }
+
+    // --- README badges --------------------------------------------------------
+    // Badges are read from each repo's README at runtime, so build status, released
+    // version and licence stay in step with the repo with nothing to copy here.
+    // Results are cached in localStorage, so a repeat visit paints them during the
+    // first render and nothing on the page moves.
+    const BADGE_CACHE_PREFIX = 'projbadges:v1:';
+
+    function badgeCfg() { return projCfg().badges || {}; }
+
+    function readBadgeCache(repo) {
+      try {
+        const rec = JSON.parse(localStorage.getItem(BADGE_CACHE_PREFIX + repo) || 'null');
+        if (!rec || !Array.isArray(rec.b)) return null;
+        const hours = Number(badgeCfg().cacheHours);
+        const ttl = (isFinite(hours) && hours > 0 ? hours : 12) * 3600000;
+        return { badges: rec.b, fresh: (Date.now() - (rec.t || 0)) < ttl };
+      } catch (e) { return null; }
+    }
+
+    function writeBadgeCache(repo, badges) {
+      try {
+        localStorage.setItem(BADGE_CACHE_PREFIX + repo, JSON.stringify({ t: Date.now(), b: badges }));
+      } catch (e) {}
+    }
+
+    // Badges listed in the data file are the pre-fetch paint and the offline
+    // fallback; a still-fresh cache entry wins over them.
+    function initialProjectBadges(p) {
+      const cfg = badgeCfg();
+      if (cfg.enabled === false) return [];
+      if (cfg.source === 'data') return p.badges || [];
+      const cached = p.repo ? readBadgeCache(p.repo) : null;
+      if (cached && cached.badges.length) return cached.badges;
+      return p.badges || [];
+    }
+
+    function decodeBasicEntities(s) {
+      return String(s)
+        .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    }
+
+    // Pull badge images out of README source. Handles the Markdown forms
+    // ([![alt](img)](href) and ![alt](img)) as well as the HTML form that centred
+    // README headers use (<a href><img alt src></a>). An image only counts if its
+    // host is allow-listed in PROJECTS_CONFIG.badges.allowHosts — a README is
+    // remote content, so that list is a security boundary as much as a filter, and
+    // it also keeps inline screenshots out of the badge strip.
+    function parseReadmeBadges(md) {
+      const cfg = badgeCfg();
+      let text = String(md || '');
+      if (cfg.headerOnly !== false) {
+        // Header = everything before the first thematic break or level-2 heading.
+        const cut = text.search(/\n[ \t]*(?:-{3,}[ \t]*\r?\n|##[ \t])/);
+        if (cut > 0) text = text.slice(0, cut);
+      }
+      const hosts = (cfg.allowHosts || []).map(h => String(h).toLowerCase());
+      const exclude = (cfg.exclude || []).map(s => String(s).toLowerCase()).filter(Boolean);
+      const out = [];
+      const seen = {};
+
+      const add = (alt, src, href) => {
+        if (!src) return;
+        src = decodeBasicEntities(String(src).trim());
+        if (!/^https:\/\//i.test(src)) return;                 // no relative paths, no http
+        let host = '';
+        try { host = new URL(src).hostname.toLowerCase(); } catch (e) { return; }
+        if (hosts.indexOf(host) < 0) return;
+        // github.com / raw.githubusercontent.com serve far more than badges, so from
+        // those two accept only Actions status badges.
+        if (/(^|\.)github(usercontent)?\.com$/.test(host) && !/\/badge\.svg(\?|$)/i.test(src)) return;
+        alt = decodeBasicEntities(String(alt || '').trim());
+        for (let i = 0; i < exclude.length; i++) {
+          if (alt.toLowerCase().indexOf(exclude[i]) >= 0) return;
+        }
+        if (seen[src]) return;
+        seen[src] = 1;
+        href = decodeBasicEntities(String(href || '').trim());
+        out.push({ alt: alt, src: src, href: /^https?:\/\//i.test(href) ? href : '' });
+      };
+
+      // HTML form, with an optional <a href> wrapper immediately before the <img>.
+      text.replace(/(?:<a\b[^>]*?href=["']([^"']+)["'][^>]*>\s*)?<img\b([^>]*?)\/?>/gi, (m, href, attrs) => {
+        add((attrs.match(/\balt=["']([^"']*)["']/i) || [])[1],
+            (attrs.match(/\bsrc=["']([^"']+)["']/i) || [])[1], href);
+        return m;
+      });
+      // Markdown form — linked badges first, so the href survives de-duplication.
+      text.replace(/\[!\[([^\]]*)\]\(\s*(\S+?)(?:\s+"[^"]*")?\s*\)\]\(\s*(\S+?)(?:\s+"[^"]*")?\s*\)/g,
+        (m, alt, src, href) => { add(alt, src, href); return m; });
+      text.replace(/!\[([^\]]*)\]\(\s*(\S+?)(?:\s+"[^"]*")?\s*\)/g,
+        (m, alt, src) => { add(alt, src, ''); return m; });
+
+      const max = Number(cfg.max);
+      return (isFinite(max) && max > 0) ? out.slice(0, max) : out;
+    }
+
+    function projectBadgesHTML(badges) {
+      return (badges || []).map(b => {
+        // A badge whose image 404s removes itself rather than leaving a broken frame.
+        const img = `<img src="${escapeAttr(b.src)}" alt="${escapeAttr(b.alt || '')}" loading="lazy" decoding="async" onerror="if(this.parentElement)this.parentElement.remove()">`;
+        return b.href
+          ? `<a href="${escapeAttr(b.href)}" target="_blank" rel="noopener nofollow" class="inline-flex rounded opacity-90 hover:opacity-100 transition-opacity duration-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">${img}</a>`
+          : `<span class="inline-flex">${img}</span>`;
+      }).join('');
+    }
+
+    // Fill a card's badge strip. The row is an .accordion-grid, so a set that lands
+    // after first paint eases open instead of snapping the card taller.
+    function applyProjectBadges(projectId, badges) {
+      const slot = document.getElementById('project-badges-' + projectId);
+      const inner = slot && slot.querySelector('.project-badges-inner');
+      if (!inner) return;
+      inner.innerHTML = projectBadgesHTML(badges);
+      slot.classList.toggle('open', !!(badges && badges.length));
+    }
+
+    // Fetched lazily — the first time the Projects tab is opened — so a visitor who
+    // never opens it costs no requests. Anything cached is already on screen by then,
+    // and a failed fetch simply leaves that paint alone.
+    let _projectBadgesStarted = false;
+    function loadProjectBadges() {
+      if (_projectBadgesStarted) return;
+      const cfg = badgeCfg();
+      if (cfg.enabled === false || cfg.source === 'data') return;
+      if (typeof PROJECTS_DATA === 'undefined' || typeof fetch !== 'function') return;
+      _projectBadgesStarted = true;
+
+      const branch = cfg.branch || 'HEAD';
+      const path = String(cfg.readmePath || 'README.md').replace(/^\/+/, '');
+
+      PROJECTS_DATA.forEach(p => {
+        if (!p.repo) return;
+        const cached = readBadgeCache(p.repo);
+        if (cached && cached.fresh) return;                  // painted at render, still fresh
+        fetch('https://raw.githubusercontent.com/' + p.repo + '/' + branch + '/' + path)
+          .then(r => { if (!r.ok) throw new Error('README ' + r.status); return r.text(); })
+          .then(md => {
+            const badges = parseReadmeBadges(md);
+            writeBadgeCache(p.repo, badges);
+            applyProjectBadges(p.id, badges);
+          })
+          .catch(() => {});                                  // offline / rate-limited
+      });
+    }
+
+    // --- Cards ----------------------------------------------------------------
+    // A logo that fails to load (repo moved, offline) degrades to the project's
+    // Lucide icon, or to its initials when it hasn't declared one.
+    function projectMarkFallback(img) {
+      const box = img.parentElement;
+      if (!box) return;
+      const icon = img.getAttribute('data-fallback-icon');
+      const name = img.getAttribute('data-fallback-name') || '?';
+      box.className = box.className
+        .replace(/bg-white\/70|dark:bg-slate-900\/60|ring-1|ring-slate-200\/70|dark:ring-slate-700\/60/g, '')
+        + ' bg-[var(--brand-bg)] border border-[var(--brand-bg-border)] text-[var(--brand-color)]';
+      box.innerHTML = icon
+        ? `<i data-lucide="${escapeAttr(icon)}" class="w-5 h-5"></i>`
+        : `<span class="text-sm font-extrabold font-display">${escapeHtml(initialsFrom(name))}</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // A screenshot that fails to load drops its tile instead of leaving a broken
+    // frame; a gallery left with no tiles removes itself.
+    function projectShotFailed(img) {
+      const tile = img.closest('.project-shot');
+      const gallery = tile && tile.parentElement;
+      if (tile) tile.remove();
+      if (gallery && gallery.classList.contains('project-gallery') && !gallery.children.length) {
+        gallery.remove();
+      }
+    }
+
+    // Group heading, styled like "Core Competencies" on the Overview tab.
+    function projGroupHeadingHTML(group, icon) {
+      if (!group || !group.heading) return '';
+      return `
+        <h3 data-reveal class="text-xl font-bold font-display tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+          <i data-lucide="${escapeAttr(icon || 'folder-git-2')}" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> ${escapeHtml(group.heading)}
+        </h3>
+        ${group.sub ? `<p data-reveal class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-5">${escapeHtml(group.sub)}</p>` : '<div class="mb-5"></div>'}`;
+    }
+
+    // One project → one glassmorphic card: mark · title → badges → summary →
+    // highlights → tech → screenshots, with the action links top-right. Mirrors the
+    // timeline's brand-colour + reveal system. WIP projects (wip:true / no links)
+    // render without dead links, showing a muted "coming soon" note instead.
+    function projectCardEl(p, isDark) {
+      const cfg = projCfg();
+      const featCfg = cfg.featured || {};
+      const isFeatured = featCfg.enabled !== false && !!p.featured;
+
+      const card = document.createElement('article');
+      card.id = `project-card-${p.id}`;
+      card.dataset.reveal = '';
+      card.className = 'project-card group relative rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 border-l-[3.5px] border-l-[var(--brand-color)] backdrop-blur-xl shadow-lg hover:shadow-xl hover:border-[var(--brand-color)] transition-all duration-300 overflow-hidden'
+        + (isFeatured ? ' is-featured' : '');
+      if (p.colors) applyBrandColor(card, isDark ? p.colors.dark : p.colors.light);
+
+      // Featured chip, then status badge + optional period.
+      const featChip = (isFeatured && featCfg.label)
+        ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-[var(--brand-color)] text-white dark:text-slate-950 shadow-sm">
+             <i data-lucide="${escapeAttr(featCfg.icon || 'star')}" class="w-2.5 h-2.5"></i> ${escapeHtml(featCfg.label)}
+           </span>` : '';
+      const status = p.status
+        ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)]">
+             <i data-lucide="${p.wip ? 'loader' : 'circle-dot'}" class="w-2.5 h-2.5"></i> ${escapeHtml(p.status)}
+           </span>` : '';
+      const period = p.period
+        ? `<span class="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/85 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 shadow-sm tracking-wide">${escapeHtml(p.period)}</span>` : '';
+
+      // Project mark: a logo file (with an optional dark-theme variant), else a
+      // brand-tinted Lucide icon. Linked to the primary link, with the same
+      // ring-on-hover cue the timeline's company logos use.
+      const logoSrc = p.logo ? ((isDark && p.logoDark) ? p.logoDark : p.logo) : '';
+      const primaryHref = (p.links && p.links[0]) ? p.links[0].href : '';
+      const markBase = 'flex-shrink-0 w-11 h-11 rounded-xl overflow-hidden grid place-items-center transition-all duration-300';
+      let markInner = '';
+      let markCls = '';
+      if (logoSrc) {
+        markInner = `<img id="project-logo-${escapeAttr(p.id)}" src="${escapeAttr(logoSrc)}" alt="${escapeAttr(p.name + ' logo')}" width="44" height="44" decoding="async"
+                          class="w-full h-full object-contain" data-fallback-icon="${escapeAttr(p.icon || '')}" data-fallback-name="${escapeAttr(p.name)}" onerror="projectMarkFallback(this)">`;
+        markCls = markBase + ' bg-white/70 dark:bg-slate-900/60 shadow-sm ring-1 ring-slate-200/70 dark:ring-slate-700/60';
+        if (primaryHref) markCls += ' hover:ring-2 hover:ring-[var(--brand-color)]';
+      } else if (p.icon) {
+        markInner = `<i data-lucide="${escapeAttr(p.icon)}" class="w-5 h-5"></i>`;
+        markCls = markBase + ' bg-[var(--brand-bg)] border border-[var(--brand-bg-border)] text-[var(--brand-color)]';
+        if (primaryHref) markCls += ' hover:border-[var(--brand-color)]';
+      }
+      const markHTML = !markInner ? ''
+        : (primaryHref
+            ? `<a href="${escapeAttr(primaryHref)}" target="_blank" rel="noopener" aria-label="${escapeAttr(p.name + ' — open project (opens in a new tab)')}" class="${markCls} focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">${markInner}</a>`
+            : `<span class="${markCls}">${markInner}</span>`);
+
+      // Action links. The old lift-on-hover is gone: a row of buttons that each
+      // jumped upward under the cursor read as a glitch. These use the site's
+      // standard fill / shadow / press treatment instead, with no vertical motion.
+      const linkBtns = (p.links || []).map((lnk, i) => {
+        const base = 'group/lnk inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all duration-300 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
+        const cls = i === 0
+          ? base + ' bg-[var(--brand-color)] text-white dark:text-slate-950 shadow-sm hover:shadow-md hover:brightness-110'
+          : base + ' border border-[var(--brand-bg-border)] bg-[var(--brand-bg)] text-[var(--brand-color)] hover:bg-[var(--brand-color)] hover:text-white dark:hover:text-slate-950 hover:shadow-md';
+        return `<a href="${escapeAttr(lnk.href)}" target="_blank" rel="noopener" aria-label="${escapeAttr(p.name + ' — ' + lnk.label + ' (opens in a new tab)')}" class="${cls}">
+                  <i data-lucide="${escapeAttr(lnk.icon || 'external-link')}" class="w-3.5 h-3.5 transition-transform duration-300 group-hover/lnk:scale-110"></i>${escapeHtml(lnk.label)}
+                </a>`;
+      }).join('');
+      const noteChip = (!linkBtns && p.note)
+        ? `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 border border-dashed border-slate-300/70 dark:border-slate-700/70">
+             <i data-lucide="clock" class="w-3.5 h-3.5"></i>${escapeHtml(p.note)}
+           </span>` : '';
+
+      // README badge strip. Starts open only when there's something to show right
+      // now (a fresh cache entry or data-declared badges), so nothing shifts.
+      const bCfg = cfg.badges || {};
+      const initialBadges = initialProjectBadges(p);
+      const badgeSlot = (bCfg.enabled !== false && (p.repo || (p.badges && p.badges.length)))
+        ? `<div id="project-badges-${escapeAttr(p.id)}" class="project-badges accordion-grid${initialBadges.length ? ' open' : ''}" style="--badge-h:${escapeAttr(String(bCfg.height || 20))}px" role="group" aria-label="${escapeAttr(bCfg.label || 'Repository badges')}">
+             <div class="overflow-hidden">
+               <div class="project-badges-inner flex flex-wrap items-center gap-1.5 pt-4">${projectBadgesHTML(initialBadges)}</div>
+             </div>
+           </div>` : '';
+
+      const highlights = (p.highlights && p.highlights.length)
+        ? `<ul class="mt-4 space-y-2.5">
+             ${p.highlights.map(hl => `
+               <li class="flex items-start gap-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
+                 <span class="mt-1.5 w-1.2 h-1.2 rounded-full bg-[var(--brand-color)] flex-shrink-0"></span>
+                 <span class="flex-1">${formatText(hl)}</span>
+               </li>`).join('')}
+           </ul>` : '';
+
+      const tech = (p.tech && p.tech.length)
+        ? `<div class="mt-4 flex flex-wrap gap-2">
+             ${p.tech.map(t => `<span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/50">${escapeHtml(t)}</span>`).join('')}
+           </div>` : '';
+
+      // Screenshot gallery (click → lightbox). Tile geometry comes from the named
+      // preset in PROJECTS_CONFIG.gallery.tiles, handed to CSS as custom properties.
+      // src/alt travel as data-* attributes (read via dataset) rather than inline
+      // onclick args, so apostrophes/quotes in alt text can't break the handler.
+      const galCfg = cfg.gallery || {};
+      const tiles = galCfg.tiles || {};
+      const tile = tiles[p.gallery] || tiles[galCfg.default] || {};
+      const galStyle = [
+        ['--gal-min', tile.min], ['--gal-max', tile.max], ['--gal-aspect', tile.aspect],
+        ['--gal-fit', tile.fit], ['--gal-pos', tile.position]
+      ].filter(kv => kv[1]).map(kv => kv[0] + ':' + kv[1]).join(';');
+
+      const shots = (p.screenshots && p.screenshots.length)
+        ? `<div class="project-gallery mt-5" style="${escapeAttr(galStyle)}">
+             ${p.screenshots.map(s => `
+               <button type="button" data-shot-src="${escapeAttr(s.src)}" data-shot-alt="${escapeAttr(s.alt || p.name)}" class="project-shot group/shot block overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/40 shadow-sm hover:shadow-md hover:border-[var(--brand-color)] focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300" aria-label="Enlarge screenshot: ${escapeAttr(s.alt || p.name)}">
+                 <img src="${escapeAttr(s.src)}" alt="${escapeAttr(s.alt || (p.name + ' screenshot'))}" loading="lazy" decoding="async" onerror="projectShotFailed(this)" class="transition-transform duration-500 group-hover/shot:scale-[1.03]">
+               </button>`).join('')}
+           </div>` : '';
+
+      card.innerHTML = `
+        <div class="p-6 sm:p-7">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div class="flex items-start gap-3.5 min-w-0">
+              ${markHTML}
+              <div class="min-w-0">
+                <div class="flex items-center gap-2.5 mb-2 flex-wrap">${featChip}${status}${period}</div>
+                <h3 class="text-2xl font-bold font-display text-slate-900 dark:text-white leading-tight group-hover:text-[var(--brand-color)] transition-colors duration-200">${escapeHtml(p.name)}</h3>
+                ${p.tagline ? `<p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">${escapeHtml(p.tagline)}</p>` : ''}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">${linkBtns || noteChip}</div>
+          </div>
+          ${badgeSlot}
+          <p class="mt-4 text-[15px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">${formatText(p.summary || '')}</p>
+          ${highlights}
+          ${tech}
+          ${shots}
+        </div>`;
+      return card;
+    }
+
+    // Projects gallery renderer. Featured ("hero") projects are pinned to the top in
+    // data order; the rest follow under their own heading. When every project is
+    // featured — or none is — the split says nothing, so one unheaded list is used.
     function renderProjects() {
       const list = document.getElementById('projects-list');
       if (!list || typeof PROJECTS_DATA === 'undefined') return;
       const isDark = document.documentElement.classList.contains('dark');
+      const cfg = projCfg();
+      const featCfg = cfg.featured || {};
+      const groups = cfg.groups || {};
       list.innerHTML = '';
 
-      PROJECTS_DATA.forEach(p => {
-        const card = document.createElement('article');
-        card.id = `project-card-${p.id}`;
-        card.dataset.reveal = '';
-        card.className = 'project-card group relative rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 border-l-[3.5px] border-l-[var(--brand-color)] backdrop-blur-xl shadow-lg hover:shadow-xl hover:border-[var(--brand-color)] transition-all duration-300 overflow-hidden';
-        if (p.colors) applyBrandColor(card, isDark ? p.colors.dark : p.colors.light);
+      const useGroups = featCfg.enabled !== false;
+      const featured = useGroups ? PROJECTS_DATA.filter(p => p.featured) : [];
+      const rest = useGroups ? PROJECTS_DATA.filter(p => !p.featured) : PROJECTS_DATA.slice();
+      const split = featured.length > 0 && rest.length > 0;
 
-        // Status badge + optional period.
-        const status = p.status
-          ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-[var(--brand-bg)] text-[var(--brand-color)] border border-[var(--brand-bg-border)]">
-               <i data-lucide="${p.wip ? 'loader' : 'circle-dot'}" class="w-2.5 h-2.5"></i> ${escapeHtml(p.status)}
-             </span>` : '';
-        const period = p.period
-          ? `<span class="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/85 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 shadow-sm tracking-wide">${escapeHtml(p.period)}</span>` : '';
+      const addGroup = (items, groupCfg, icon) => {
+        if (!items.length) return;
+        const wrap = document.createElement('div');
+        if (split) wrap.innerHTML = projGroupHeadingHTML(groupCfg, icon);
+        const inner = document.createElement('div');
+        inner.className = 'space-y-8';
+        items.forEach(p => inner.appendChild(projectCardEl(p, isDark)));
+        wrap.appendChild(inner);
+        list.appendChild(wrap);
+      };
 
-        // Action links (buttons). WIP projects with no links show a muted note chip instead.
-        const linkBtns = (p.links || []).map((lnk, i) => {
-          const primary = i === 0;
-          const base = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all duration-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none';
-          const cls = primary
-            ? base + ' bg-[var(--brand-color)] text-white dark:text-slate-950 shadow-sm hover:shadow-md hover:-translate-y-0.5'
-            : base + ' border border-[var(--brand-bg-border)] bg-[var(--brand-bg)] text-[var(--brand-color)] hover:bg-[var(--brand-color)] hover:text-white dark:hover:text-slate-950';
-          return `<a href="${escapeAttr(lnk.href)}" target="_blank" rel="noopener" aria-label="${escapeAttr(p.name + ' — ' + lnk.label + ' (opens in a new tab)')}" class="${cls}">
-                    <i data-lucide="${escapeAttr(lnk.icon || 'external-link')}" class="w-3.5 h-3.5"></i>${escapeHtml(lnk.label)}
-                  </a>`;
-        }).join('');
-        const noteChip = (!linkBtns && p.note)
-          ? `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 border border-dashed border-slate-300/70 dark:border-slate-700/70">
-               <i data-lucide="clock" class="w-3.5 h-3.5"></i>${escapeHtml(p.note)}
-             </span>` : '';
-
-        // Highlights.
-        const highlights = (p.highlights && p.highlights.length)
-          ? `<ul class="mt-4 space-y-2.5">
-               ${p.highlights.map(hl => `
-                 <li class="flex items-start gap-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
-                   <span class="mt-1.5 w-1.2 h-1.2 rounded-full bg-[var(--brand-color)] flex-shrink-0"></span>
-                   <span class="flex-1">${formatText(hl)}</span>
-                 </li>`).join('')}
-             </ul>` : '';
-
-        // Tech pills.
-        const tech = (p.tech && p.tech.length)
-          ? `<div class="mt-4 flex flex-wrap gap-2">
-               ${p.tech.map(t => `<span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/50">${escapeHtml(t)}</span>`).join('')}
-             </div>` : '';
-
-        // Screenshot gallery (click → lightbox).
-        // Screenshots open a lightbox. src/alt travel as data-* attributes (read via dataset) rather
-        // than inline onclick args, so apostrophes/quotes in alt text can't break the handler.
-        const shots = (p.screenshots && p.screenshots.length)
-          ? `<div class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-               ${p.screenshots.map(s => `
-                 <button type="button" data-shot-src="${escapeAttr(s.src)}" data-shot-alt="${escapeAttr(s.alt || p.name)}" class="project-shot group/shot block overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/40 shadow-sm hover:shadow-md hover:border-[var(--brand-color)] focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300" aria-label="Enlarge screenshot: ${escapeAttr(s.alt || p.name)}">
-                   <img src="${escapeAttr(s.src)}" alt="${escapeAttr(s.alt || (p.name + ' screenshot'))}" loading="lazy" class="w-full h-40 object-cover object-top transition-transform duration-500 group-hover/shot:scale-[1.03]">
-                 </button>`).join('')}
-             </div>` : '';
-
-        card.innerHTML = `
-          <div class="p-6 sm:p-7">
-            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div class="min-w-0">
-                <div class="flex items-center gap-2.5 mb-2 flex-wrap">${status}${period}</div>
-                <h3 class="text-2xl font-bold font-display text-slate-900 dark:text-white leading-tight group-hover:text-[var(--brand-color)] transition-colors duration-200">${escapeHtml(p.name)}</h3>
-                ${p.tagline ? `<p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">${escapeHtml(p.tagline)}</p>` : ''}
-              </div>
-              <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">${linkBtns || noteChip}</div>
-            </div>
-            <p class="mt-4 text-[15px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">${formatText(p.summary || '')}</p>
-            ${highlights}
-            ${tech}
-            ${shots}
-          </div>`;
-        list.appendChild(card);
-      });
+      addGroup(split ? featured : featured.concat(rest), groups.featured, featCfg.icon || 'star');
+      if (split) addGroup(rest, groups.rest, 'folder-git-2');
 
       // Delegated lightbox trigger for every screenshot (wired once).
       if (!list.dataset.lightboxWired) {
@@ -2710,7 +3055,7 @@
           if (!p) return;
           const key = 'proj:' + id;
           pdfSectionKeys.projects.push(key);
-          pRows += pdfEntryCardHTML(key, null, p.name, p.tagline || '', p.period || '', p.highlights || [], {});
+          pRows += pdfEntryCardHTML(key, p.logo || null, p.name, p.tagline || '', p.period || '', p.highlights || [], {});
         });
         const pGlobals = pdfBulkToggleHTML('projects', 'showDescription', 'Descriptions');
         html += pdfSectionWrap('Projects', 'pdf-proj-badge', pdfSectionKeys.projects, pGlobals, '<div class="space-y-2.5">' + pRows + '</div>');
