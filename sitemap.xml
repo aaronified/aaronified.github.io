@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Single entry by design: the site is one document and the nav tabs are hash routes
+  (#overview, #workex, …), which search engines fold into the canonical URL rather
+  than treating as separate pages. Adding them here would just report duplicates.
+
+  Fork note: replace the domain and refresh <lastmod> when the resume changes.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://aaronified.github.io/</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

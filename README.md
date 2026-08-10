@@ -45,6 +45,8 @@ It renders four sections — **Overview**, **Career Trajectory**, **FAQ**, and
 │   ├── faqs.js             # Frequently asked questions
 │   └── recommendations.js  # Testimonials + references
 ├── assets/                 # Your photo, company/school logos, avatars
+├── robots.txt              # Crawler rules + sitemap pointer (update the domain)
+├── sitemap.xml             # Single-URL sitemap (update the domain)
 └── README.md               # This guide
 ```
 
@@ -362,14 +364,72 @@ logos, and avatars. Filenames are case-sensitive on GitHub Pages — match them 
 
 ## Page title, SEO & favicon
 
-You **don't need to touch `index.html`** for any of this — it's all data-driven:
+You **don't need to touch `index.html`** for any of this — it's all data-driven. `applySeo()`
+reads the data files on load and writes every search-related tag into the document.
 
-- **Browser-tab title, search description, keywords** — set them in `data/personal.js` under `seo`
-  (`title`, `description`, `keywords`). They're applied on load. (The matching tags in the `<head>`
-  are only a no-JS fallback; the values in `seo` are what render.)
+### What you configure
+
+In `data/personal.js`:
+
+```js
+seo: {
+  title:       "Your Name — What You Do | Where",  // browser tab + Google's blue link
+  description: "…",                                // the grey snippet under the link (~155 chars)
+  keywords:    "Your Name, Your Name job, …",       // lead with the name variants people type
+  siteUrl:     "https://yourname.github.io",        // canonical origin — no trailing slash
+  ogImage:     "assets/your-photo.jpg"              // link-preview thumbnail
+},
+schema: {
+  givenName: "Your", familyName: "Name",            // optional; falls back to splitting `name`
+  addressLocality: "Your City", addressCountry: "IN"
+}
+```
+
+Then update the two site-level files at the repo root, which can't be generated at runtime:
+
+- **`robots.txt`** — change the `Sitemap:` line to your domain.
+- **`sitemap.xml`** — change `<loc>` to your domain and refresh `<lastmod>` when you edit the resume.
+
+### What gets generated for you
+
+Everything below is derived — you never write it twice:
+
+| Tag | Source |
+| --- | --- |
+| `<title>`, `description`, `keywords`, `author` | `PERSONAL_DATA.seo` / `.name` |
+| `<link rel="canonical">` | `seo.siteUrl` (falls back to the serving origin) |
+| Open Graph + Twitter card | `seo` + `profileImage` — controls LinkedIn/Slack/WhatsApp link previews |
+| `schema.org` **Person** JSON-LD | job title & employer from the newest `type: "work"` entry in `trajectory.js`; `alumniOf` from the `type: "education"` entries; `knowsAbout` from the competency `skills` lists; `sameAs` from every `https://` contact link |
+| `rel="me"` on profile links | any contact whose `href` is an external URL |
+
+The **Person** record is the part that matters most for a search on your name: it declares that
+this page *is* you, and `sameAs` + `rel="me"` fold your LinkedIn and GitHub profiles into the same
+identity so they reinforce each other instead of competing for the same query.
+
 - **Favicon** — auto-generated: a monogram of your initials (derived from `PERSONAL_DATA.name`) on a
   gradient tile. Nothing to configure.
 - **Footer copyright name** — filled automatically from `PERSONAL_DATA.name`.
+
+### One caveat worth understanding
+
+The whole page — headings, timeline, and the SEO tags above — is rendered by JavaScript, because
+`index.html` is deliberately kept free of profile content. **Crawlers that execute JavaScript
+(Googlebot, Bingbot) index it correctly; crawlers that don't will see an empty shell.** In practice
+that covers the search engines people actually use for name lookups, but it does mean link
+previews on some chat apps and scrapes by simpler bots may come up blank. Making those work would
+require either hard-coding your details into `index.html` or adding a build step that pre-renders
+it — a deliberate trade against keeping the template profile-agnostic.
+
+### After you deploy
+
+Two manual steps that meaningfully speed up a name search ranking:
+
+1. Add the site to [Google Search Console](https://search.google.com/search-console) and
+   [Bing Webmaster Tools](https://www.bing.com/webmasters), verify ownership, and submit
+   `sitemap.xml`. Use **URL Inspection → Request Indexing** for the first crawl.
+2. Link to the site from your LinkedIn profile and GitHub profile. Those are high-authority pages
+   that already rank for your name, and the inbound links are what tie the `sameAs` claims together
+   from both directions.
 
 ---
 

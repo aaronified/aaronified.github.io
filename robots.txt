@@ -1,0 +1,13 @@
+# Personal resume site — the whole point is to be findable, so everything is open.
+# Fork note: update the Sitemap URL below to your own GitHub Pages domain.
+
+User-agent: *
+Allow: /
+
+# Backup copies of earlier revisions live at the repo root. They're .bak (not served
+# as HTML) but excluded explicitly so nothing stale can be picked up.
+Disallow: /index_v1.html.bak
+Disallow: /index_v2.html.bak
+Disallow: /changes_required.txt
+
+Sitemap: https://aaronified.github.io/sitemap.xml

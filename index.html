@@ -3,18 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Monogram favicon. Static fallback below; upgraded by JS to a gradient mark using the profile's initials. -->
-  <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'24'%20fill%3D'rebeccapurple'%2F%3E%3Ctext%20x%3D'50'%20y%3D'66'%20text-anchor%3D'middle'%20font-family%3D'Arial%2Csans-serif'%20font-weight%3D'700'%20font-size%3D'46'%20fill%3D'white'%3EAD%3C%2Ftext%3E%3C%2Fsvg%3E">
-  <title>Arani Das - Analytics & Data Science Leadership</title>
-  
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="Professional profile and resume of Arani Das, a data-driven analytics leader with 9+ years of experience spanning supply chain operations, logistics, e-commerce, and strategic analytics.">
-  <meta name="keywords" content="Arani Das, Data Analytics, Data Science, Supply Chain, Logistics, Operations, Leadership, ISB, Allcargo Gati, Tata CLiQ">
+  <!-- Monogram favicon. The blank tile below just holds the shape/colour for the few ms before
+       JS swaps in the real gradient mark built from the profile's initials — no initials are
+       baked in here, so the file stays profile-agnostic. -->
+  <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'24'%20fill%3D'rebeccapurple'%2F%3E%3C%2Fsvg%3E">
+  <!-- Placeholder only. The real tab title comes from PERSONAL_DATA.seo.title. -->
+  <title>Interactive Resume</title>
+
+  <!-- ==========================================================================
+       SEO. index.html stays profile-agnostic: every person-specific tag —
+       description, keywords, author, canonical, Open Graph, Twitter card and the
+       schema.org JSON-LD — is authored in data/personal.js and injected by
+       applySeo() on load. Only the directives below are template-generic enough
+       to live here.
+       ========================================================================== -->
   <meta name="color-scheme" content="dark light">
-  
+  <!-- Index freely; allow large image previews and untruncated snippets. -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+
   <!-- Preconnect to Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- The two CDNs below block first paint; warming the connections early trims
+       a few hundred ms off LCP, which is a ranking input. -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
@@ -483,7 +496,9 @@
           <div class="relative group/img">
             <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-60 blur-md group-hover/img:opacity-100 transition-opacity duration-500"></div>
             <div class="relative w-40 h-40 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 shadow-lg">
-              <img id="profile-img" src="" alt="" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover/img:scale-105" width="160" height="160">
+              <!-- src/alt are set from data/personal.js. fetchpriority flags it as the LCP image
+                   so the browser starts it ahead of the CDN scripts once the src lands. -->
+              <img id="profile-img" src="" alt="" fetchpriority="high" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover/img:scale-105" width="160" height="160">
             </div>
           </div>
 
@@ -574,6 +589,16 @@
 
     <!-- MAIN CONTENT SECTIONS -->
     <main id="main-content" class="space-y-12 outline-none">
+
+      <!-- Every section below is rendered from data/*.js, so with JS off the page is an empty
+           shell. Say so rather than showing nothing. (This is also why Googlebot/Bingbot, which
+           do render JS, are the crawlers this site relies on — see the SEO notes in README.) -->
+      <noscript>
+        <div class="rounded-3xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 p-6 sm:p-10 text-center">
+          <p class="text-lg font-semibold text-slate-900 dark:text-white">This interactive resume needs JavaScript.</p>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Enable it to view the profile, career timeline, projects and PDF export.</p>
+        </div>
+      </noscript>
 
       <!-- SECTION: OVERVIEW -->
       <section id="sec-overview" class="section-pane">
@@ -1043,7 +1068,19 @@
         .replace(/\*([^*]+)\*/g, '<span class="hl-num">$1</span>');
     }
 
-    // Derive up-to-two-letter initials from a name (e.g. "Arani Das" -> "AD").
+    // Inverse of formatText: drop the markers and any tags, leaving prose. Used where the
+    // string has to be machine-readable rather than styled (meta tags, JSON-LD).
+    function plainText(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/[`^*]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    // Derive up-to-two-letter initials from a name (e.g. "Ada Lovelace" -> "AL").
     function initialsFrom(name) {
       return name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
     }
@@ -1318,6 +1355,151 @@
     }
 
     // Dynamic APP rendering (Modularity core)
+    /* ==========================================================================
+       SEO
+       --------------------------------------------------------------------------
+       Writes the tab title, meta description/keywords/author, canonical link,
+       Open Graph + Twitter card tags, and a schema.org Person/WebSite graph —
+       all derived from data/*.js so index.html carries no profile content.
+
+       The Person node is the highest-leverage part for a name search: it states
+       that this page *is* that person, and `sameAs` folds the LinkedIn/GitHub
+       profiles into one entity so they reinforce each other rather than compete
+       for the same query.
+
+       Trade-off to be aware of: this runs at runtime, so only crawlers that
+       execute JavaScript (Googlebot, Bingbot) ever see it. See README > SEO.
+       ========================================================================== */
+    function applySeo() {
+      const seo = PERSONAL_DATA.seo || {};
+      const extra = PERSONAL_DATA.schema || {};
+
+      // Canonical origin. Falls back to wherever we're actually served from, so
+      // local previews and forks don't emit someone else's URLs.
+      const origin = String(seo.siteUrl || window.location.origin || '').replace(/\/+$/, '');
+      const pageUrl = origin ? origin + '/' : '';
+      const abs = p => !p ? '' : (/^https?:\/\//i.test(p) ? p : origin + '/' + String(p).replace(/^\/+/, ''));
+
+      const upsert = (selector, make, attr, val) => {
+        if (!val) return;
+        let el = document.head.querySelector(selector);
+        if (!el) { el = make(); document.head.appendChild(el); }
+        el.setAttribute(attr, val);
+      };
+      const meta = (name, val) =>
+        upsert(`meta[name="${name}"]`, () => {
+          const m = document.createElement('meta'); m.setAttribute('name', name); return m;
+        }, 'content', val);
+      // Open Graph keys go on `property`, not `name` — parsers ignore them otherwise.
+      const prop = (property, val) =>
+        upsert(`meta[property="${property}"]`, () => {
+          const m = document.createElement('meta'); m.setAttribute('property', property); return m;
+        }, 'content', val);
+      const link = (rel, href) =>
+        upsert(`link[rel="${rel}"]`, () => {
+          const l = document.createElement('link'); l.setAttribute('rel', rel); return l;
+        }, 'href', href);
+
+      const name = PERSONAL_DATA.name || '';
+      const image = abs(seo.ogImage || PERSONAL_DATA.profileImage);
+      const bio = plainText((typeof OVERVIEW_DATA !== 'undefined' && OVERVIEW_DATA.bio) || '');
+      const description = seo.description || bio;
+
+      if (seo.title) document.title = seo.title;
+      meta('description', description);
+      meta('keywords', seo.keywords);
+      meta('author', name);
+      link('canonical', pageUrl);
+
+      prop('og:type', 'profile');
+      prop('og:site_name', name);
+      prop('og:title', seo.title || name);
+      prop('og:description', description);
+      prop('og:url', pageUrl);
+      prop('og:image', image);
+      prop('og:image:alt', name ? `Professional profile photo of ${name}` : '');
+      prop('og:locale', 'en_US');
+
+      meta('twitter:card', 'summary_large_image');
+      meta('twitter:title', seo.title || name);
+      meta('twitter:description', description);
+      meta('twitter:image', image);
+
+      // ---- schema.org graph -------------------------------------------------
+      const contacts = PERSONAL_DATA.contacts || [];
+      const byType = t => contacts.find(c => c.type === t);
+      const emailContact = byType('email');
+      const phoneContact = byType('phone');
+      // sameAs: every external profile we link to. Ordering doesn't matter; presence does.
+      const sameAs = contacts
+        .filter(c => /^https?:\/\//i.test(c.href || ''))
+        .map(c => c.href);
+
+      const traj = (typeof TRAJECTORY_DATA !== 'undefined' && TRAJECTORY_DATA) || [];
+      // TRAJECTORY_DATA is authored newest-first, so the first work entry is the current role.
+      const currentJob = traj.find(e => e.type === 'work');
+      const schools = traj.filter(e => e.type === 'education');
+      const competencies = (typeof OVERVIEW_DATA !== 'undefined' && OVERVIEW_DATA.competencies) || [];
+      const knowsAbout = [...new Set(competencies.flatMap(c => c.skills || []))];
+
+      const nameParts = name.trim().split(/\s+/);
+      const person = {
+        '@type': 'Person',
+        '@id': pageUrl + '#person',
+        name,
+        givenName: extra.givenName || nameParts[0] || undefined,
+        familyName: extra.familyName || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : undefined),
+        url: pageUrl,
+        image: image || undefined,
+        description: description || undefined,
+        jobTitle: currentJob ? currentJob.role : undefined,
+        email: emailContact ? emailContact.href : undefined,
+        // href is the dial string ("tel:+91…"), which is closer to E.164 than the display label.
+        telephone: phoneContact ? String(phoneContact.href || '').replace(/^tel:/i, '') || phoneContact.label : undefined,
+        worksFor: currentJob ? {
+          '@type': 'Organization',
+          name: currentJob.company,
+          sameAs: currentJob.link || undefined
+        } : undefined,
+        alumniOf: schools.length ? schools.map(s => ({
+          '@type': 'EducationalOrganization',
+          name: s.company,
+          sameAs: s.link || undefined
+        })) : undefined,
+        address: (extra.addressLocality || extra.addressCountry) ? {
+          '@type': 'PostalAddress',
+          addressLocality: extra.addressLocality || undefined,
+          addressCountry: extra.addressCountry || undefined
+        } : undefined,
+        knowsAbout: knowsAbout.length ? knowsAbout : undefined,
+        sameAs: sameAs.length ? sameAs : undefined
+      };
+
+      const website = {
+        '@type': 'WebSite',
+        '@id': pageUrl + '#website',
+        url: pageUrl,
+        name: name ? `${name} — Interactive Resume` : 'Interactive Resume',
+        description: description || undefined,
+        inLanguage: document.documentElement.lang || 'en',
+        // Ties the site to the person so search engines treat them as one entity.
+        author: { '@id': pageUrl + '#person' }
+      };
+
+      // A single @graph keeps the two nodes cross-referenced by @id.
+      const graph = { '@context': 'https://schema.org', '@graph': [person, website] };
+
+      let ld = document.getElementById('person-jsonld');
+      if (!ld) {
+        ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.id = 'person-jsonld';
+        document.head.appendChild(ld);
+      }
+      // JSON.stringify drops the `undefined` fields above, so absent data leaves no empty keys.
+      ld.textContent = JSON.stringify(graph, null, 2);
+    }
+
     function initAppContent() {
       // Personal Details
       document.getElementById('profile-name').textContent = PERSONAL_DATA.name;
@@ -1325,20 +1507,9 @@
       document.getElementById('profile-img').src = PERSONAL_DATA.profileImage;
       document.getElementById('profile-img').alt = `Professional profile photo of ${PERSONAL_DATA.name}`;
 
-      // SEO / browser-tab identity — authored in data/personal.js (seo); applied here so you don't
-      // edit index.html. Overrides the static fallback tags in <head>.
-      if (PERSONAL_DATA.seo) {
-        const seo = PERSONAL_DATA.seo;
-        if (seo.title) document.title = seo.title;
-        const setMeta = (name, val) => {
-          if (!val) return;
-          let m = document.querySelector(`meta[name="${name}"]`);
-          if (!m) { m = document.createElement('meta'); m.setAttribute('name', name); document.head.appendChild(m); }
-          m.setAttribute('content', val);
-        };
-        setMeta('description', seo.description);
-        setMeta('keywords', seo.keywords);
-      }
+      // SEO / browser-tab identity — authored in data/personal.js, applied here so index.html
+      // stays profile-agnostic.
+      applySeo();
 
       // Brand monogram — used for the favicon/tab icon only (auto initials from name)
       const monogram = monogramSVG(initialsFrom(PERSONAL_DATA.name));
@@ -1351,10 +1522,20 @@
       const miniContacts = document.getElementById('mini-contacts');
       miniContacts.innerHTML = '';
       const miniItemClass = 'p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-200';
+
+      // rel="me" marks an off-site profile as belonging to the same person. It's the HTML
+      // counterpart of the JSON-LD `sameAs` list and is what lets search engines merge this
+      // page, the LinkedIn profile and the GitHub account into a single identity.
+      const markExternalProfile = (a, contact) => {
+        if (!/^https?:\/\//i.test(contact.href || '')) return;   // mailto:/tel: aren't profiles
+        a.target = '_blank';
+        a.rel = 'me noopener';
+      };
+
       PERSONAL_DATA.contacts.forEach(contact => {
         const a = document.createElement('a');
         a.href = contact.href;
-        if (contact.type === 'linkedin') a.target = '_blank';
+        markExternalProfile(a, contact);
         a.setAttribute('aria-label', contact.label);
         a.title = contact.label;
         a.className = miniItemClass;
@@ -1375,7 +1556,7 @@
       PERSONAL_DATA.contacts.forEach(contact => {
         const card = document.createElement('a');
         card.href = contact.href;
-        if (contact.type === 'linkedin') card.target = '_blank';
+        markExternalProfile(card, contact);
         // No lift on hover: these sit in a tight 2x2 grid, and a chip that jumped
         // upward under the cursor read as a glitch rather than a response. The cue is
         // the site's standard fill + border + shadow shift, plus the icon tile
@@ -1679,7 +1860,7 @@
         : `<span class="font-bold text-slate-850 dark:text-slate-200">${item.company}</span>`;
 
       if (item.isMerged) {
-        // Merged Multiple-Role Segments (Tata CLiQ)
+        // Merged segment: one employer, several roles over time (entries with `isMerged: true`)
         return `
           <div id="card-${item.id}" onclick="event.stopPropagation(); toggleTimelineCard('${item.id}')" class="w-full text-left bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 hover:border-[var(--brand-color)] hover:shadow-lg backdrop-blur-xl rounded-2xl shadow-sm transition-all duration-300 cursor-pointer overflow-hidden relative group/card border-l-[3.5px] border-l-[var(--brand-color)]">
             <div class="p-5">
