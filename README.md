@@ -1,6 +1,7 @@
 # Interactive Resume Template
 
-A single-page, interactive resume / portfolio site you can host for free on **GitHub Pages**.
+A single-page, interactive resume / portfolio site you can host for free on **GitHub Pages** —
+see it live at [aaronified.github.io](https://aaronified.github.io/) as an example.
 No build step, no framework, no dependencies to install — just static HTML, a CDN copy of
 [Tailwind CSS](https://tailwindcss.com/), [Lucide icons](https://lucide.dev/), and a few plain
 JavaScript data files you edit to make the site your own.

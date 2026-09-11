@@ -321,7 +321,7 @@
     .pdf-switch[aria-checked="true"]::after { transform: translateX(1rem); }
     .pdf-switch:focus-visible { outline: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
 
-    /* Drag-reorder insertion indicator (competencies, contacts, references) */
+    /* Drag-reorder insertion indicator (competencies, contacts, references, projects) */
     .pdf-drag-top { box-shadow: inset 0 3px 0 0 var(--accent); }
     .pdf-drag-bottom { box-shadow: inset 0 -3px 0 0 var(--accent); }
 
@@ -3224,22 +3224,12 @@
 
       // Projects — between Work Experience and Education, matching the printed order. Reuses the
       // shared entry card / achievement machinery (nodes resolved via pdfEntryNode → projects.items).
-      const projects = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
-      const projOrder = (pdfConfig.projects && pdfConfig.projects.order && pdfConfig.projects.order.length)
-        ? pdfConfig.projects.order : projects.map(p => p.id);
-      if (projOrder.length) {
-        const projById = {};
-        projects.forEach(p => { projById[p.id] = p; });
-        let pRows = '';
-        projOrder.forEach(id => {
-          const p = projById[id];
-          if (!p) return;
-          const key = 'proj:' + id;
-          pdfSectionKeys.projects.push(key);
-          pRows += pdfEntryCardHTML(key, p.logo || null, p.name, p.tagline || '', p.period || '', p.highlights || [], {});
-        });
+      const pRows = pdfProjectRowsHTML();
+      if (pRows) {
         const pGlobals = pdfBulkToggleHTML('projects', 'showDescription', 'Descriptions');
-        html += pdfSectionWrap('Projects', 'pdf-proj-badge', pdfSectionKeys.projects, pGlobals, '<div class="space-y-2.5">' + pRows + '</div>');
+        html += pdfSectionWrap('Projects', 'pdf-proj-badge', pdfSectionKeys.projects, pGlobals,
+          '<p class="text-[11px] text-slate-500 dark:text-slate-400 -mt-1 mb-1">Reorder (arrows / drag) to set the order projects print in.</p>' +
+          '<div id="pdf-proj-list" data-sort-list="proj" class="space-y-2.5">' + pRows + '</div>');
       }
 
       const nested = nestInternships(eduList, allInterns);
@@ -3270,6 +3260,33 @@
       return html;
     }
 
+    // Project rows for the customise screen, in pdfConfig.projects.order (the printed order).
+    // Rebuilds pdfSectionKeys.projects so the badge + bulk toggles stay in sync after a reorder.
+    function pdfProjectRowsHTML() {
+      const projects = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
+      const order = (pdfConfig.projects && pdfConfig.projects.order && pdfConfig.projects.order.length)
+        ? pdfConfig.projects.order : projects.map(p => p.id);
+      const projById = {};
+      projects.forEach(p => { projById[p.id] = p; });
+      const live = order.filter(id => projById[id]);
+      pdfSectionKeys.projects = [];
+      return live.map((id, i) => {
+        const p = projById[id];
+        const key = 'proj:' + id;
+        pdfSectionKeys.projects.push(key);
+        return pdfEntryCardHTML(key, p.logo || null, p.name, p.tagline || '', p.period || '', p.highlights || [],
+          { sort: { kind: 'proj', key: id, idx: i, total: live.length } });
+      }).join('');
+    }
+
+    function renderProjectList() {
+      const list = document.getElementById('pdf-proj-list');
+      if (!list) return;
+      list.innerHTML = pdfProjectRowsHTML();
+      if (window.lucide) lucide.createIcons();
+      refreshPdfModifiedHighlights();
+    }
+
     function pdfSectionWrap(title, badgeId, keys, globalsHTML, rowsHTML) {
       const inc = keys.filter(k => { const n = pdfEntryNode(k); return n && n.include; }).length;
       return pdfSectionRowHTML(title, pdfBadgeHTML(badgeId, inc, keys.length), globalsHTML, rowsHTML);
@@ -3287,9 +3304,14 @@
       if (logo) chips += pdfChipToggleHTML('pdf-entry-logo', node.showLogo !== false, 'Logo');
       if (opts.hasScore) chips += pdfChipToggleHTML('pdf-entry-score', node.showScore !== false, 'Score');
       const achBlock = highlights.length ? pdfAchBlockHTML(key, highlights, node) : '';
+      // Sortable entries (projects) carry the shared drag/arrow cluster and sort dataset.
+      const sort = opts.sort;
+      const sortAttrs = sort ? ' data-sort-kind="' + escapeAttr(sort.kind) + '" data-sort-key="' + escapeAttr(sort.key) + '" draggable="true"' : '';
+      const sortHandle = sort ? pdfSortHandleHTML(sort.kind, sort.key, sort.idx, sort.total, primary) : '';
       return '' +
-      '<div class="pdf-entry rounded-2xl' + (opts.isSub ? ' ml-4 border-l-2 border-slate-200/60 dark:border-slate-700/60 pl-3 py-1' : ' border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-3') + ' space-y-2" data-entry-key="' + escapeAttr(key) + '">' +
+      '<div class="pdf-entry' + (sort ? ' pdf-sortable' : '') + ' rounded-2xl' + (opts.isSub ? ' ml-4 border-l-2 border-slate-200/60 dark:border-slate-700/60 pl-3 py-1' : ' border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-3') + ' space-y-2" data-entry-key="' + escapeAttr(key) + '"' + sortAttrs + '>' +
         '<div class="flex items-center gap-2.5">' +
+          sortHandle +
           logoHtml +
           '<span class="flex-1 min-w-0">' +
             '<span class="block font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">' + escapeHtml(primary) + '</span>' +
@@ -3394,17 +3416,19 @@
       window.addEventListener('pagehide', flushPdfSave);
     }
 
-    // Generic reorder shared by competencies / contacts / references (data-sort-kind on each row).
+    // Generic reorder shared by competencies / contacts / references / projects (data-sort-kind on each row).
     function pdfOrderFor(kind) {
       if (kind === 'comp') return pdfConfig.competencies.order;
       if (kind === 'contact') return pdfConfig.contacts.order;
       if (kind === 'reco') return pdfConfig.recommendations.order;
+      if (kind === 'proj') return pdfConfig.projects.order;
       return null;
     }
     function pdfRerenderList(kind) {
       if (kind === 'comp') renderCompetencyList();
       else if (kind === 'contact') renderContactList();
       else if (kind === 'reco') renderRecoList();
+      else if (kind === 'proj') renderProjectList();
     }
     function pdfMove(kind, fromIdx, toIdx, focusDir) {
       const order = pdfOrderFor(kind);
