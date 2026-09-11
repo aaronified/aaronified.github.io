@@ -46,6 +46,17 @@ const CHAT_CONFIG = {
     maxBullets: 3      // highlight bullets quoted per entry
   },
 
+  // Abuse guard. Slurs and abuse are refused before any matching happens, and the
+  // message is replaced by `hiddenLabel` in the transcript instead of being echoed
+  // back onto the page. The stem list lives in index.html; add your own context's
+  // patterns here (strings, compiled case-insensitively) rather than editing it.
+  moderation: {
+    enabled: true,
+    reply: "I'm not going to engage with that. Ask me something about my work and I'll answer from the résumé.",
+    hiddenLabel: "message hidden",
+    extraPatterns: []
+  },
+
   // Question-side phrase rewrites, for where the résumé's wording and a visitor's differ.
   // [what they type, what this résumé calls it] — applied to the question only.
   aliases: [

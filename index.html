@@ -2903,6 +2903,81 @@
       ).join('') + '</div>';
     }
 
+    // --- Moderation ---------------------------------------------------------
+    // A public box that echoes what visitors type needs a guard. Anything matching
+    // below is refused before retrieval runs, and the message is NOT echoed into the
+    // transcript — a slur typed here should never end up rendered on the page.
+    //
+    // The patterns are deliberately short STEMS, matched after chatNormalizeAbuse()
+    // folds case, accents, leetspeak, padding characters and repeated letters, so
+    // "N-1-G-G-3-R" and "f u c k" collapse onto the same stem. Extend for your own
+    // context with CHAT_CONFIG.moderation.extraPatterns rather than editing this list.
+    const CHAT_ABUSE_PATTERNS = [
+      // racial / ethnic
+      /\bnig{1,}(er|ers|a|as|uh)?\b/, /\bnegro(e?s)?\b/, /\bkikes?\b/, /\bspics?\b/,
+      /\bchinks?\b/, /\bgooks?\b/, /\bcoons?\b/, /\bwetbacks?\b/, /\bpakis?\b/,
+      /\bragheads?\b/, /\btowelheads?\b/, /\bjungle bunny\b/, /\bhalf breeds?\b/,
+      // caste / communal
+      /\bchamars?\b/, /\bbhangis?\b/, /\bchuhras?\b/, /\bmlechh?a?s?\b/,
+      // homophobic / transphobic
+      /\bfag{1,}(ot|ots|s)?\b/, /\btrann(y|ies)\b/, /\bshemales?\b/, /\bdykes?\b/, /\bbatty boy\b/,
+      // ableist
+      /\bretard(ed|s)?\b/, /\bmongoloids?\b/, /\bspastics?\b/, /\bspaz(z|zes)?\b/,
+      // misogynist and plain abuse
+      /\bbitch(es|y)?\b/, /\bwhores?\b/, /\bsluts?\b/, /\bcunts?\b/, /\bbastards?\b/,
+      /\bfuck/, /\bshit(head|ty|s)?\b/, /\bassholes?\b/, /\bdickheads?\b/, /\bwankers?\b/,
+      /\bstfu\b/, /\bgtfo\b/,
+      // vowel-elided spellings (f*ck, sh*t, n*gger) once the censor character is dropped
+      /\bfck/, /\bsht\b/, /\bbtch/, /\bcnts?\b/, /\bngg/, /\bfgg?ot/,
+      /\b(madarchod|behenchod|bhenchod|chutiy?a|gandu|randi|harami|bhosdi\w*)\b/
+    ];
+
+    // Fold the tricks people use to slip a word past a matcher: accents, digits for
+    // letters, punctuation padding, and stretched repeats.
+    function chatNormalizeAbuse(str, dropCensors) {
+      let s = String(str == null ? '' : str).toLowerCase();
+      if (s.normalize) s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+      s = s
+        .replace(/[1!|]/g, 'i').replace(/3/g, 'e').replace(/0/g, 'o').replace(/[4@]/g, 'a')
+        .replace(/[5$]/g, 's').replace(/7/g, 't').replace(/8/g, 'b').replace(/[69]/g, 'g');
+      // A censor character sitting BETWEEN two letters is deleted rather than spaced
+      // out, so "f*ck" and "f-u-c-k" close up into one token while "this pic" stays two.
+      if (dropCensors) {
+        let prev;
+        do { prev = s; s = s.replace(/([a-z])[^a-z\s]+([a-z])/g, '$1$2'); } while (s !== prev);
+      }
+      return s
+        .replace(/[^a-z]+/g, ' ')
+        .replace(/(.)\1{2,}/g, '$1$1')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function chatModerationCfg() { return chatCfg().moderation || {}; }
+
+    function chatIsAbusive(str) {
+      const mod = chatModerationCfg();
+      if (mod.enabled === false) return false;
+      const norm = chatNormalizeAbuse(str);
+      if (!norm) return false;
+      const patterns = CHAT_ABUSE_PATTERNS.slice();
+      (mod.extraPatterns || []).forEach(pat => {
+        try { patterns.push(new RegExp(pat, 'i')); } catch (e) {}
+      });
+      const hits = text => patterns.some(rx => rx.test(text));
+      if (hits(norm)) return true;
+
+      const deCensored = chatNormalizeAbuse(str, true);
+      if (deCensored !== norm && hits(deCensored)) return true;
+
+      // Letters spaced out one by one ("n i g g e r") only look like that when someone is
+      // dodging a filter, so it is safe to re-test that one with the gaps closed. Word
+      // boundaries are kept everywhere else, so ordinary text ("this pic", "Scunthorpe")
+      // cannot collide with a stem.
+      if (/(^| )[a-z]( [a-z]){2,}( |$)/.test(norm)) return hits(norm.replace(/ /g, ''));
+      return false;
+    }
+
     // --- Intent shortcuts ---------------------------------------------------
     // A handful of questions that pure retrieval answers badly, and that visitors
     // actually ask. Each reads the same computed fields the page itself renders, so
@@ -2998,6 +3073,14 @@
 
     // --- Reply --------------------------------------------------------------
     function chatReply(question) {
+      if (chatIsAbusive(question)) {
+        return {
+          html: '<p>' + escapeHtml(chatModerationCfg().reply ||
+            "I am not going to engage with that. Ask me something about my work and I'll answer from the r\u00e9sum\u00e9.") + '</p>',
+          blocked: true, suggest: false
+        };
+      }
+
       const intent = chatIntent(question);
       if (intent) return intent;
 
@@ -3053,8 +3136,12 @@
     function chatAsk(question) {
       const text = String(question || '').trim();
       if (!text) return;
-      chatAppend('user', '<p>' + escapeHtml(text) + '</p>', false);
       const reply = chatReply(text);
+      // A refused message is replaced by a placeholder rather than echoed: the point of
+      // the guard is that the words never get rendered on the page.
+      chatAppend('user', reply.blocked
+        ? '<p class="italic opacity-80">' + escapeHtml(chatModerationCfg().hiddenLabel || 'message hidden') + '</p>'
+        : '<p>' + escapeHtml(text) + '</p>', false);
       chatAppend('bot', reply.html, reply.suggest);
     }
 

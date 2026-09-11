@@ -397,6 +397,14 @@ never drift from your data: greetings, *"who are you"*, years of experience (com
 `TRAJECTORY_DATA`, never hard-coded), current role, base location, contact links, and *"list your
 projects"*. Off-résumé personal questions (salary, age, hobbies) get a straight decline.
 
+**Slurs and abuse.** A public box that echoes what people type needs a guard. Anything matching
+the abuse patterns is refused before matching runs, and the message is replaced by
+`moderation.hiddenLabel` in the transcript rather than echoed — a slur typed into it never gets
+rendered on the page. Matching happens after case, accents, leetspeak (`n1gg3r`), censor characters
+(`f*ck`) and stretched letters are folded together, and word boundaries are kept so ordinary words
+are safe (the Scunthorpe problem). Add patterns for your own context with
+`moderation.extraPatterns: ["..."]`; set `moderation.enabled: false` to switch the guard off.
+
 **Tuning it.** If it declines too often, lower `coverage` first, then `minScore`. If it answers
 questions it shouldn't, raise `coverage`. If visitors use a word your résumé doesn't (they type
 "machine learning", you wrote "ML"), add an `aliases` pair rather than rewording your content.
