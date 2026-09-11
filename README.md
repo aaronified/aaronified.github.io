@@ -380,12 +380,14 @@ const CHAT_CONFIG = {
   suggestions: ["What do you do now?", "Tell me about Tippani"],   // chips
   noMatch: "I don't have anything on that…",
   scoring: {
-    minScore: 1.2,     // ↑ = answers less often, says "I don't know" more
-    coverage: 0.55,    // share of the question's meaning the quoted entries must cover
-    relCutoff: 0.45,   // how close a runner-up must score to be quoted too
-    maxResults: 3,     // entries quoted per answer
-    maxBullets: 3,     // highlight bullets quoted per entry
-    k1: 1.2, b: 0.6    // BM25 internals — leave alone unless you know them
+    minScore: 1.2,        // ↑ = answers less often, says "I don't know" more
+    coverage: 0.55,       // share of the question's meaning the quoted entries must cover…
+    strongMatch: 0.65,    // …or answer anyway if the matched words carry this much information
+    noiseTolerance: 1.05, //    and at most this much of the question went unmatched
+    relCutoff: 0.45,      // how close a runner-up must score to be quoted too
+    maxResults: 3,        // entries quoted per answer
+    maxBullets: 3,        // highlight bullets quoted per entry
+    k1: 1.2, b: 0.6       // BM25 internals — leave alone unless you know them
   },
   aliases: [["machine learning", "ml"]],   // [what visitors type, what your résumé calls it]
   stopwords: ["the", "and", "know", "best", …]   // words ignored when matching
@@ -405,9 +407,18 @@ rendered on the page. Matching happens after case, accents, leetspeak (`n1gg3r`)
 are safe (the Scunthorpe problem). Add patterns for your own context with
 `moderation.extraPatterns: ["..."]`; set `moderation.enabled: false` to switch the guard off.
 
-**Tuning it.** If it declines too often, lower `coverage` first, then `minScore`. If it answers
-questions it shouldn't, raise `coverage`. If visitors use a word your résumé doesn't (they type
-"machine learning", you wrote "ML"), add an `aliases` pair rather than rewording your content.
+**Tuning it.** Two gates decide whether a question gets answered: the entries quoted must cover
+`coverage` of the question's meaning, **or** carry `strongMatch` worth of matched content while
+leaving no more than `noiseTolerance` unmatched. `strongMatch` and `noiseTolerance` are measured in
+"words your résumé never uses", so they keep their meaning whatever you write.
+
+- Declines too often → lower `coverage`, then raise `noiseTolerance`.
+- Answers things it shouldn't → lower `noiseTolerance` first (that is the gate a distinctive word
+  in an otherwise unrelated sentence slips through), then raise `coverage`.
+- Visitors use a word you don't (they type "machine learning", you wrote "ML") → add an `aliases`
+  pair rather than rewording your content.
+- A word that is noise in questions but happens to appear in your content ("current", "know",
+  "best") belongs in `stopwords`.
 
 Nothing is stored: no transcript in `localStorage`, no analytics, no requests. Closing the tab
 ends the conversation.

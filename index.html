@@ -2611,7 +2611,9 @@
         minScore: num(s.minScore, 1.2),                  // below this = no answer
         coverage: num(s.coverage, 0.4),                  // share of question words that must hit
         relCutoff: num(s.relCutoff, 0.45),               // keep runners-up this close to the best
-        strongMatch: num(s.strongMatch, 3.0),            // information a match needs to answer regardless
+        strongMatch: num(s.strongMatch, 0.65),           // matched information needed to answer regardless,
+        noiseTolerance: num(s.noiseTolerance, 1.05),     // …and how much unmatched question is tolerable,
+                                                         // both counted in "words the resume never uses"
         maxResults: Math.max(1, num(s.maxResults, 3)),
         maxBullets: Math.max(0, num(s.maxBullets, 3))
       };
@@ -2726,7 +2728,8 @@
     // --- Tokenising ---------------------------------------------------------
     function chatStopwords() {
       if (_chatStop) return _chatStop;
-      _chatStop = new Set((chatCfg().stopwords || []).map(w => String(w).toLowerCase()));
+      const list = chatCfg().stopwords;
+      _chatStop = new Set((Array.isArray(list) ? list : []).map(w => String(w).toLowerCase()));
       return _chatStop;
     }
 
@@ -2735,7 +2738,7 @@
     function chatStem(w) {
       if (w.length > 4 && /ies$/.test(w)) return w.slice(0, -3) + 'y';
       if (w.length > 4 && /(sses|shes|ches|xes)$/.test(w)) return w.slice(0, -2);
-      if (w.length > 3 && /[^su]s$/.test(w)) return w.slice(0, -1);
+      if (w.length > 3 && /[^su]s$/.test(w)) return chatStem(w.slice(0, -1));
       if (w.length > 5 && /ing$/.test(w)) return w.slice(0, -3);
       if (w.length > 4 && /ed$/.test(w)) return w.slice(0, -2);
       // English drops the silent e before those suffixes, so "managed" stems to "manag"
@@ -2785,7 +2788,7 @@
     // "machine learning". Pure data (CHAT_CONFIG.aliases) — no rewriting of the corpus.
     function chatExpandQuery(question) {
       let q = String(question || '').toLowerCase();
-      (chatCfg().aliases || []).forEach(a => {
+      (Array.isArray(chatCfg().aliases) ? chatCfg().aliases : []).forEach(a => {
         const phrase = String(a && a[0] || '').toLowerCase();
         if (!phrase) return;
         const rx = new RegExp('\\b' + phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
@@ -2835,13 +2838,19 @@
       // subject appears nowhere ("do you know kubernetes") stays uncovered and gets declined.
       let matchedIdf = 0;
       terms.forEach(t => { if (hits.some(h => h.doc.tf[t])) matchedIdf += idf[t]; });
-      // Answer when the question is mostly covered OR when what did match carries enough
-      // information on its own. Without the second test a single ordinary verb the resume
-      // never happens to use ("explain", "walk", "summarise") scores the maximum possible
-      // idf, can never be matched, and so vetoes a question whose subject matched perfectly.
-      if ((!totalIdf || matchedIdf / totalIdf < cfg.coverage) && matchedIdf < cfg.strongMatch) {
-        return { hits: [], terms: terms };
-      }
+      if (!totalIdf) return { hits: [], terms: terms };
+
+      // Answer when the question is mostly covered, OR when the matched words carry real
+      // information AND little of the question went unmatched. Without the second test a
+      // single ordinary verb the resume never uses ("explain", "walk") scores the maximum
+      // possible idf, can never match, and vetoes a question whose subject matched perfectly.
+      // Without its noise half, one distinctive noun would drag in any sentence containing
+      // it ("is Tippani a good name for a pet hamster"). Both bars are measured in unknown
+      // words — the idf of a term absent from the corpus — so they scale with the corpus.
+      const unknownIdf = Math.log(1 + (idx.N + 0.5) / 0.5);
+      const strong = matchedIdf >= cfg.strongMatch * unknownIdf &&
+                     (totalIdf - matchedIdf) <= cfg.noiseTolerance * unknownIdf;
+      if (matchedIdf / totalIdf < cfg.coverage && !strong) return { hits: [], terms: terms };
       return { hits: hits, terms: terms };
     }
 
@@ -2997,7 +3006,7 @@
       const norm = chatNormalizeAbuse(str);
       if (!norm) return false;
       const patterns = CHAT_ABUSE_PATTERNS.slice();
-      (mod.extraPatterns || []).forEach(pat => {
+      (Array.isArray(mod.extraPatterns) ? mod.extraPatterns : []).forEach(pat => {
         try { patterns.push(new RegExp(pat, 'i')); } catch (e) {}
       });
       const hits = text => patterns.some(rx => rx.test(text));
@@ -3012,6 +3021,13 @@
       // cannot collide with a stem.
       if (/(^| )[a-z]( [a-z]){2,}( |$)/.test(norm)) return hits(norm.replace(/ /g, ''));
       return false;
+    }
+
+    // True when the question is ONLY the generic phrase an intent matched. "How many years of
+    // experience" is the tenure shortcut; "how many years of Python experience" is a question
+    // about Python and has to fall through to the search rather than get a bare total back.
+    function chatBareIntent(q, rx, generic) {
+      return !chatTokens(String(q).replace(rx, ' ').replace(generic, ' ')).length;
     }
 
     // --- Intent shortcuts ---------------------------------------------------
@@ -3048,7 +3064,7 @@
       // phrase falls through to the search rather than being answered with a bare total.
       const tenureRx = /\b(years? of experience|how many years|how long have you (been )?work|total experience|how experienced)\b/;
       if (tenureRx.test(q) && typeof computeExperience === 'function' &&
-          !chatTokens(q.replace(tenureRx, ' ').replace(/\b(work|working|worked|experience|professional|total|overall)\b/g, ' ')).length) {
+          chatBareIntent(q, tenureRx, /\b(work|working|worked|experience|professional|total|overall)\b/g)) {
         const cr = (typeof currentRole === 'function') ? currentRole() : null;
         return {
           html: p('<strong>' + escapeHtml(computeExperience()) + '</strong> of professional experience' +
@@ -3058,7 +3074,11 @@
         };
       }
 
-      if (/\b(what (do|are) you ((now|currently|presently|these days) )?(do|doing)( now| currently| these days| today)?|current (role|job|position|company|employer)|where do you work( now)?|who do you work for|what is your current|what are you up to)\b/.test(q) && typeof currentRole === 'function') {
+      // Same leftover test as tenure: "what tools do you use in your current role" is a question
+      // about tools, not a request for the job title.
+      const currentRx = /\b(what (do|are) you ((now|currently|presently|these days) )?(do|doing)( now| currently| these days| today)?|current (role|job|position|company|employer)|where do you work( now)?|who do you work for|what is your current|what are you up to)\b/;
+      if (currentRx.test(q) && typeof currentRole === 'function' &&
+          chatBareIntent(q, currentRx, /\b(current|role|job|position|company|employer|work|working|now|today|days|doing|up)\b/g)) {
         const cr = currentRole();
         if (cr) return {
           html: p('I am <strong>' + escapeHtml(cr.role) + '</strong> at <strong>' + escapeHtml(cr.company) + '</strong> (' + escapeHtml(cr.period || '') + ').') +
@@ -3068,7 +3088,11 @@
         };
       }
 
-      if (/\b(where (are|do) you (based|live|located|work from)|which city|(base|current|your) location|are you (open to |willing to )?relocat|where.*(based|located))\b/.test(q)) {
+      // The catch-all "where … based/located" used to answer "where is your MBA college located"
+      // with my own city, so the phrasing must be self-referential and nothing may be left over.
+      const locationRx = /\b(where (are|do) you (based|live|located|work from)|which city do you (live|work)|(base|current) location|are you (open to |willing to )?relocat)\b/;
+      if (locationRx.test(q) &&
+          chatBareIntent(q, locationRx, /\b(base|based|current|location|located|live|living|city|work|working|from|relocate|relocation|relocating)\b/g)) {
         const overview = (typeof OVERVIEW_DATA !== 'undefined') ? OVERVIEW_DATA : {};
         const base = (overview.quickFacts || []).find(f => /base/i.test(f.label));
         const fp = (typeof deriveFootprint === 'function') ? deriveFootprint() : null;
@@ -3092,7 +3116,7 @@
         };
       }
 
-      if (/\b(favou?rite|hobby|hobbies|married|girlfriend|boyfriend|how old|your age|date of birth|birthday|salary|ctc|compensation|pay|religion|caste|politics|horoscope|zodiac|star sign)\b/.test(q))
+      if (/\b(favou?rite (colou?r|food|movie|film|song|book|sport|team|player|drink|place|animal|pet|cuisine)|hobby|hobbies|married|girlfriend|boyfriend|how old|your age|date of birth|birthday|salary|ctc|compensation|expected pay|religion|caste|politics|horoscope|zodiac|star sign)\b/.test(q))
         return {
           html: p('That is not something this r\u00e9sum\u00e9 covers \u2014 I only answer from what is written on this page. Try one of these:'),
           suggest: true
@@ -3152,7 +3176,7 @@
     }
 
     function chatSuggestionsHTML() {
-      const list = chatCfg().suggestions || [];
+      const list = Array.isArray(chatCfg().suggestions) ? chatCfg().suggestions : [];
       if (!list.length) return '';
       return '<div class="flex flex-wrap gap-1.5">' + list.map(s =>
         '<button type="button" class="chat-suggestion px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" data-chat-q="' + escapeAttr(s) + '">' +

@@ -42,8 +42,12 @@ const CHAT_CONFIG = {
     coverage: 0.55,    // …and the quoted entries must cover this share of the question's
                        //    information (rare words count for more than common ones)
     relCutoff: 0.45,   // keep extra hits scoring at least this fraction of the best one
-    strongMatch: 3.0,  // …or answer anyway when the matched words carry this much information,
-                       //    so a word the résumé never uses can't veto a well-matched question
+    // …or answer anyway when the matched words carry enough information AND little of the
+    // question went unmatched. Both are counted in "words the résumé never uses", so they
+    // hold their meaning on any profile: 0.65 ≈ two-thirds of one such word's worth of
+    // matched content, 1.05 ≈ tolerate about one such word in the question.
+    strongMatch: 0.65,
+    noiseTolerance: 1.05,
     maxResults: 3,     // never quote more entries than this in one answer
     maxBullets: 3      // highlight bullets quoted per entry
   },
@@ -91,6 +95,6 @@ const CHAT_CONFIG = {
     "accomplishment", "accomplishments", "achievement", "achievements", "actually", "best",
     "better", "big", "biggest", "ever", "example", "examples", "familiar", "good", "great",
     "greatest", "kind", "know", "knowing", "known", "knows", "main", "major", "need", "proud",
-    "currently", "presently", "really", "sort", "still", "stuff", "thing", "things", "want"
+    "current", "currently", "presently", "really", "sort", "still", "stuff", "thing", "things", "want"
   ]
 };
