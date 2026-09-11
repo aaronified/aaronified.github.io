@@ -2475,6 +2475,8 @@
       box.classList.remove('hidden');
       box.setAttribute('aria-hidden', 'false');
       document.documentElement.style.overflow = 'hidden';
+      const chat = document.getElementById('chat-widget');
+      if (chat) { chat.setAttribute('inert', ''); chat.setAttribute('aria-hidden', 'true'); }
       const closeBtn = document.getElementById('lightbox-close');
       if (closeBtn) closeBtn.focus();
       document.addEventListener('keydown', lightboxKeydown);
@@ -2486,6 +2488,8 @@
       box.setAttribute('aria-hidden', 'true');
       document.documentElement.style.overflow = '';
       document.removeEventListener('keydown', lightboxKeydown);
+      const chat = document.getElementById('chat-widget');
+      if (chat) { chat.removeAttribute('inert'); chat.removeAttribute('aria-hidden'); }
       const img = document.getElementById('lightbox-img');
       if (img) img.src = '';
       if (_lightboxLastFocused && typeof _lightboxLastFocused.focus === 'function') _lightboxLastFocused.focus();
@@ -2607,6 +2611,7 @@
         minScore: num(s.minScore, 1.2),                  // below this = no answer
         coverage: num(s.coverage, 0.4),                  // share of question words that must hit
         relCutoff: num(s.relCutoff, 0.45),               // keep runners-up this close to the best
+        strongMatch: num(s.strongMatch, 3.0),            // information a match needs to answer regardless
         maxResults: Math.max(1, num(s.maxResults, 3)),
         maxBullets: Math.max(0, num(s.maxBullets, 3))
       };
@@ -2733,6 +2738,9 @@
       if (w.length > 3 && /[^su]s$/.test(w)) return w.slice(0, -1);
       if (w.length > 5 && /ing$/.test(w)) return w.slice(0, -3);
       if (w.length > 4 && /ed$/.test(w)) return w.slice(0, -2);
+      // English drops the silent e before those suffixes, so "managed" stems to "manag"
+      // while "manage" would stem to itself. Drop the bare e too and the two meet.
+      if (w.length > 3 && /e$/.test(w)) return w.slice(0, -1);
       return w;
     }
 
@@ -2827,7 +2835,13 @@
       // subject appears nowhere ("do you know kubernetes") stays uncovered and gets declined.
       let matchedIdf = 0;
       terms.forEach(t => { if (hits.some(h => h.doc.tf[t])) matchedIdf += idf[t]; });
-      if (!totalIdf || matchedIdf / totalIdf < cfg.coverage) return { hits: [], terms: terms };
+      // Answer when the question is mostly covered OR when what did match carries enough
+      // information on its own. Without the second test a single ordinary verb the resume
+      // never happens to use ("explain", "walk", "summarise") scores the maximum possible
+      // idf, can never be matched, and so vetoes a question whose subject matched perfectly.
+      if ((!totalIdf || matchedIdf / totalIdf < cfg.coverage) && matchedIdf < cfg.strongMatch) {
+        return { hits: [], terms: terms };
+      }
       return { hits: hits, terms: terms };
     }
 
@@ -2860,6 +2874,15 @@
         out += (out ? '<br><br>' : '') + paras[i];
         len += plainText(paras[i]).length;
         if (len >= 300) { i++; break; }
+      }
+      // One long paragraph has no boundary to cut on, so fall back to the last word break
+      // before the budget and close any marker the cut left open (an odd ` ^ or * would
+      // otherwise print literally).
+      if (i >= paras.length && plainText(out).length > 460) {
+        const cut = out.slice(0, 320);
+        out = cut.slice(0, Math.max(cut.lastIndexOf(' '), 240));
+        ['`', '^', '*'].forEach(ch => { if ((out.split(ch).length - 1) % 2) out += ch; });
+        return { html: formatText(out), trimmed: true };
       }
       return { html: formatText(out), trimmed: i < paras.length };
     }
@@ -2932,10 +2955,23 @@
       /\b(madarchod|behenchod|bhenchod|chutiy?a|gandu|randi|harami|bhosdi\w*)\b/
     ];
 
+    // Cyrillic / Greek characters that render as Latin letters, keyed by the lowercase form.
+    const CHAT_HOMOGLYPHS = {
+      '\u0430': 'a', '\u0432': 'b', '\u0441': 'c', '\u0435': 'e', '\u0440': 'p', '\u043e': 'o',
+      '\u0445': 'x', '\u0443': 'y', '\u0438': 'u', '\u043a': 'k', '\u043c': 'm', '\u043d': 'h',
+      '\u0442': 't', '\u0456': 'i', '\u0458': 'j', '\u0455': 's', '\u04bb': 'h', '\u0501': 'd',
+      '\u03b1': 'a', '\u03b2': 'b', '\u03b5': 'e', '\u03b9': 'i', '\u03ba': 'k', '\u03bd': 'v',
+      '\u03bf': 'o', '\u03c1': 'p', '\u03c3': 'o', '\u03c4': 't', '\u03c5': 'u', '\u03c7': 'x',
+      '\u03bc': 'u', '\u03b7': 'n'
+    };
+
     // Fold the tricks people use to slip a word past a matcher: accents, digits for
     // letters, punctuation padding, and stretched repeats.
     function chatNormalizeAbuse(str, dropCensors) {
       let s = String(str == null ? '' : str).toLowerCase();
+      // Cyrillic and Greek look-alikes read as Latin letters but match none of the stems,
+      // so fold them first: one swapped vowel would otherwise walk a slur straight through.
+      s = s.replace(/[\u0400-\u04ff\u0370-\u03ff]/g, ch => CHAT_HOMOGLYPHS[ch] || ch);
       if (s.normalize) s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
       s = s
         .replace(/[1!|]/g, 'i').replace(/3/g, 'e').replace(/0/g, 'o').replace(/[4@]/g, 'a')
@@ -2998,7 +3034,7 @@
       if (/^(bye|goodbye|good bye|see you|see ya|cya|later|adios)$/.test(q))
         return { html: p('Thanks for reading. The contact links are in the header if you want to get in touch.'), suggest: false };
 
-      if (/^(help|what can you do|what can you answer|what can i ask|what do you know|suggestions|options)$/.test(q))
+      if (/^(help|what can you do|what can you answer|what can i ask( you)?|what can you help( me)? with|what do you know|what should i ask|suggestions|options)$/.test(q))
         return { html: p('I answer from this résumé only — roles, projects, skills, education and the FAQ. Try one of these:'), suggest: true };
 
       if (/\b(are you (a |an )?(ai|bot|robot|chatbot|llm|human|real|person)|who are you|what are you|how do you work|are you chatgpt|are you claude|are you gpt)\b/.test(q))
@@ -3007,7 +3043,12 @@
           suggest: true
         };
 
-      if (/\b(years? of experience|how many years|how long have you (been )?work|total experience|how experienced)\b/.test(q) && typeof computeExperience === 'function') {
+      // Tenure. "how many years of experience" is this shortcut; "how many years of Python
+      // experience" is a question about Python, so anything left over after the generic
+      // phrase falls through to the search rather than being answered with a bare total.
+      const tenureRx = /\b(years? of experience|how many years|how long have you (been )?work|total experience|how experienced)\b/;
+      if (tenureRx.test(q) && typeof computeExperience === 'function' &&
+          !chatTokens(q.replace(tenureRx, ' ').replace(/\b(work|working|worked|experience|professional|total|overall)\b/g, ' ')).length) {
         const cr = (typeof currentRole === 'function') ? currentRole() : null;
         return {
           html: p('<strong>' + escapeHtml(computeExperience()) + '</strong> of professional experience' +
@@ -3017,7 +3058,7 @@
         };
       }
 
-      if (/\b(what (do|are) you (do|doing)( now| currently| these days| today)?|current (role|job|position|company|employer)|where do you work( now)?|who do you work for|what is your current)\b/.test(q) && typeof currentRole === 'function') {
+      if (/\b(what (do|are) you ((now|currently|presently|these days) )?(do|doing)( now| currently| these days| today)?|current (role|job|position|company|employer)|where do you work( now)?|who do you work for|what is your current|what are you up to)\b/.test(q) && typeof currentRole === 'function') {
         const cr = currentRole();
         if (cr) return {
           html: p('I am <strong>' + escapeHtml(cr.role) + '</strong> at <strong>' + escapeHtml(cr.company) + '</strong> (' + escapeHtml(cr.period || '') + ').') +
@@ -3027,7 +3068,7 @@
         };
       }
 
-      if (/\b(where (are|do) you (based|live|located|work from)|which city|base location|are you (open to |willing to )?relocat|where.*(based|located))\b/.test(q)) {
+      if (/\b(where (are|do) you (based|live|located|work from)|which city|(base|current|your) location|are you (open to |willing to )?relocat|where.*(based|located))\b/.test(q)) {
         const overview = (typeof OVERVIEW_DATA !== 'undefined') ? OVERVIEW_DATA : {};
         const base = (overview.quickFacts || []).find(f => /base/i.test(f.label));
         const fp = (typeof deriveFootprint === 'function') ? deriveFootprint() : null;
@@ -3161,7 +3202,9 @@
       document.addEventListener('keydown', chatKeydown);
     }
 
-    function closeChat(restoreFocus) {
+    // focusTarget: an element to focus after closing (the tab a citation jumped to), false to
+    // leave focus alone, or omitted for the launcher — focus must never end up on <body>.
+    function closeChat(focusTarget) {
       const panel = document.getElementById('chat-panel');
       const launcher = document.getElementById('chat-launcher');
       if (!panel || !chatPanelOpen()) return;
@@ -3171,8 +3214,10 @@
       if (launcher) {
         launcher.setAttribute('aria-expanded', 'false');
         launcher.classList.remove('hidden');
-        if (restoreFocus !== false) launcher.focus();
       }
+      if (focusTarget === false) return;
+      const el = (focusTarget && typeof focusTarget.focus === 'function') ? focusTarget : launcher;
+      if (el) el.focus();
     }
 
     // Escape closes the panel — unless a dialog that owns Escape is on top of it.
@@ -3232,7 +3277,7 @@
         if (cite) {
           const section = cite.getAttribute('data-chat-section');
           if (typeof setSection === 'function' && section) setSection(section);
-          closeChat(false);
+          closeChat(document.getElementById('nav-' + section));
           window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         }
       });
@@ -3605,8 +3650,14 @@
       updateResetButton();
       const modal = document.getElementById('pdf-modal');
       if (!modal) return;
-      if (typeof closeChat === 'function') closeChat(false);
       pdfLastFocused = document.activeElement;
+      if (typeof closeChat === 'function') {
+        // Snapshot first: closing the panel would otherwise leave <body> focused, and the
+        // dialog would restore focus to nothing. A caret inside the chat maps to its launcher.
+        const inChat = pdfLastFocused && pdfLastFocused.closest && pdfLastFocused.closest('#chat-widget');
+        closeChat(false);
+        if (inChat) pdfLastFocused = document.getElementById('chat-launcher');
+      }
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
       document.documentElement.style.overflow = 'hidden';
