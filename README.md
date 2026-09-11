@@ -7,7 +7,9 @@ No build step, no framework, no dependencies to install — just static HTML, a 
 JavaScript data files you edit to make the site your own.
 
 It renders five sections — **Overview**, **Career Trajectory**, **Projects**, **FAQ**, and
-**Recommendations** — plus light/dark theming that remembers the visitor's choice.
+**Recommendations** — plus light/dark theming that remembers the visitor's choice and an
+**Ask-me chat** bubble that answers visitors' questions by quoting your own content back at them
+(no API key, no server, no AI).
 
 > The repo currently ships with one person's content as a worked example. To build your own,
 > replace the content in the `data/*.js` files (and a few spots in `index.html`) as described below.
@@ -44,7 +46,8 @@ It renders five sections — **Overview**, **Career Trajectory**, **Projects**, 
 │   ├── trajectory.js       # Career/education timeline
 │   ├── projects.js         # Projects gallery + section config
 │   ├── faqs.js             # Frequently asked questions
-│   └── recommendations.js  # Testimonials + references
+│   ├── recommendations.js  # Testimonials + references
+│   └── chat.js             # Ask-me chat: copy, suggestions, matching thresholds
 ├── assets/                 # Your photo, company/school logos, avatars
 ├── robots.txt              # Crawler rules + sitemap pointer (update the domain)
 ├── sitemap.xml             # Single-URL sitemap (update the domain)
@@ -354,6 +357,52 @@ const REFERENCES_DATA = [
   }
 ];
 ```
+
+### `data/chat.js` — the ask-me chat
+
+A floating **Ask about my work** bubble sits in the bottom-right corner on every tab. A visitor
+types a question; it answers by **quoting the matching entry from your own data files** and links
+to the section it came from.
+
+**There is no AI here, and that is the point.** No API key, no server, no network call — a key
+cannot live in a public static page, and a chatbot that invents your career is worse than none.
+It builds a small search index over `data/*.js` in the browser, ranks entries with BM25, and if
+nothing scores well enough it says *"I don't have anything on that"* and offers suggestions. It
+can only ever say things you have written on the page.
+
+```js
+const CHAT_CONFIG = {
+  enabled: true,                                  // false removes the widget entirely
+  launcher: { label: "Ask about my work", icon: "message-circle" },
+  title: "Ask about my work",
+  greeting: "Ask me anything about my work…",     // first message in the transcript
+  disclaimer: "Not an AI — I search this résumé and quote it back.",
+  suggestions: ["What do you do now?", "Tell me about Tippani"],   // chips
+  noMatch: "I don't have anything on that…",
+  scoring: {
+    minScore: 1.2,     // ↑ = answers less often, says "I don't know" more
+    coverage: 0.55,    // share of the question's meaning the quoted entries must cover
+    relCutoff: 0.45,   // how close a runner-up must score to be quoted too
+    maxResults: 3,     // entries quoted per answer
+    maxBullets: 3,     // highlight bullets quoted per entry
+    k1: 1.2, b: 0.6    // BM25 internals — leave alone unless you know them
+  },
+  aliases: [["machine learning", "ml"]],   // [what visitors type, what your résumé calls it]
+  stopwords: ["the", "and", "know", "best", …]   // words ignored when matching
+};
+```
+
+**What it answers without searching.** A few questions are handled by explicit rules so they can
+never drift from your data: greetings, *"who are you"*, years of experience (computed from
+`TRAJECTORY_DATA`, never hard-coded), current role, base location, contact links, and *"list your
+projects"*. Off-résumé personal questions (salary, age, hobbies) get a straight decline.
+
+**Tuning it.** If it declines too often, lower `coverage` first, then `minScore`. If it answers
+questions it shouldn't, raise `coverage`. If visitors use a word your résumé doesn't (they type
+"machine learning", you wrote "ML"), add an `aliases` pair rather than rewording your content.
+
+Nothing is stored: no transcript in `localStorage`, no analytics, no requests. Closing the tab
+ends the conversation.
 
 ### Images (`assets/`)
 

@@ -362,6 +362,22 @@
     html.reduce-motion [data-reveal] { opacity: 1 !important; transform: none !important; }
 
     /* ==========================================================
+       ASK-ME CHAT WIDGET — screen-only.
+       #chat-widget is a body-level sibling, so the print rule below
+       (`body > *:not(#print-resume){display:none}`) hides it; it also
+       carries print:hidden. Motion follows the site's reduce-motion
+       switch, like every other animation here.
+       ========================================================== */
+    #chat-panel { transform-origin: bottom right; animation: chat-pop 200ms var(--ease-out-soft) both; }
+    @keyframes chat-pop { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+    .reduce-motion #chat-panel { animation: none; }
+    #chat-log { overscroll-behavior: contain; scrollbar-width: thin; }
+    /* A quoted resume entry: accent rule down the left, like the timeline cards. */
+    .chat-quote { border-left: 3px solid var(--accent); }
+    .chat-quote ul { list-style: disc; margin: 0.35rem 0 0; padding-left: 1.05rem; }
+    .chat-quote li { margin: 0.15rem 0; }
+
+    /* ==========================================================
        PRINT / PDF LAYOUT
        The screen app is hidden for print; a compact, purpose-built
        #print-resume block (populated by buildPrintResume()) is shown.
@@ -466,6 +482,7 @@
   <script src="data/projects.js"></script>
   <script src="data/faqs.js"></script>
   <script src="data/recommendations.js"></script>
+  <script src="data/chat.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 transition-colors duration-300 font-sans antialiased overflow-x-hidden relative min-h-screen">
 
@@ -730,6 +747,51 @@
     </button>
   </div>
 
+  <!-- ASK-ME CHAT (screen-only; body-level sibling so the print rule
+       `body > *:not(#print-resume){display:none}` hides it — plus print:hidden.
+       Populated and unhidden by initChat(), only when CHAT_CONFIG.enabled.) -->
+  <div id="chat-widget" class="hidden print:hidden">
+
+    <!-- Floating launcher -->
+    <button id="chat-launcher" type="button" aria-expanded="false" aria-controls="chat-panel"
+      class="fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center gap-2 pl-3.5 pr-4 py-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
+      <i data-lucide="message-circle" id="chat-launcher-icon" class="w-5 h-5"></i>
+      <span id="chat-launcher-label">Ask about my work</span>
+    </button>
+
+    <!-- Panel -->
+    <div id="chat-panel" role="dialog" aria-labelledby="chat-title" aria-hidden="true"
+      class="hidden fixed z-[55] bottom-3 right-3 left-3 sm:left-auto sm:bottom-5 sm:right-5 sm:w-[380px] max-h-[min(78vh,620px)] flex flex-col rounded-3xl bg-white/85 dark:bg-slate-900/85 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-2xl overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex items-start gap-3 px-4 py-3 border-b border-slate-200/50 dark:border-slate-800/50">
+        <img id="chat-avatar" src="" alt="" class="w-9 h-9 rounded-xl object-cover object-top border border-slate-200/60 dark:border-slate-700/60 flex-shrink-0">
+        <div class="flex-1 min-w-0">
+          <h2 id="chat-title" class="text-sm font-bold font-display text-slate-900 dark:text-white truncate">Ask about my work</h2>
+          <p id="chat-disclaimer" class="text-[11px] text-slate-500 dark:text-slate-400 leading-snug"></p>
+        </div>
+        <button id="chat-close" type="button" aria-label="Close chat" class="flex-shrink-0 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Transcript -->
+      <div id="chat-log" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation"
+        class="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-sm"></div>
+
+      <!-- Composer -->
+      <form id="chat-form" class="flex items-center gap-2 px-3 py-3 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
+        <label for="chat-input" class="sr-only">Ask a question about this r&eacute;sum&eacute;</label>
+        <input id="chat-input" name="q" type="text" autocomplete="off" maxlength="200" placeholder="Ask a question&hellip;"
+          class="flex-1 min-w-0 px-3 py-2 rounded-xl text-sm bg-white/70 dark:bg-slate-950/50 border border-slate-300/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
+        <button type="submit" aria-label="Send question" class="flex-shrink-0 p-2.5 rounded-xl bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:bg-indigo-500 dark:hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+          <i data-lucide="send-horizontal" class="w-4 h-4"></i>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
   <!-- APPLICATION JAVASCRIPT -->
   <script>
     // Constants & DOM Nodes
@@ -744,6 +806,7 @@
       initReveals();          // register scroll-reveals before the first pane is shown
       attachPdfModalHandlers();
       buildPrintResume();
+      initChat();
 
       // Restore the active tab (and PDF dialog) from the URL so they survive reloads.
       _applyingRoute = true; applyRoute(true); _applyingRoute = false;
@@ -2522,6 +2585,576 @@
     }
 
     /* ============================================================
+       ASK-ME CHAT — client-side Q&A over the resume content.
+       No network call, no API key, no language model. buildChatDocs()
+       turns every data/*.js record into a small document, chatSearch()
+       ranks them with BM25, and chatReply() answers by QUOTING the best
+       matches and linking to the section they came from. Questions that
+       clear no threshold get an honest "I don't have that" plus chips.
+       All behaviour (copy, suggestions, thresholds) lives in
+       data/chat.js — CHAT_CONFIG — like PROJECTS_CONFIG does for the
+       projects gallery.
+       ============================================================ */
+    function chatCfg() { return (typeof CHAT_CONFIG !== 'undefined' && CHAT_CONFIG) ? CHAT_CONFIG : {}; }
+
+    // Scoring knobs, each falling back to a sane default if the data file omits it.
+    function chatScoring() {
+      const s = chatCfg().scoring || {};
+      const num = (v, d) => (typeof v === 'number' && isFinite(v)) ? v : d;
+      return {
+        k1: num(s.k1, 1.2),                              // term-frequency saturation
+        b: num(s.b, 0.6),                                // length normalisation
+        minScore: num(s.minScore, 1.2),                  // below this = no answer
+        coverage: num(s.coverage, 0.4),                  // share of question words that must hit
+        relCutoff: num(s.relCutoff, 0.45),               // keep runners-up this close to the best
+        maxResults: Math.max(1, num(s.maxResults, 3)),
+        maxBullets: Math.max(0, num(s.maxBullets, 3))
+      };
+    }
+
+    // Section a quote can be cited back to (id -> on-screen tab label).
+    const CHAT_SECTIONS = {
+      overview: 'Overview',
+      workex: 'Career Trajectory',
+      projects: 'Projects',
+      faq: 'FAQ',
+      recommendations: 'Recommendations'
+    };
+
+    let _chatIndex = null;
+    let _chatStop = null;
+
+    // --- Corpus -------------------------------------------------------------
+    // One retrievable document. `body`/`bullets` keep the inline markers (they are
+    // rendered with formatText); chatTokens() indexes their plain-text form.
+    function chatDoc(o) {
+      return {
+        id: o.id, kind: o.kind, section: o.section,
+        title: o.title || '', subtitle: o.subtitle || '', meta: o.meta || '',
+        body: o.body || '', bullets: o.bullets || [], keywords: o.keywords || []
+      };
+    }
+
+    function buildChatDocs() {
+      const docs = [];
+      const person = (typeof PERSONAL_DATA !== 'undefined') ? PERSONAL_DATA : {};
+      const overview = (typeof OVERVIEW_DATA !== 'undefined') ? OVERVIEW_DATA : {};
+
+      // Profile summary.
+      if (overview.bio) {
+        docs.push(chatDoc({
+          id: 'bio', kind: 'bio', section: 'overview',
+          title: person.name || 'Profile', subtitle: person.title || '', body: overview.bio,
+          keywords: ['about', 'profile', 'summary', 'background', 'bio', 'yourself', 'introduction', 'who']
+        }));
+      }
+
+      // Core competencies — the skills questions land here.
+      (overview.competencies || []).forEach((c, i) => docs.push(chatDoc({
+        id: 'comp-' + i, kind: 'competency', section: 'overview',
+        title: c.title, subtitle: 'Core competency', body: c.description,
+        keywords: (c.skills || []).concat(['skill', 'skills', 'expertise', 'strength', 'tools', 'tech', 'technology', 'stack'])
+      })));
+
+      // Career trajectory. Merged employers (roles: [...]) contribute one document per
+      // sub-role, so "what did you do at Tata CLiQ" can quote the right stint.
+      const kindWords = {
+        role: ['job', 'role', 'work', 'worked', 'working', 'experience', 'company', 'employer', 'position'],
+        education: ['education', 'degree', 'college', 'university', 'studied', 'study', 'school', 'course', 'grade', 'score', 'cgpa', 'gpa', 'qualification'],
+        internship: ['internship', 'intern', 'trainee']
+      };
+      ((typeof TRAJECTORY_DATA !== 'undefined') ? TRAJECTORY_DATA : []).forEach(e => {
+        const kind = e.type === 'education' ? 'education' : (e.type === 'internship' ? 'internship' : 'role');
+        const base = [e.company, e.location, e.period].filter(Boolean).concat(kindWords[kind]);
+        if (Array.isArray(e.roles) && e.roles.length) {
+          e.roles.forEach((r, i) => docs.push(chatDoc({
+            id: e.id + '-' + i, kind: kind, section: 'workex',
+            title: r.role, subtitle: e.company,
+            meta: [r.period || e.period, e.location].filter(Boolean).join('  ·  '),
+            body: r.description, bullets: r.highlights || [],
+            keywords: base.concat([r.role])
+          })));
+        } else {
+          docs.push(chatDoc({
+            id: e.id, kind: kind, section: 'workex',
+            title: e.role, subtitle: e.company,
+            meta: [e.period, e.location, e.score ? 'Score: ' + e.score : ''].filter(Boolean).join('  ·  '),
+            body: e.description, bullets: e.highlights || [],
+            keywords: base.concat([e.role])
+          }));
+        }
+      });
+
+      // Projects.
+      ((typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : []).forEach(p => docs.push(chatDoc({
+        id: 'proj-' + p.id, kind: 'project', section: 'projects',
+        title: p.name, subtitle: p.tagline || '',
+        meta: [p.status, p.period].filter(Boolean).join('  ·  '),
+        body: p.summary, bullets: p.highlights || [],
+        keywords: (p.tech || []).concat(['project', 'projects', 'built', 'build', 'side', 'open', 'source', 'github', 'repo', 'code'])
+      })));
+
+      // FAQ — the question line is the title, so paraphrases of it match strongly.
+      ((typeof FAQS_DATA !== 'undefined') ? FAQS_DATA : []).forEach((f, i) => docs.push(chatDoc({
+        id: 'faq-' + i, kind: 'faq', section: 'faq',
+        title: f.question, body: f.answer,
+        keywords: ['faq', 'philosophy', 'approach', 'opinion', 'view', 'think']
+      })));
+
+      // Recommendations (quote text included) and professional references (names only).
+      const peopleWords = ['recommendation', 'recommendations', 'testimonial', 'reference', 'references',
+        'endorsement', 'colleague', 'manager', 'reportee', 'team', 'says', 'said', 'feedback', 'vouch'];
+      ((typeof RECOMMENDATIONS_DATA !== 'undefined') ? RECOMMENDATIONS_DATA : []).forEach((r, i) => docs.push(chatDoc({
+        id: 'rec-' + i, kind: 'recommendation', section: 'recommendations',
+        title: r.author, subtitle: r.title || '', meta: r.relationship || '', body: r.text,
+        keywords: peopleWords
+      })));
+      ((typeof REFERENCES_DATA !== 'undefined') ? REFERENCES_DATA : []).forEach((r, i) => docs.push(chatDoc({
+        id: 'ref-' + i, kind: 'reference', section: 'recommendations',
+        title: r.name, subtitle: r.title || '', meta: r.relationship || '',
+        keywords: peopleWords
+      })));
+
+      return docs;
+    }
+
+    // --- Tokenising ---------------------------------------------------------
+    function chatStopwords() {
+      if (_chatStop) return _chatStop;
+      _chatStop = new Set((chatCfg().stopwords || []).map(w => String(w).toLowerCase()));
+      return _chatStop;
+    }
+
+    // Deliberately crude stemmer: plurals plus -ing/-ed. Enough to make "analytics"/
+    // "analytic" and "building"/"build" agree without pulling in a stemming library.
+    function chatStem(w) {
+      if (w.length > 4 && /ies$/.test(w)) return w.slice(0, -3) + 'y';
+      if (w.length > 4 && /(sses|shes|ches|xes)$/.test(w)) return w.slice(0, -2);
+      if (w.length > 3 && /[^su]s$/.test(w)) return w.slice(0, -1);
+      if (w.length > 5 && /ing$/.test(w)) return w.slice(0, -3);
+      if (w.length > 4 && /ed$/.test(w)) return w.slice(0, -2);
+      return w;
+    }
+
+    // plainText() strips the inline markers and any HTML (FAQ answers carry <br>).
+    function chatTokens(str) {
+      const stop = chatStopwords();
+      const out = [];
+      plainText(str).toLowerCase().replace(/[^a-z0-9]+/g, ' ').split(' ').forEach(w => {
+        if (w.length > 1 && !stop.has(w)) out.push(chatStem(w));
+      });
+      return out;
+    }
+
+    // --- Index --------------------------------------------------------------
+    // Built once, lazily, on first open. Fields are weighted by multiplying the term
+    // frequency: a hit in a title counts for three body hits.
+    function getChatIndex() {
+      if (_chatIndex) return _chatIndex;
+      const docs = buildChatDocs();
+      const df = Object.create(null);
+      let totalLen = 0;
+      docs.forEach(d => {
+        const fields = [
+          { s: [d.title, d.subtitle].filter(Boolean).join(' '), w: 3 },
+          { s: (d.keywords || []).join(' '), w: 2 },
+          { s: [d.body, (d.bullets || []).join(' '), d.meta].filter(Boolean).join(' '), w: 1 }
+        ];
+        const tf = Object.create(null);
+        let len = 0;
+        fields.forEach(f => chatTokens(f.s).forEach(t => { tf[t] = (tf[t] || 0) + f.w; len++; }));
+        d.tf = tf;
+        d.len = len || 1;
+        totalLen += d.len;
+        Object.keys(tf).forEach(t => { df[t] = (df[t] || 0) + 1; });
+      });
+      const n = docs.length || 1;
+      _chatIndex = { docs: docs, N: n, avgLen: (totalLen / n) || 1, df: df };
+      return _chatIndex;
+    }
+
+    // Phrase aliases, applied to the QUESTION only: the resume writes "ML", visitors type
+    // "machine learning". Pure data (CHAT_CONFIG.aliases) — no rewriting of the corpus.
+    function chatExpandQuery(question) {
+      let q = String(question || '').toLowerCase();
+      (chatCfg().aliases || []).forEach(a => {
+        const phrase = String(a && a[0] || '').toLowerCase();
+        if (!phrase) return;
+        const rx = new RegExp('\\b' + phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
+        q = q.replace(rx, ' ' + String(a[1] || '') + ' ');
+      });
+      return q;
+    }
+
+    // BM25. Returns the accepted hits (possibly none) plus the query terms, which the
+    // renderer reuses to pick which highlight bullets to quote.
+    function chatSearch(question) {
+      const idx = getChatIndex();
+      const cfg = chatScoring();
+      const terms = [];
+      chatTokens(chatExpandQuery(question)).forEach(t => { if (terms.indexOf(t) < 0) terms.push(t); });
+      if (!terms.length) return { hits: [], terms: terms };
+
+      // Coverage is weighted by idf, not by term count: matching a common word like
+      // "know" must not make "do you know kubernetes" look answered when the word that
+      // carries the question (kubernetes) appears nowhere in the resume.
+      const idf = {};
+      let totalIdf = 0;
+      terms.forEach(t => {
+        const df = idx.df[t] || 0;
+        idf[t] = Math.log(1 + (idx.N - df + 0.5) / (df + 0.5));
+        totalIdf += idf[t];
+      });
+
+      const scored = [];
+      idx.docs.forEach(d => {
+        let score = 0;
+        terms.forEach(t => {
+          const f = d.tf[t] || 0;
+          if (!f) return;
+          score += idf[t] * (f * (cfg.k1 + 1)) / (f + cfg.k1 * (1 - cfg.b + cfg.b * d.len / idx.avgLen));
+        });
+        if (score > 0) scored.push({ doc: d, score: score });
+      });
+      scored.sort((a, b) => b.score - a.score);
+
+      const best = scored[0];
+      if (!best || best.score < cfg.minScore) return { hits: [], terms: terms };
+      const hits = scored.filter(h => h.score >= best.score * cfg.relCutoff).slice(0, cfg.maxResults);
+
+      // Coverage is measured across the entries we would actually quote, so a two-subject
+      // question ("Tippani and data-sampler") is covered by the pair, while a question whose
+      // subject appears nowhere ("do you know kubernetes") stays uncovered and gets declined.
+      let matchedIdf = 0;
+      terms.forEach(t => { if (hits.some(h => h.doc.tf[t])) matchedIdf += idf[t]; });
+      if (!totalIdf || matchedIdf / totalIdf < cfg.coverage) return { hits: [], terms: terms };
+      return { hits: hits, terms: terms };
+    }
+
+    // --- Answer composition -------------------------------------------------
+    // The bio and the FAQ answers are written in the first person, so the bot quotes
+    // them as me. The disclaimer under the header is what keeps that honest.
+    function chatLeadIn(d) {
+      switch (d.kind) {
+        case 'role':           return 'From my time at <strong>' + escapeHtml(d.subtitle) + '</strong>:';
+        case 'internship':     return 'From my internship at <strong>' + escapeHtml(d.subtitle) + '</strong>:';
+        case 'education':      return 'From my education:';
+        case 'project':        return 'From my projects:';
+        case 'faq':            return 'I have written about that:';
+        case 'competency':     return 'That sits in my core competencies:';
+        case 'recommendation': return 'Here is what <strong>' + escapeHtml(d.title) + '</strong> wrote:';
+        case 'reference':      return 'One of my professional references:';
+        case 'bio':            return 'The short version:';
+        default:               return 'From my résumé:';
+      }
+    }
+
+    // Long entries (mainly FAQ answers) are trimmed on paragraph boundaries so an
+    // inline marker is never cut in half; the cite button leads to the full text.
+    function chatTrim(body) {
+      const full = String(body || '');
+      if (plainText(full).length <= 460) return { html: formatText(full), trimmed: false };
+      const paras = full.split(/<br\s*\/?>\s*<br\s*\/?>/i);
+      let out = '', len = 0, i = 0;
+      for (; i < paras.length; i++) {
+        out += (out ? '<br><br>' : '') + paras[i];
+        len += plainText(paras[i]).length;
+        if (len >= 300) { i++; break; }
+      }
+      return { html: formatText(out), trimmed: i < paras.length };
+    }
+
+    // Prefer the highlight bullets that actually mention the question's words.
+    function chatPickBullets(bullets, terms) {
+      const cfg = chatScoring();
+      if (!bullets || !bullets.length || !cfg.maxBullets) return [];
+      const scored = bullets.map((b, i) => {
+        const toks = chatTokens(b);
+        let hits = 0;
+        terms.forEach(t => { if (toks.indexOf(t) >= 0) hits++; });
+        return { b: b, i: i, hits: hits };
+      });
+      const matched = scored.filter(x => x.hits > 0);
+      const pool = matched.length ? matched.slice().sort((a, b) => b.hits - a.hits || a.i - b.i) : scored;
+      return pool.slice(0, cfg.maxBullets).sort((a, b) => a.i - b.i).map(x => x.b);
+    }
+
+    function chatCardHTML(hit, terms) {
+      const d = hit.doc;
+      const bullets = chatPickBullets(d.bullets, terms);
+      const quote = d.body ? chatTrim(d.body) : null;
+      return '<div class="chat-quote pl-3">' +
+        '<div class="font-semibold text-slate-800 dark:text-slate-100">' + escapeHtml(d.title) + '</div>' +
+        (d.subtitle && d.subtitle !== d.title
+          ? '<div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">' + escapeHtml(d.subtitle) + '</div>' : '') +
+        (d.meta ? '<div class="text-[11px] text-slate-400 dark:text-slate-500">' + escapeHtml(d.meta) + '</div>' : '') +
+        (quote ? '<p class="mt-1 leading-relaxed">' + quote.html + (quote.trimmed ? ' <span class="text-slate-400">…</span>' : '') + '</p>' : '') +
+        (bullets.length ? '<ul class="mt-1 text-slate-600 dark:text-slate-300">' +
+          bullets.map(b => '<li>' + formatText(b) + '</li>').join('') + '</ul>' : '') +
+      '</div>';
+    }
+
+    // "See Career Trajectory" buttons — one per distinct section the answer quoted.
+    function chatCiteHTML(sections) {
+      if (!sections.length) return '';
+      return '<div class="flex flex-wrap gap-1.5 pt-1">' + sections.map(id =>
+        '<button type="button" class="chat-cite inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-indigo-600 dark:text-amber-400 bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/20 dark:border-amber-400/20 hover:bg-indigo-500/10 dark:hover:bg-amber-400/10 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" data-chat-section="' + escapeAttr(id) + '">' +
+          'See ' + escapeHtml(CHAT_SECTIONS[id] || id) + '<i data-lucide="arrow-right" class="w-3 h-3"></i></button>'
+      ).join('') + '</div>';
+    }
+
+    // --- Intent shortcuts ---------------------------------------------------
+    // A handful of questions that pure retrieval answers badly, and that visitors
+    // actually ask. Each reads the same computed fields the page itself renders, so
+    // they can never drift from the resume.
+    function chatIntent(raw) {
+      const q = String(raw || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!q) return null;
+      const cfg = chatCfg();
+      const person = (typeof PERSONAL_DATA !== 'undefined') ? PERSONAL_DATA : {};
+      const p = t => '<p>' + t + '</p>';
+
+      if (/^(hi|hey|hello|yo|hola|namaste|howdy|hi there|hey there|good (morning|afternoon|evening))$/.test(q))
+        return { html: p('Hello. ' + escapeHtml(cfg.greeting || 'Ask me about my work.')), suggest: true };
+
+      if (/^(thanks|thanks a lot|thank you|thank you so much|thx|ty|cheers|nice|cool|awesome|great|perfect|ok|okay|got it)$/.test(q))
+        return { html: p('Any time. Ask away if something else comes up.'), suggest: false };
+
+      if (/^(bye|goodbye|good bye|see you|see ya|cya|later|adios)$/.test(q))
+        return { html: p('Thanks for reading. The contact links are in the header if you want to get in touch.'), suggest: false };
+
+      if (/^(help|what can you do|what can you answer|what can i ask|what do you know|suggestions|options)$/.test(q))
+        return { html: p('I answer from this résumé only — roles, projects, skills, education and the FAQ. Try one of these:'), suggest: true };
+
+      if (/\b(are you (a |an )?(ai|bot|robot|chatbot|llm|human|real|person)|who are you|what are you|how do you work|are you chatgpt|are you claude|are you gpt)\b/.test(q))
+        return {
+          html: p('I am a small search box with a chat skin — no AI model behind me. I match your question against what is written on this page and quote it back, with a link to where it came from. Anything not on the page, I cannot answer.'),
+          suggest: true
+        };
+
+      if (/\b(years? of experience|how many years|how long have you (been )?work|total experience|how experienced)\b/.test(q) && typeof computeExperience === 'function') {
+        const cr = (typeof currentRole === 'function') ? currentRole() : null;
+        return {
+          html: p('<strong>' + escapeHtml(computeExperience()) + '</strong> of professional experience' +
+            (cr ? ', currently ' + escapeHtml(cr.role) + ' at ' + escapeHtml(cr.company) + '.' : '.')) +
+            chatCiteHTML(['workex']),
+          suggest: false
+        };
+      }
+
+      if (/\b(what (do|are) you (do|doing)( now| currently| these days| today)?|current (role|job|position|company|employer)|where do you work( now)?|who do you work for|what is your current)\b/.test(q) && typeof currentRole === 'function') {
+        const cr = currentRole();
+        if (cr) return {
+          html: p('I am <strong>' + escapeHtml(cr.role) + '</strong> at <strong>' + escapeHtml(cr.company) + '</strong> (' + escapeHtml(cr.period || '') + ').') +
+            (cr.description ? '<div class="chat-quote pl-3"><p>' + formatText(cr.description) + '</p></div>' : '') +
+            chatCiteHTML(['workex']),
+          suggest: false
+        };
+      }
+
+      if (/\b(where (are|do) you (based|live|located|work from)|which city|base location|are you (open to |willing to )?relocat|where.*(based|located))\b/.test(q)) {
+        const overview = (typeof OVERVIEW_DATA !== 'undefined') ? OVERVIEW_DATA : {};
+        const base = (overview.quickFacts || []).find(f => /base/i.test(f.label));
+        const fp = (typeof deriveFootprint === 'function') ? deriveFootprint() : null;
+        if (base || fp) return {
+          html: p((base ? 'Based in <strong>' + escapeHtml(base.value) + '</strong>. ' : '') + (fp ? escapeHtml(fp.text) + '.' : '')),
+          suggest: false
+        };
+      }
+
+      if (/\b(contact (you|details|info|information)|how (can|do) i (contact|reach)|get in touch|reach out|reach you|your (email|e mail|phone|number|linkedin|github)|email address|hire you|work with you)\b/.test(q)) {
+        const list = (person.contacts || []);
+        if (list.length) return {
+          html: p('Here are my contact links:') +
+            '<ul class="space-y-1">' + list.map(c => {
+              const ext = /^https?:/i.test(c.href || '');
+              return '<li><a href="' + escapeAttr(c.href || '#') + '"' + (ext ? ' target="_blank" rel="noopener"' : '') +
+                ' class="inline-flex items-center gap-1.5 font-semibold text-indigo-600 dark:text-amber-400 hover:underline focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded">' +
+                '<i data-lucide="' + escapeAttr(c.icon || 'link') + '" class="w-3.5 h-3.5"></i>' + escapeHtml(c.label || c.href) + '</a></li>';
+            }).join('') + '</ul>',
+          suggest: false
+        };
+      }
+
+      if (/\b(favou?rite|hobby|hobbies|married|girlfriend|boyfriend|how old|your age|date of birth|birthday|salary|ctc|compensation|pay|religion|caste|politics|horoscope|zodiac|star sign)\b/.test(q))
+        return {
+          html: p('That is not something this r\u00e9sum\u00e9 covers \u2014 I only answer from what is written on this page. Try one of these:'),
+          suggest: true
+        };
+
+      if (/\b(what projects|which projects|list (your |the )?projects|your projects|what have you built|what did you build|side projects|open source)\b/.test(q)) {
+        const list = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
+        if (list.length) return {
+          html: p('I have ' + list.length + ' projects on this site:') +
+            '<ul class="space-y-1">' + list.map(pr =>
+              '<li><strong>' + escapeHtml(pr.name) + '</strong>' + (pr.tagline ? ' — ' + escapeHtml(pr.tagline) : '') + '</li>').join('') + '</ul>' +
+            chatCiteHTML(['projects']),
+          suggest: false
+        };
+      }
+
+      return null;
+    }
+
+    // --- Reply --------------------------------------------------------------
+    function chatReply(question) {
+      const intent = chatIntent(question);
+      if (intent) return intent;
+
+      const res = chatSearch(question);
+      if (!res.hits.length) {
+        return {
+          html: '<p>' + escapeHtml(chatCfg().noMatch || "I don't have anything on that in this résumé. Try one of these:") + '</p>',
+          suggest: true
+        };
+      }
+
+      const sections = [];
+      let html = '<p>' + chatLeadIn(res.hits[0].doc) + '</p>';
+      res.hits.forEach((h, i) => {
+        if (i === 1) html += '<p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 pt-1">Also on this</p>';
+        html += chatCardHTML(h, res.terms);
+        if (sections.indexOf(h.doc.section) < 0) sections.push(h.doc.section);
+      });
+      return { html: html + chatCiteHTML(sections), suggest: false };
+    }
+
+    // --- Widget -------------------------------------------------------------
+    let _chatSeeded = false;
+
+    function chatPanelOpen() {
+      const panel = document.getElementById('chat-panel');
+      return !!panel && !panel.classList.contains('hidden');
+    }
+
+    function chatSuggestionsHTML() {
+      const list = chatCfg().suggestions || [];
+      if (!list.length) return '';
+      return '<div class="flex flex-wrap gap-1.5">' + list.map(s =>
+        '<button type="button" class="chat-suggestion px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" data-chat-q="' + escapeAttr(s) + '">' +
+        escapeHtml(s) + '</button>').join('') + '</div>';
+    }
+
+    // Append one turn. Bot turns may be followed by the suggestion chips.
+    function chatAppend(who, html, withChips) {
+      const log = document.getElementById('chat-log');
+      if (!log) return;
+      const turn = document.createElement('div');
+      turn.className = who === 'user' ? 'flex justify-end' : 'flex justify-start';
+      turn.innerHTML = '<div class="' + (who === 'user'
+        ? 'max-w-[85%] px-3 py-2 rounded-2xl rounded-br-md bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 font-medium'
+        : 'max-w-[93%] px-3 py-2.5 rounded-2xl rounded-bl-md bg-slate-100/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 space-y-2') +
+        '">' + html + (who === 'user' || !withChips ? '' : chatSuggestionsHTML()) + '</div>';
+      log.appendChild(turn);
+      if (window.lucide) lucide.createIcons();
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function chatAsk(question) {
+      const text = String(question || '').trim();
+      if (!text) return;
+      chatAppend('user', '<p>' + escapeHtml(text) + '</p>', false);
+      const reply = chatReply(text);
+      chatAppend('bot', reply.html, reply.suggest);
+    }
+
+    function openChat() {
+      const panel = document.getElementById('chat-panel');
+      const launcher = document.getElementById('chat-launcher');
+      if (!panel || chatPanelOpen()) return;
+      panel.classList.remove('hidden');
+      panel.setAttribute('aria-hidden', 'false');
+      if (launcher) { launcher.setAttribute('aria-expanded', 'true'); launcher.classList.add('hidden'); }
+      if (!_chatSeeded) {
+        _chatSeeded = true;
+        chatAppend('bot', '<p>' + escapeHtml(chatCfg().greeting || 'Ask me about my work.') + '</p>', true);
+      }
+      const input = document.getElementById('chat-input');
+      if (input) input.focus();
+      document.addEventListener('keydown', chatKeydown);
+    }
+
+    function closeChat(restoreFocus) {
+      const panel = document.getElementById('chat-panel');
+      const launcher = document.getElementById('chat-launcher');
+      if (!panel || !chatPanelOpen()) return;
+      panel.classList.add('hidden');
+      panel.setAttribute('aria-hidden', 'true');
+      document.removeEventListener('keydown', chatKeydown);
+      if (launcher) {
+        launcher.setAttribute('aria-expanded', 'false');
+        launcher.classList.remove('hidden');
+        if (restoreFocus !== false) launcher.focus();
+      }
+    }
+
+    // Escape closes the panel — unless a dialog that owns Escape is on top of it.
+    function chatKeydown(e) {
+      if (e.key !== 'Escape') return;
+      const lb = document.getElementById('lightbox');
+      if (lb && !lb.classList.contains('hidden')) return;
+      if (typeof isPdfModalOpen === 'function' && isPdfModalOpen()) return;
+      e.preventDefault();
+      closeChat();
+    }
+
+    function initChat() {
+      const widget = document.getElementById('chat-widget');
+      if (!widget) return;
+      const cfg = chatCfg();
+      if (cfg.enabled === false) { widget.remove(); return; }
+
+      const person = (typeof PERSONAL_DATA !== 'undefined') ? PERSONAL_DATA : {};
+      const launcherCfg = cfg.launcher || {};
+      const label = document.getElementById('chat-launcher-label');
+      const icon = document.getElementById('chat-launcher-icon');
+      const title = document.getElementById('chat-title');
+      const disclaimer = document.getElementById('chat-disclaimer');
+      const avatar = document.getElementById('chat-avatar');
+      if (label) label.textContent = launcherCfg.label || 'Ask about my work';
+      if (icon && launcherCfg.icon) icon.setAttribute('data-lucide', launcherCfg.icon);
+      if (title) title.textContent = cfg.title || launcherCfg.label || 'Ask about my work';
+      if (disclaimer) disclaimer.textContent = cfg.disclaimer || 'Not an AI — I search this résumé and quote it back.';
+      const launcher = document.getElementById('chat-launcher');
+      if (launcher) launcher.setAttribute('aria-label', (launcherCfg.label || 'Ask about my work') + ' — opens a question box');
+      if (avatar) {
+        if (person.profileImage) { avatar.src = person.profileImage; avatar.alt = person.name || ''; }
+        else avatar.remove();
+      }
+
+      launcher && launcher.addEventListener('click', openChat);
+      const closeBtn = document.getElementById('chat-close');
+      if (closeBtn) closeBtn.addEventListener('click', () => closeChat());
+
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('chat-input');
+      if (form) form.addEventListener('submit', e => {
+        e.preventDefault();
+        if (!input) return;
+        const q = input.value;
+        input.value = '';
+        chatAsk(q);
+      });
+
+      // One delegated handler for the suggestion chips and the "See <section>" citations.
+      const log = document.getElementById('chat-log');
+      if (log) log.addEventListener('click', e => {
+        const chip = e.target.closest('.chat-suggestion');
+        if (chip) { chatAsk(chip.getAttribute('data-chat-q')); return; }
+        const cite = e.target.closest('.chat-cite');
+        if (cite) {
+          const section = cite.getAttribute('data-chat-section');
+          if (typeof setSection === 'function' && section) setSection(section);
+          closeChat(false);
+          window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        }
+      });
+
+      widget.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* ============================================================
        PDF EXPORT SELECTION SCREEN
        An intermediate modal (opened by the "Print PDF" triggers) that
        curates what buildPrintResume() renders — competency order/text,
@@ -2885,12 +3518,15 @@
       updateResetButton();
       const modal = document.getElementById('pdf-modal');
       if (!modal) return;
+      if (typeof closeChat === 'function') closeChat(false);
       pdfLastFocused = document.activeElement;
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
       document.documentElement.style.overflow = 'hidden';
       const shell = document.getElementById('app-shell');
       if (shell) { shell.setAttribute('inert', ''); shell.setAttribute('aria-hidden', 'true'); }
+      const chat = document.getElementById('chat-widget');
+      if (chat) { chat.setAttribute('inert', ''); chat.setAttribute('aria-hidden', 'true'); }
       pdfKeydownHandler = function (e) {
         if (e.key === 'Escape') { e.preventDefault(); closePdfModal(); return; }
         if (e.key === 'Tab') pdfTrapFocus(e);
@@ -2910,6 +3546,8 @@
       document.documentElement.style.overflow = '';
       const shell = document.getElementById('app-shell');
       if (shell) { shell.removeAttribute('inert'); shell.removeAttribute('aria-hidden'); }
+      const chat = document.getElementById('chat-widget');
+      if (chat) { chat.removeAttribute('inert'); chat.removeAttribute('aria-hidden'); }
       if (pdfKeydownHandler) { modal.removeEventListener('keydown', pdfKeydownHandler); pdfKeydownHandler = null; }
       if (pdfLastFocused && typeof pdfLastFocused.focus === 'function') pdfLastFocused.focus();
       syncHash();     // drop the /pdf segment from the URL when the dialog closes
