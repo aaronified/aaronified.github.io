@@ -2611,9 +2611,8 @@
         minScore: num(s.minScore, 1.2),                  // below this = no answer
         coverage: num(s.coverage, 0.4),                  // share of question words that must hit
         relCutoff: num(s.relCutoff, 0.45),               // keep runners-up this close to the best
-        strongMatch: num(s.strongMatch, 0.65),           // matched information needed to answer regardless,
-        noiseTolerance: num(s.noiseTolerance, 1.05),     // …and how much unmatched question is tolerable,
-                                                         // both counted in "words the resume never uses"
+        strongMatch: num(s.strongMatch, 0.65),           // information a partial answer needs, counted
+                                                         // in "words the resume never uses"
         maxResults: Math.max(1, num(s.maxResults, 3)),
         maxBullets: Math.max(0, num(s.maxBullets, 3))
       };
@@ -2840,18 +2839,20 @@
       terms.forEach(t => { if (hits.some(h => h.doc.tf[t])) matchedIdf += idf[t]; });
       if (!totalIdf) return { hits: [], terms: terms };
 
-      // Answer when the question is mostly covered, OR when the matched words carry real
-      // information AND little of the question went unmatched. Without the second test a
-      // single ordinary verb the resume never uses ("explain", "walk") scores the maximum
-      // possible idf, can never match, and vetoes a question whose subject matched perfectly.
-      // Without its noise half, one distinctive noun would drag in any sentence containing
-      // it ("is Tippani a good name for a pet hamster"). Both bars are measured in unknown
-      // words — the idf of a term absent from the corpus — so they scale with the corpus.
+      // Three outcomes, not two:
+      //   covered        — the entries answer the question; quote them plainly.
+      //   partial        — something real matched but much of the question did not; quote it
+      //                    under a hedge rather than announcing it as the answer.
+      //   nothing        — decline.
+      // A single threshold cannot do better: "tell me about a challenge you faced" and "is
+      // Tippani tasty" are identical to any word-counting measure (one rare word matched, one
+      // unknown word left over). Hedging is honest for both, where declining loses the first
+      // and answering plainly overclaims the second. The partial bar is measured in unknown
+      // words — the idf of a term absent from the corpus — so it scales with any corpus.
       const unknownIdf = Math.log(1 + (idx.N + 0.5) / 0.5);
-      const strong = matchedIdf >= cfg.strongMatch * unknownIdf &&
-                     (totalIdf - matchedIdf) <= cfg.noiseTolerance * unknownIdf;
-      if (matchedIdf / totalIdf < cfg.coverage && !strong) return { hits: [], terms: terms };
-      return { hits: hits, terms: terms };
+      const covered = matchedIdf / totalIdf >= cfg.coverage;
+      if (!covered && matchedIdf < cfg.strongMatch * unknownIdf) return { hits: [], terms: terms };
+      return { hits: hits, terms: terms, partial: !covered };
     }
 
     // --- Answer composition -------------------------------------------------
@@ -3053,7 +3054,8 @@
       if (/^(help|what can you do|what can you answer|what can i ask( you)?|what can you help( me)? with|what do you know|what should i ask|suggestions|options)$/.test(q))
         return { html: p('I answer from this résumé only — roles, projects, skills, education and the FAQ. Try one of these:'), suggest: true };
 
-      if (/\b(are you (a |an )?(ai|bot|robot|chatbot|llm|human|real|person)|who are you|what are you|how do you work|are you chatgpt|are you claude|are you gpt)\b/.test(q))
+      if (/^(who|what) are you( exactly| really)?$/.test(q) || /^(how|what) (do|does) (you|this) work$/.test(q) ||
+          /\b(are you (a |an )?(ai|bot|robot|chatbot|llm|human|real person)|are you chatgpt|are you claude|are you gpt)\b/.test(q))
         return {
           html: p('I am a small search box with a chat skin — no AI model behind me. I match your question against what is written on this page and quote it back, with a link to where it came from. Anything not on the page, I cannot answer.'),
           suggest: true
@@ -3062,7 +3064,7 @@
       // Tenure. "how many years of experience" is this shortcut; "how many years of Python
       // experience" is a question about Python, so anything left over after the generic
       // phrase falls through to the search rather than being answered with a bare total.
-      const tenureRx = /\b(years? of experience|how many years|how long have you (been )?work|total experience|how experienced)\b/;
+      const tenureRx = /\b(years? of experience|how many years|how long have you (been )?work(ed|ing)?|total( work)? experience|how much experience|how experienced)\b/;
       if (tenureRx.test(q) && typeof computeExperience === 'function' &&
           chatBareIntent(q, tenureRx, /\b(work|working|worked|experience|professional|total|overall)\b/g)) {
         const cr = (typeof currentRole === 'function') ? currentRole() : null;
@@ -3090,9 +3092,9 @@
 
       // The catch-all "where … based/located" used to answer "where is your MBA college located"
       // with my own city, so the phrasing must be self-referential and nothing may be left over.
-      const locationRx = /\b(where (are|do) you (based|live|located|work from)|which city do you (live|work)|(base|current) location|are you (open to |willing to )?relocat)\b/;
+      const locationRx = /\b(where (are|do) you ((currently|presently|now) )?(based|live|living|located|work from)|(which|what) city (are|do) you|your (base )?location|(base|current) location|are you (currently |presently )?based|are you (open to |willing to )?relocat)\b/;
       if (locationRx.test(q) &&
-          chatBareIntent(q, locationRx, /\b(base|based|current|location|located|live|living|city|work|working|from|relocate|relocation|relocating)\b/g)) {
+          chatBareIntent(q, locationRx, /\b(base|based|current|location|located|live|living|city|work|working|from|relocate|relocation|relocating|in)\b/g)) {
         const overview = (typeof OVERVIEW_DATA !== 'undefined') ? OVERVIEW_DATA : {};
         const base = (overview.quickFacts || []).find(f => /base/i.test(f.label));
         const fp = (typeof deriveFootprint === 'function') ? deriveFootprint() : null;
@@ -3158,7 +3160,9 @@
       }
 
       const sections = [];
-      let html = '<p>' + chatLeadIn(res.hits[0].doc) + '</p>';
+      let html = '<p>' + (res.partial
+        ? escapeHtml(chatCfg().partialLeadIn || "I don't have a direct answer for that. The closest thing on my r\u00e9sum\u00e9:")
+        : chatLeadIn(res.hits[0].doc)) + '</p>';
       res.hits.forEach((h, i) => {
         if (i === 1) html += '<p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 pt-1">Also on this</p>';
         html += chatCardHTML(h, res.terms);

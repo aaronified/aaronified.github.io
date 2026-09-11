@@ -33,21 +33,24 @@ const CHAT_CONFIG = {
   // Shown when nothing clears the scoring thresholds below.
   noMatch: "I don't have anything on that in this résumé — I only answer from what's on this page. Try one of these:",
 
+  // Used when something matched but most of the question didn't: the entry is still worth
+  // showing, but calling it "the answer" would overclaim.
+  partialLeadIn: "I don't have a direct answer for that. The closest thing on my résumé:",
+
   // Retrieval tuning (BM25). Raise minScore/coverage to make the bot more willing to say
   // "I don't know"; lower them to make it answer more loosely.
   scoring: {
     k1: 1.2,           // term-frequency saturation
     b: 0.6,            // length normalisation
     minScore: 1.2,     // best hit must clear this, or it's a no-match
-    coverage: 0.55,    // …and the quoted entries must cover this share of the question's
-                       //    information (rare words count for more than common ones)
+    coverage: 0.45,    // …and the quoted entries must cover this share of the question's
+                       //    information (rare words count for more than common ones) to be
+                       //    given as a straight answer
     relCutoff: 0.45,   // keep extra hits scoring at least this fraction of the best one
-    // …or answer anyway when the matched words carry enough information AND little of the
-    // question went unmatched. Both are counted in "words the résumé never uses", so they
-    // hold their meaning on any profile: 0.65 ≈ two-thirds of one such word's worth of
-    // matched content, 1.05 ≈ tolerate about one such word in the question.
+    // …below that, a match carrying at least this much information is still quoted, but
+    // under `partialLeadIn` rather than as a straight answer. Counted in "words the résumé
+    // never uses", so it holds its meaning on any profile.
     strongMatch: 0.65,
-    noiseTolerance: 1.05,
     maxResults: 3,     // never quote more entries than this in one answer
     maxBullets: 3      // highlight bullets quoted per entry
   },
@@ -93,8 +96,11 @@ const CHAT_CONFIG = {
     "very", "was", "we", "were", "what", "when", "where", "which", "while", "who", "whom", "why",
     "will", "with", "would", "you", "your", "yours",
     "accomplishment", "accomplishments", "achievement", "achievements", "actually", "best",
+    "favorite", "favourite",
     "better", "big", "biggest", "ever", "example", "examples", "familiar", "good", "great",
     "greatest", "kind", "know", "knowing", "known", "knows", "main", "major", "need", "proud",
-    "current", "currently", "presently", "really", "sort", "still", "stuff", "thing", "things", "want"
+    "current", "currently", "presently", "really", "sort", "still", "stuff", "thing", "things", "want",
+    // question framing that says nothing about WHICH entry is wanted
+    "describe", "elaborate", "explain", "summarise", "summarize", "walk"
   ]
 };

@@ -381,9 +381,8 @@ const CHAT_CONFIG = {
   noMatch: "I don't have anything on that…",
   scoring: {
     minScore: 1.2,        // ↑ = answers less often, says "I don't know" more
-    coverage: 0.55,       // share of the question's meaning the quoted entries must cover…
-    strongMatch: 0.65,    // …or answer anyway if the matched words carry this much information
-    noiseTolerance: 1.05, //    and at most this much of the question went unmatched
+    coverage: 0.45,       // cover this share of the question → answered straight…
+    strongMatch: 0.65,    // …below that, this much matched information → answered under a hedge
     relCutoff: 0.45,      // how close a runner-up must score to be quoted too
     maxResults: 3,        // entries quoted per answer
     maxBullets: 3,        // highlight bullets quoted per entry
@@ -407,18 +406,27 @@ rendered on the page. Matching happens after case, accents, leetspeak (`n1gg3r`)
 are safe (the Scunthorpe problem). Add patterns for your own context with
 `moderation.extraPatterns: ["..."]`; set `moderation.enabled: false` to switch the guard off.
 
-**Tuning it.** Two gates decide whether a question gets answered: the entries quoted must cover
-`coverage` of the question's meaning, **or** carry `strongMatch` worth of matched content while
-leaving no more than `noiseTolerance` unmatched. `strongMatch` and `noiseTolerance` are measured in
-"words your résumé never uses", so they keep their meaning whatever you write.
+**Three answers, not two.** Every question lands in one of three places:
 
-- Declines too often → lower `coverage`, then raise `noiseTolerance`.
-- Answers things it shouldn't → lower `noiseTolerance` first (that is the gate a distinctive word
-  in an otherwise unrelated sentence slips through), then raise `coverage`.
+| The quoted entries… | Reply |
+|---|---|
+| cover `coverage` of the question | answered straight — *"From my time at Allcargo Gati:"* |
+| cover less, but carry `strongMatch` worth of matched content | answered under `partialLeadIn` — *"I don't have a direct answer for that. The closest thing on my résumé:"* |
+| match nothing worth showing | `noMatch` + suggestion chips |
+
+The middle tier exists because no threshold can separate *"tell me about a challenge you faced"*
+from *"is Tippani tasty?"* — to any word-counting measure they are identical (one rare word
+matched, one unknown word left over). Declining loses the first; answering plainly overclaims the
+second; showing the entry under a hedge is honest for both. `strongMatch` is measured in "words
+your résumé never uses", so it keeps its meaning whatever you write.
+
+**Tuning it.**
+- Hedges questions it should answer straight → lower `coverage`.
+- Declines things it should at least show → lower `strongMatch`.
 - Visitors use a word you don't (they type "machine learning", you wrote "ML") → add an `aliases`
   pair rather than rewording your content.
-- A word that is noise in questions but happens to appear in your content ("current", "know",
-  "best") belongs in `stopwords`.
+- A word that is noise in questions but happens to appear in your content ("current", "explain",
+  "favourite", "know", "best") belongs in `stopwords` — that is the single most effective knob.
 
 Nothing is stored: no transcript in `localStorage`, no analytics, no requests. Closing the tab
 ends the conversation.
