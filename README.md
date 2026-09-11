@@ -6,7 +6,7 @@ No build step, no framework, no dependencies to install — just static HTML, a 
 [Tailwind CSS](https://tailwindcss.com/), [Lucide icons](https://lucide.dev/), and a few plain
 JavaScript data files you edit to make the site your own.
 
-It renders four sections — **Overview**, **Career Trajectory**, **FAQ**, and
+It renders five sections — **Overview**, **Career Trajectory**, **Projects**, **FAQ**, and
 **Recommendations** — plus light/dark theming that remembers the visitor's choice.
 
 > The repo currently ships with one person's content as a worked example. To build your own,
@@ -500,6 +500,8 @@ browser's print dialog — choose *Save as PDF*. This prints a **separate, compa
   City | Role | Period` + a detail row with the description and **achievement bullets**), separated
   by rules. Making each role a block lets a multi-role employer flow across a page break instead of
   leaving a big gap.
+- **Projects** — name, summary, achievement bullets, tech line and the primary link, in the order
+  you set on the selection screen.
 - **Education** — degrees, with any **internships nested under the college** attended at that time
   (matched automatically by date).
 - **Colours:** body text is dark grey, headings are black, and all inline highlights render as
@@ -530,6 +532,9 @@ Per-item toggles are packed into compact rows to keep scrolling short.
   education). Per entry: include, compact Description / Logo / (Score) toggles, and an achievement
   count (− / +) with a *Choose which to hide* pick-list (default: drop from the last backward).
   Education descriptions are off by default (they duplicate the degree title) but can be switched on.
+- **Projects** — reorderable (▲/▼ arrows or drag) so they print in the order you want. Universal:
+  Descriptions. Per project: include, Description toggle, and the same achievement count (− / +)
+  with a *Choose which to hide* pick-list. Projects flagged `wip: true` are off by default.
 - **References** — **off by default.** Universal: Photos, Titles, Relationships, Contacts. Merges your
   recommenders *and* professional references (`RECOMMENDATIONS_DATA` + `REFERENCES_DATA`) into one
   combined list — the recommendation quote text is never included. Per person (reorderable): include,
