@@ -2897,7 +2897,8 @@
       return { html: formatText(out), trimmed: i < paras.length };
     }
 
-    // Prefer the highlight bullets that actually mention the question's words.
+    // Prefer the highlight bullets that actually mention the question's words. Returns
+    // {b, i} pairs so the caller can record which ones the visitor has already seen.
     function chatPickBullets(bullets, terms) {
       const cfg = chatScoring();
       if (!bullets || !bullets.length || !cfg.maxBullets) return [];
@@ -2909,12 +2910,14 @@
       });
       const matched = scored.filter(x => x.hits > 0);
       const pool = matched.length ? matched.slice().sort((a, b) => b.hits - a.hits || a.i - b.i) : scored;
-      return pool.slice(0, cfg.maxBullets).sort((a, b) => a.i - b.i).map(x => x.b);
+      return pool.slice(0, cfg.maxBullets).sort((a, b) => a.i - b.i);
     }
 
     function chatCardHTML(hit, terms) {
       const d = hit.doc;
       const bullets = chatPickBullets(d.bullets, terms);
+      const seen = _chatShown[d.id] || (_chatShown[d.id] = []);
+      bullets.forEach(x => { if (seen.indexOf(x.i) < 0) seen.push(x.i); });
       const quote = d.body ? chatTrim(d.body) : null;
       return '<div class="chat-quote pl-3">' +
         '<div class="font-semibold text-slate-800 dark:text-slate-100">' + escapeHtml(d.title) + '</div>' +
@@ -2923,7 +2926,7 @@
         (d.meta ? '<div class="text-[11px] text-slate-400 dark:text-slate-500">' + escapeHtml(d.meta) + '</div>' : '') +
         (quote ? '<p class="mt-1 leading-relaxed">' + quote.html + (quote.trimmed ? ' <span class="text-slate-400">…</span>' : '') + '</p>' : '') +
         (bullets.length ? '<ul class="mt-1 text-slate-600 dark:text-slate-300">' +
-          bullets.map(b => '<li>' + formatText(b) + '</li>').join('') + '</ul>' : '') +
+          bullets.map(x => '<li>' + formatText(x.b) + '</li>').join('') + '</ul>' : '') +
       '</div>';
     }
 
@@ -3072,7 +3075,7 @@
           html: p('<strong>' + escapeHtml(computeExperience()) + '</strong> of professional experience' +
             (cr ? ', currently ' + escapeHtml(cr.role) + ' at ' + escapeHtml(cr.company) + '.' : '.')) +
             chatCiteHTML(['workex']),
-          suggest: false
+          suggest: false, followDoc: cr ? cr.id : null
         };
       }
 
@@ -3086,7 +3089,7 @@
           html: p('I am <strong>' + escapeHtml(cr.role) + '</strong> at <strong>' + escapeHtml(cr.company) + '</strong> (' + escapeHtml(cr.period || '') + ').') +
             (cr.description ? '<div class="chat-quote pl-3"><p>' + formatText(cr.description) + '</p></div>' : '') +
             chatCiteHTML(['workex']),
-          suggest: false
+          suggest: false, followDoc: cr.id
         };
       }
 
@@ -3131,7 +3134,7 @@
             '<ul class="space-y-1">' + list.map(pr =>
               '<li><strong>' + escapeHtml(pr.name) + '</strong>' + (pr.tagline ? ' — ' + escapeHtml(pr.tagline) : '') + '</li>').join('') + '</ul>' +
             chatCiteHTML(['projects']),
-          suggest: false
+          suggest: false, followDoc: 'proj-' + list[0].id
         };
       }
 
@@ -3168,7 +3171,210 @@
         html += chatCardHTML(h, res.terms);
         if (sections.indexOf(h.doc.section) < 0) sections.push(h.doc.section);
       });
-      return { html: html + chatCiteHTML(sections), suggest: false };
+      // A straight answer earns three follow-ups built from what it quoted; a hedge falls back
+      // to the starter questions, which steer back to ground the resume actually covers.
+      return { html: html + chatCiteHTML(sections), suggest: !!res.partial, hits: res.hits, partial: !!res.partial };
+    }
+
+    // --- Follow-up suggestions ----------------------------------------------
+    // Three chips under every direct answer, built from the resume's own structure rather
+    // than a fixed list: the rest of this entry, the other role at that employer, someone who
+    // worked there, the neighbouring job, a skill, a sibling project, a related FAQ.
+    //
+    // The rule that keeps them honest: a candidate is offered ONLY if asking it really does
+    // return the entry it promises (chatFollowupValid). Anything the resume cannot back up —
+    // a project with no highlights, a skill that appears nowhere else — silently drops out.
+    const CHAT_CHIP_CLASS = 'px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors';
+
+    const _chatAsked = new Set();     // questions this visitor has already asked
+    const _chatOffered = new Set();   // chips already offered, so they don't repeat
+    const _chatShown = {};            // docId -> highlight indices already quoted
+
+    function chatNorm(q) { return String(q || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+    function chatFollowCfg() {
+      const f = chatCfg().followups || {};
+      const n = Number(f.count);
+      return {
+        enabled: f.enabled !== false,
+        count: (isFinite(n) && n > 0) ? Math.floor(n) : 3,
+        label: typeof f.label === 'string' ? f.label : 'Go deeper',
+        padWithSuggestions: f.padWithSuggestions !== false,
+        templates: (f.templates && typeof f.templates === 'object') ? f.templates : {}
+      };
+    }
+
+    // Fill a template. An unfilled {placeholder} means the data wasn't there, so no chip.
+    function chatTpl(name, vars, fallback) {
+      const t = chatFollowCfg().templates;
+      let out = (typeof t[name] === 'string') ? t[name] : fallback;
+      if (!out) return '';
+      Object.keys(vars || {}).forEach(k => { out = out.split('{' + k + '}').join(vars[k] == null ? '' : vars[k]); });
+      return /\{[a-z]+\}/i.test(out) ? '' : out;
+    }
+
+    // "Allcargo Gati Limited" and a recommender's "…in Allcargo Gati" are the same employer.
+    function chatCompanyKey(name) {
+      return String(name || '').toLowerCase()
+        .replace(/\(.*?\)/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\b(limited|ltd|pvt|private|inc|llc|group|company|technologies|industries)\b/g, ' ')
+        .trim().split(' ').slice(0, 2).join(' ');
+    }
+
+    // A candidate is real only if asking it returns the entry it points at, as a straight
+    // answer. This is what makes a dead-end chip impossible.
+    function chatFollowupValid(q, targetId) {
+      if (!q || chatIsAbusive(q)) return false;
+      if (chatIntent(q)) return !targetId;
+      const res = chatSearch(q);
+      if (!res.hits.length || res.partial) return false;
+      return targetId ? res.hits[0].doc.id === targetId : true;
+    }
+
+    function chatDocsOf(kinds) {
+      return getChatIndex().docs.filter(d => kinds.indexOf(d.kind) >= 0);
+    }
+
+    // Every follow-up this entry can support, tagged by generator so the three chips end up
+    // pointing in three different directions.
+    function chatFollowupCandidates(doc) {
+      const out = [];
+      const docs = getChatIndex().docs;
+      const add = (gen, q, target, more) => { if (q) out.push({ gen: gen, q: q, target: target, more: more }); };
+      const company = doc.subtitle || doc.title;
+
+      // The rest of this entry. Not a re-query — asking again returns the same bullets — so the
+      // chip renders the unshown ones directly.
+      const shown = _chatShown[doc.id] || [];
+      if ((doc.bullets || []).length > shown.length && (doc.kind === 'role' || doc.kind === 'project' ||
+          doc.kind === 'internship' || doc.kind === 'education')) {
+        add('more', chatTpl('more', { company: doc.kind === 'project' ? doc.title : company },
+          'What else did you deliver at {company}?'), doc.id, doc.id);
+      }
+
+      if (doc.kind === 'role' || doc.kind === 'internship' || doc.kind === 'education') {
+        // The employer's other stint (merged roles share a subtitle).
+        const sibling = docs.filter(d => d.id !== doc.id && d.subtitle && d.subtitle === doc.subtitle)[0];
+        if (sibling) add('sibling', chatTpl('sibling', { company: company }, 'What was your other role at {company}?'), sibling.id);
+
+        // Someone whose relationship names this employer.
+        const key = chatCompanyKey(company);
+        const person = key && chatDocsOf(['recommendation', 'reference'])
+          .filter(d => chatCompanyKey(d.meta || '').indexOf(key) >= 0 || chatNorm(d.meta || '').indexOf(key) >= 0)[0];
+        if (person) add('people', chatTpl('people', { company: company }, 'Who can vouch for your work at {company}?'), person.id);
+
+        // The job either side of this one in the timeline.
+        const line = docs.filter(d => d.kind === 'role' || d.kind === 'internship' || d.kind === 'education');
+        const at = line.findIndex(d => d.id === doc.id);
+        const next = line[at + 1], prev = line[at - 1];
+        if (next) add('chrono', chatTpl('before', { company: next.subtitle || next.title }, 'What did you do before that, at {company}?'), next.id);
+        else if (prev) add('chrono', chatTpl('after', { company: prev.subtitle || prev.title }, 'What came after that, at {company}?'), prev.id);
+      }
+
+      if (doc.kind === 'project') {
+        const other = chatDocsOf(['project']).filter(d => d.id !== doc.id)[0];
+        if (other) add('project', chatTpl('project', { project: other.title }, 'What is {project}?'), other.id);
+      }
+
+      // A skill named in this entry, pointing at wherever it is covered in depth.
+      (doc.keywords || []).slice(0, 12).forEach(k => {
+        const skill = String(k || '');
+        if (skill.length < 3 || /^(project|projects|built|build|side|open|source|github|repo|code|skill|skills|job|role|work|worked|working|experience|company|employer|position)$/i.test(skill)) return;
+        const target = docs.filter(d => d.id !== doc.id && chatTokens(skill).every(t => d.tf[t]))[0];
+        if (target) add('skill', chatTpl('skill', { skill: skill }, 'Where have you used {skill}?'), target.id);
+      });
+
+      // A person, for an answer that quoted one.
+      if (doc.kind === 'recommendation' || doc.kind === 'reference') {
+        const other = chatDocsOf(['recommendation', 'reference']).filter(d => d.id !== doc.id)[0];
+        if (other) add('person', chatTpl('person', { person: other.title }, 'What did {person} say about you?'), other.id);
+      }
+
+      // The FAQ that overlaps this entry most, as its own question.
+      const terms = chatTokens([doc.title, doc.body].join(' '));
+      let bestFaq = null, bestHits = 0;
+      chatDocsOf(['faq']).forEach(f => {
+        if (f.id === doc.id) return;
+        let n = 0;
+        terms.forEach(t => { if (f.tf[t]) n++; });
+        if (n > bestHits) { bestHits = n; bestFaq = f; }
+      });
+      if (bestFaq) add('faq', bestFaq.title, bestFaq.id);
+
+      return out;
+    }
+
+    // Pick the chips: at most one per generator, in depth-first order, each validated, none
+    // repeated. Tops up from the starter questions when the resume runs out of links.
+    function chatFollowups(hits) {
+      const cfg = chatFollowCfg();
+      if (!cfg.enabled || !hits || !hits.length) return [];
+      const GENS = ['more', 'sibling', 'people', 'chrono', 'skill', 'project', 'person', 'faq'];
+
+      const pick = () => {
+        const byGen = {};
+        hits.slice(0, 2).forEach(h => chatFollowupCandidates(h.doc).forEach(c => {
+          const key = chatNorm(c.q);
+          if (!key || _chatAsked.has(key)) return;
+          if (!c.more && _chatOffered.has(key)) return;
+          (byGen[c.gen] = byGen[c.gen] || []).push(c);
+        }));
+        const got = [];
+        GENS.forEach(gen => {
+          if (got.length >= cfg.count) return;
+          const list = byGen[gen] || [];
+          for (let i = 0; i < list.length; i++) {
+            if (list[i].more || chatFollowupValid(list[i].q, list[i].target)) { got.push(list[i]); break; }
+          }
+        });
+        return got;
+      };
+
+      let picked = pick();
+      // Everything already offered? Let the pool come back rather than showing nothing.
+      if (!picked.length && _chatOffered.size) { _chatOffered.clear(); picked = pick(); }
+
+      if (picked.length < cfg.count && cfg.padWithSuggestions) {
+        (Array.isArray(chatCfg().suggestions) ? chatCfg().suggestions : []).forEach(s => {
+          const key = chatNorm(s);
+          if (picked.length >= cfg.count || !key || _chatAsked.has(key) || _chatOffered.has(key)) return;
+          if (picked.some(c => chatNorm(c.q) === key)) return;
+          if (!chatFollowupValid(s, null)) return;   // a fork may have deleted what it points at
+          picked.push({ gen: 'pad', q: s });
+        });
+      }
+      picked = picked.slice(0, cfg.count);
+      picked.forEach(c => { if (!c.more) _chatOffered.add(chatNorm(c.q)); });
+      return picked;
+    }
+
+    function chatFollowupsHTML(list) {
+      if (!list || !list.length) return '';
+      return '<div class="pt-1 space-y-1.5">' +
+        '<div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">' +
+          escapeHtml(chatFollowCfg().label) + '</div>' +
+        '<div class="flex flex-wrap gap-1.5">' + list.map(c => c.more
+          ? '<button type="button" class="chat-more ' + CHAT_CHIP_CLASS + '" data-chat-doc="' + escapeAttr(c.more) + '" data-chat-q="' + escapeAttr(c.q) + '">' + escapeHtml(c.q) + '</button>'
+          : '<button type="button" class="chat-suggestion ' + CHAT_CHIP_CLASS + '" data-chat-q="' + escapeAttr(c.q) + '">' + escapeHtml(c.q) + '</button>').join('') +
+        '</div></div>';
+    }
+
+    // "What else did you deliver at X" — quote the highlights that have not been shown yet.
+    function chatMoreBullets(docId) {
+      const doc = getChatIndex().docs.filter(d => d.id === docId)[0];
+      if (!doc) return;
+      const shown = _chatShown[docId] || (_chatShown[docId] = []);
+      const rest = [];
+      (doc.bullets || []).forEach((b, i) => { if (shown.indexOf(i) < 0) rest.push({ b: b, i: i }); });
+      if (!rest.length) { chatAppend('bot', '<p>That is everything on that one.</p>', chatSuggestionsHTML()); return; }
+      const take = rest.slice(0, chatScoring().maxBullets);
+      take.forEach(x => shown.push(x.i));
+      const html = '<p>More from <strong>' + escapeHtml(doc.subtitle || doc.title) + '</strong>:</p>' +
+        '<div class="chat-quote pl-3"><ul class="text-slate-600 dark:text-slate-300">' +
+          take.map(x => '<li>' + formatText(x.b) + '</li>').join('') +
+        '</ul></div>' + chatCiteHTML([doc.section]);
+      chatAppend('bot', html, chatFollowupsHTML(chatFollowups([{ doc: doc }])));
     }
 
     // --- Widget -------------------------------------------------------------
@@ -3180,15 +3386,19 @@
     }
 
     function chatSuggestionsHTML() {
-      const list = Array.isArray(chatCfg().suggestions) ? chatCfg().suggestions : [];
+      let list = (Array.isArray(chatCfg().suggestions) ? chatCfg().suggestions : [])
+        .filter(q => chatFollowupValid(q, null));          // never offer a question that dead-ends
+      const fresh = list.filter(q => !_chatAsked.has(chatNorm(q)));
+      list = fresh.length ? fresh : list;
       if (!list.length) return '';
       return '<div class="flex flex-wrap gap-1.5">' + list.map(s =>
-        '<button type="button" class="chat-suggestion px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" data-chat-q="' + escapeAttr(s) + '">' +
+        '<button type="button" class="chat-suggestion ' + CHAT_CHIP_CLASS + '" data-chat-q="' + escapeAttr(s) + '">' +
         escapeHtml(s) + '</button>').join('') + '</div>';
     }
 
-    // Append one turn. Bot turns may be followed by the suggestion chips.
-    function chatAppend(who, html, withChips) {
+    // Append one turn. `chips` is ready-made chip HTML ('' for none) — follow-ups after an
+    // answer, the starter questions after a decline.
+    function chatAppend(who, html, chips) {
       const log = document.getElementById('chat-log');
       if (!log) return;
       const turn = document.createElement('div');
@@ -3196,7 +3406,7 @@
       turn.innerHTML = '<div class="' + (who === 'user'
         ? 'max-w-[85%] px-3 py-2 rounded-2xl rounded-br-md bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 font-medium'
         : 'max-w-[93%] px-3 py-2.5 rounded-2xl rounded-bl-md bg-slate-100/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 space-y-2') +
-        '">' + html + (who === 'user' || !withChips ? '' : chatSuggestionsHTML()) + '</div>';
+        '">' + html + (who === 'user' ? '' : (chips || '')) + '</div>';
       log.appendChild(turn);
       if (window.lucide) lucide.createIcons();
       log.scrollTop = log.scrollHeight;
@@ -3210,8 +3420,24 @@
       // the guard is that the words never get rendered on the page.
       chatAppend('user', reply.blocked
         ? '<p class="italic opacity-80">' + escapeHtml(chatModerationCfg().hiddenLabel || 'message hidden') + '</p>'
-        : '<p>' + escapeHtml(text) + '</p>', false);
-      chatAppend('bot', reply.html, reply.suggest);
+        : '<p>' + escapeHtml(text) + '</p>', '');
+      if (!reply.blocked) _chatAsked.add(chatNorm(text));
+
+      let chips = '';
+      if (reply.hits && reply.hits.length && !reply.partial) {
+        chips = chatFollowupsHTML(chatFollowups(reply.hits));
+      } else if (reply.followDoc) {
+        const doc = getChatIndex().docs.filter(d => d.id === reply.followDoc)[0];
+        if (doc) chips = chatFollowupsHTML(chatFollowups([{ doc: doc }]));
+      } else if (!reply.blocked && !reply.suggest) {
+        // Answered, but from an intent with no entry behind it (contacts, location). Anchor the
+        // follow-ups on the current role so the visitor still has three ways forward.
+        const cr = (typeof currentRole === 'function') ? currentRole() : null;
+        const doc = cr && getChatIndex().docs.filter(d => d.id === cr.id || d.id === cr.id + '-0')[0];
+        if (doc) chips = chatFollowupsHTML(chatFollowups([{ doc: doc }]));
+      }
+      if (!chips && reply.suggest) chips = chatSuggestionsHTML();
+      chatAppend('bot', reply.html, chips);
     }
 
     function openChat() {
@@ -3223,7 +3449,7 @@
       if (launcher) { launcher.setAttribute('aria-expanded', 'true'); launcher.classList.add('hidden'); }
       if (!_chatSeeded) {
         _chatSeeded = true;
-        chatAppend('bot', '<p>' + escapeHtml(chatCfg().greeting || 'Ask me about my work.') + '</p>', true);
+        chatAppend('bot', '<p>' + escapeHtml(chatCfg().greeting || 'Ask me about my work.') + '</p>', chatSuggestionsHTML());
       }
       const input = document.getElementById('chat-input');
       if (input) input.focus();
@@ -3299,6 +3525,12 @@
       // One delegated handler for the suggestion chips and the "See <section>" citations.
       const log = document.getElementById('chat-log');
       if (log) log.addEventListener('click', e => {
+        const more = e.target.closest('.chat-more');
+        if (more) {
+          chatAppend('user', '<p>' + escapeHtml(more.getAttribute('data-chat-q') || '') + '</p>', '');
+          chatMoreBullets(more.getAttribute('data-chat-doc'));
+          return;
+        }
         const chip = e.target.closest('.chat-suggestion');
         if (chip) { chatAsk(chip.getAttribute('data-chat-q')); return; }
         const cite = e.target.closest('.chat-cite');

@@ -55,6 +55,31 @@ const CHAT_CONFIG = {
     maxBullets: 3      // highlight bullets quoted per entry
   },
 
+  // Follow-up chips offered under every direct answer: three questions that go deeper into
+  // what was just quoted, built from the résumé's own structure (unshown bullets, the other
+  // role at that employer, people who worked there, the neighbouring job, a skill, a related
+  // FAQ). Every candidate is checked against the index before it is offered, so a chip can
+  // never lead to "I don't have anything on that". Hedged answers and declines fall back to
+  // the starter `suggestions` above instead.
+  followups: {
+    enabled: true,
+    count: 3,
+    label: "Go deeper",
+    padWithSuggestions: true,    // top up from `suggestions` when the résumé runs out of links
+    // {company} {role} {skill} {project} {person} are filled in. A template set to "" turns
+    // that generator off; a placeholder that can't be filled drops the chip.
+    templates: {
+      more:     "What else did you deliver at {company}?",
+      sibling:  "What was your other role at {company}?",
+      people:   "Who can vouch for your work at {company}?",
+      before:   "What did you do before that, at {company}?",
+      after:    "What came after that, at {company}?",
+      skill:    "Where have you used {skill}?",
+      project:  "What is {project}?",
+      person:   "What did {person} say about you?"
+    }
+  },
+
   // Abuse guard. Slurs and abuse are refused before any matching happens, and the
   // message is replaced by `hiddenLabel` in the transcript instead of being echoed
   // back onto the page. The stem list lives in index.html; add your own context's

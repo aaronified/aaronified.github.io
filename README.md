@@ -377,8 +377,13 @@ const CHAT_CONFIG = {
   title: "Ask about my work",
   greeting: "Ask me anything about my work…",     // first message in the transcript
   disclaimer: "Not an AI — I search this résumé and quote it back.",
-  suggestions: ["What do you do now?", "Tell me about Tippani"],   // chips
+  suggestions: ["What do you do now?", "Tell me about Tippani"],   // starter chips
   noMatch: "I don't have anything on that…",
+  followups: {                       // the three "go deeper" chips under every answer
+    enabled: true, count: 3, label: "Go deeper",
+    padWithSuggestions: true,        // top up from `suggestions` when the résumé runs out of links
+    templates: { more: "What else did you deliver at {company}?", … }
+  },
   scoring: {
     minScore: 1.2,        // ↑ = answers less often, says "I don't know" more
     coverage: 0.45,       // cover this share of the question → answered straight…
@@ -397,6 +402,26 @@ const CHAT_CONFIG = {
 never drift from your data: greetings, *"who are you"*, years of experience (computed from
 `TRAJECTORY_DATA`, never hard-coded), current role, base location, contact links, and *"list your
 projects"*. Off-résumé personal questions (salary, age, hobbies) get a straight decline.
+
+**Follow-up suggestions.** Every answer ends with **three chips that go deeper into what was
+just quoted** — the rest of that entry's bullets, your other role at that employer, someone who
+worked with you there, the job either side of it, a skill, a sibling project, a related FAQ. They
+are built from your own data, so a visitor can walk the whole résumé without typing.
+
+The rule that keeps them honest: **every chip is checked against the index before it is offered,
+and dropped unless asking it really returns the entry it promises.** A project with no highlights,
+a skill that appears nowhere else, a starter question pointing at content you deleted — all
+silently drop out. A chip can never lead to "I don't have anything on that".
+
+The three chips come from three different generators where possible, so they point in three
+directions (deeper / sideways / across) rather than three shades of the same thing. *"What else did
+you deliver at X?"* is special: re-asking would return the same bullets, so that chip renders the
+ones you haven't seen yet, and retires when the entry is exhausted. Hedged answers and declines
+fall back to the starter `suggestions` instead — there is nothing to go deeper into.
+
+Reword any of it in `followups.templates`; `{company}`, `{role}`, `{skill}`, `{project}` and
+`{person}` are filled from your data, and a template set to `""` turns that generator off. Set
+`followups.enabled: false` to go back to plain starter chips everywhere.
 
 **Slurs and abuse.** A public box that echoes what people type needs a guard. Anything matching
 the abuse patterns is refused before matching runs, and the message is replaced by
