@@ -111,31 +111,33 @@ const PROJECTS_DATA = [
   {
     id: "tippani",
     name: "Tippani",
-    tagline: "Self-hosted store for book & film annotations",
+    tagline: "Self-hosted home for the quotes you keep",
     featured: true,
     status: "Active",
     period: "2025 – Present",
     colors: { light: "#0d9488", dark: "#2dd4bf" },
-    logo: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/web/dist/mark.svg",
-    logoDark: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/web/dist/mark-dark.svg",
+    logo: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/web/frontend/public/mark.svg",
+    logoDark: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/web/frontend/public/mark-dark.svg",
     repo: "aaronified/tippani",
-    summary: "A self-hosted, multi-user home for your ^book highlights^ and ^movie dialogues^. Paste or bulk-import quotes, then tag, colour, favourite and rate them, auto-fetch covers and metadata, `search` everything instantly, and export it all back out as ^Obsidian-friendly Markdown^.",
+    summary: "A self-hosted, multi-user home for your ^book highlights^, ^movie dialogues^ and quotes from anywhere else. Paste or bulk-import them, then tag, colour and favourite them, auto-fetch covers and metadata, `search` everything instantly, and export it all back out as ^Obsidian-friendly Markdown^.",
     highlights: [
-      "Ships as a single static `Go` binary (*~12 MB*) on `SQLite` + `FTS5` — *~25 MB* idle memory and ^zero background jobs^",
-      "Purpose-built for ^low-powered NAS boxes^: plain HTTP on your LAN, or built-in HTTPS from a hot-reloaded cert pair",
-      "Bulk import from `Kindle`, `Bookcision`, `Goodreads` and `IMDb`; instant full-text search across books, annotations and dialogues",
-      "A ^read-only interactive demo^ rebuilds automatically whenever the frontend UI changes"
+      "Ships as a single static `Go` binary (*~12 MB*) on `SQLite` + `FTS5` — *~25 MB* idle memory and ^zero background jobs^, built for the NAS that is already busy",
+      "A ^daily quiz^ built on the *Ebbinghaus* forgetting curve: every quote carries a memory half-life and returns one of *five* ways, including a server-graded fill-in-the-blank",
+      "Instant full-text search with a ^typo-tolerant fallback^, plus `tag:` / `author:` / `colour:` field search across *16* fields that offers your own library's words",
+      "Bulk import from `Kindle`, `Bookcision`, `Goodreads`, `Hardcover` and `IMDb` lands in a ^pending queue^ you correct wholesale before anything is saved",
+      "Installable `PWA` in ^English and Bengali^, two hand-made skins, and a ^read-only interactive demo^ that rebuilds whenever the frontend changes"
     ],
-    tech: ["Go", "SQLite", "FTS5", "React", "Docker", "Full-text search"],
+    tech: ["Go", "SQLite", "FTS5", "React", "Docker", "PWA", "Full-text search"],
     links: [
       { label: "GitHub", href: "https://github.com/aaronified/tippani", icon: "brand-github" },
-      { label: "Interactive demo", href: "https://aaronified.github.io/tippani/", icon: "external-link" }
+      { label: "Interactive demo", href: "https://aaronified.github.io/tippani/demo/", icon: "external-link" },
+      { label: "Roadmap", href: "https://aaronified.github.io/tippani/roadmap.html", icon: "target" }
     ],
     gallery: "wide",
     screenshots: [
-      { src: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/docs/img/library-paper-light.jpg", alt: "Tippani — book library in the paper / light theme: a grid of real book covers with genre filters" },
-      { src: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/docs/img/search-film-dark.jpg", alt: "Tippani — instant full-text search across books, annotations, movies and dialogues" },
-      { src: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/docs/img/import-paper-light.jpg", alt: "Tippani — import screen with cards for Markdown, Bookcision, Goodreads, IMDb and Kindle" }
+      { src: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/docs/img/library-paper-light.jpg", alt: "Tippani — books in the paper / light theme: a grid of real book covers with genre filters" },
+      { src: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/docs/img/catalogue-film-dark.jpg", alt: "Tippani — catalogue in the film / dark theme: a grid of movie and show posters with dialogue counts" },
+      { src: "https://raw.githubusercontent.com/aaronified/tippani/HEAD/docs/img/search-film-light.jpg", alt: "Tippani — search correcting a misspelled query automatically, with results across books and annotations" }
     ]
   },
   {
