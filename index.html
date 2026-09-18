@@ -662,8 +662,8 @@
       background: #e2e8f0; border-radius: 2px; overflow: hidden;
     }
     .pr-doc.pr-t-dokra .pr-sb-f,
-    .pr-doc.pr-t-pattachitra .pr-sb-f { display: block; height: 100%; background: #4f46e5; border-radius: 2px; }
-    .pr-doc.pr-t-dokra .pr-sb-f { background: #3f3f46; }
+    .pr-doc.pr-t-pattachitra .pr-sb-f { display: block; height: 100%; background: var(--pr-accent); border-radius: 2px; }
+    .pr-doc.pr-t-dokra .pr-sb-f { background: var(--pr-accent); }
     .pr-doc.pr-t-dokra .pr-sb-t { height: 3px; }
     /* In Pattachitra the bars live on the painted column, so they take its palette. */
     .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-n { color: var(--pr-cream); font-size: 0.9em; }
@@ -674,9 +674,11 @@
     /* --- Bhagirathi: the river. One flowing column — and now an opening band behind the name,
        so the page starts somewhere rather than just beginning. Kept to a tint and a hairline:
        the whole point of this template is that nothing interrupts the flow. --- */
+    .pr-doc.pr-t-bhagirathi { --pr-accent: #4f46e5; }
     .pr-doc.pr-t-bhagirathi .pr-hero {
-      background: #eef2ff;
-      border-bottom: 2px solid #4f46e5;
+      /* The band is the accent, thinned against the paper — so one colour drives both. */
+      background: color-mix(in srgb, var(--pr-accent) 12%, #fff);
+      border-bottom: 2px solid var(--pr-accent);
       /* Out to the paper edge, through the document's padding. */
       margin: calc(-1 * var(--pr-pad, 0px)) calc(-1 * var(--pr-pad, 0px)) calc(9px * var(--pr-gap));
       padding: calc(6px * var(--pr-gap)) var(--pr-pad, 10px);
@@ -691,12 +693,25 @@
     .pr-doc.pr-t-pattachitra {
       --pr-band: 56mm;
       --pr-ink: #2a1a14;          /* lamp black, warmed */
-      --pr-ochre: #b45309;
+      --pr-accent: #b45309;       /* the ochre — replaced by the chosen theme colour */
+      --pr-ochre: var(--pr-accent);
+      /* What the default ochre computes to. Stated rather than hand-picked, so the template's
+         own colours meet the same contrast bar a chosen one has to. The cream and near-black
+         that were here before read at 4.4 and 3.9 against it — under AA, on the two surfaces
+         that carry text on the accent. */
+      --pr-on-accent: #FFFFFF;
       --pr-cream: #f6efe6;
     }
     /* The band is a real element, one per sheet — not a ::before. The PDF export transcribes
        the DOM, and a pseudo-element is not in the DOM: as a ::before it would be on screen and
        missing from the file. */
+    /* The printed document paints the band instead of holding one: only the PDF export needs a
+       real element (it transcribes the DOM), and #print-resume must stay byte-identical to the
+       measuring copy — that identity is what guarantees the preview cannot drift from print. */
+    #print-resume.pr-t-pattachitra::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: var(--pr-band);
+      background: var(--pr-ink); z-index: 0;
+    }
     .pr-doc.pr-t-pattachitra .pr-band {
       position: absolute; left: 0; top: 0; bottom: 0; width: var(--pr-band);
       background: var(--pr-ink);
@@ -705,7 +720,11 @@
                                      this pair the band covered the very thing it exists for. */
     }
     .pr-doc.pr-t-pattachitra .pr-aside { position: relative; z-index: 1; }
-    .pr-doc.pr-t-pattachitra { position: relative; }
+    /* NOT on the measuring copy. `.pdf-measure` is position:absolute precisely so it takes no
+       space in the flow; this rule overrode that, the hidden copy dropped back into the flow,
+       and its 1,800px pushed every real sheet below the visible area — a blank preview, with
+       the page count still correct because the sheets were all there, just off screen. */
+    .pr-doc.pr-t-pattachitra:not(.pdf-measure) { position: relative; }
     /* The flow clears the band by PADDING THE DOCUMENT, once — not by shifting each block, and
        not by a percentage. A percentage resolves against whichever box happens to be the
        parent, and that box is the sheet in the preview, the sheet body inside it, and
@@ -731,7 +750,7 @@
     }
     .pr-doc.pr-t-pattachitra .pr-aside h4 {
       font-size: 0.82em; text-transform: uppercase; letter-spacing: .12em;
-      color: #0f0a08; background: var(--pr-ochre); font-weight: 700;
+      color: var(--pr-on-accent, #0f0a08); background: var(--pr-ochre); font-weight: 700;
       margin: 0 0 4px; padding: 2px 6px;
     }
     .pr-doc.pr-t-pattachitra .pr-aside h4 + * { margin-top: 0; }
@@ -740,13 +759,20 @@
     .pr-doc.pr-t-pattachitra .pr-aside li:last-child { margin-bottom: 0; }
     .pr-doc.pr-t-pattachitra .pr-aside .t { color: var(--pr-cream); font-weight: 700; }
     .pr-doc.pr-t-pattachitra .pr-aside .pr-aside-sk { font-size: 0.88em; color: #cbbfb2; }
+    /* A project's own mark, or a letter on a colour made from its name. */
+    .pr-doc.pr-t-pattachitra .pr-chip {
+      display: inline-block; width: 11px; height: 11px; line-height: 11px; border-radius: 2px;
+      color: #fff; font-size: 7px; font-weight: 700; text-align: center; vertical-align: -1px;
+      margin-right: 5px;
+    }
+    .pr-doc.pr-t-pattachitra .pr-proj-row { display: flex; align-items: baseline; gap: 0; }
     .pr-doc.pr-t-pattachitra .pr-aside .pr-meta,
     .pr-doc.pr-t-pattachitra .pr-aside a { color: #e3d8ca; }
 
     /* Section heads are painted bars, the way each panel of a pata is titled. */
     .pr-doc.pr-t-pattachitra .pr-section-h {
       border-bottom: 0; text-transform: uppercase; letter-spacing: .1em;
-      font-size: 0.86em; color: var(--pr-cream); background: var(--pr-ochre);
+      font-size: 0.86em; color: var(--pr-on-accent, var(--pr-cream)); background: var(--pr-ochre);
       /* The painted title bars run out to the right paper edge — a panel title on a pata is not
          inset from the border, it meets it. */
       padding: 2px 8px; margin: calc(9px * var(--pr-gap)) calc(-1 * var(--pr-pad, 0px))
@@ -769,7 +795,8 @@
        and page two runs full width; its content is finite and belongs on the opening page. --- */
     .pr-doc.pr-t-dokra {
       --pr-cast: #2f3640;        /* the mould: near-black, slightly cool */
-      --pr-bronze: #9a6b3f;      /* the metal */
+      --pr-accent: #9a6b3f;      /* the metal — replaced by the chosen theme colour */
+      --pr-bronze: var(--pr-accent);
       --pr-ash: #eceef1;         /* the sand it is cast in */
       --pr-lead: 1.3; --pr-gap: 0.9;
       background: var(--pr-ash) !important;
@@ -1491,10 +1518,40 @@
     // whole library being unreachable both land here, and the page keeps its icons either way.
     function drawIcons(root) {
       root = root || document;
+      // Brand marks first, before Lucide is asked. Lucide REMOVED them over trademark, so
+      // handing it `brand-github` only earns a console warning per icon per render on a page
+      // that already knows how to draw it.
+      if (typeof ICON_FALLBACK !== 'undefined') drawFallbackIcons(root, n => n.indexOf('brand-') === 0);
       if (window.lucide && lucide.createIcons) { try { lucide.createIcons(); } catch (e) {} }
-      if (typeof ICON_FALLBACK === 'undefined') return;
+      if (typeof ICON_FALLBACK !== 'undefined') drawFallbackIcons(root, () => true);
+      // Rides along here because every path that renders markup already calls this.
+      externaliseLinks(root);
+    }
+
+    // Links off this page open in a new tab. A résumé is a thing people read straight through;
+    // following a GitHub link should not cost them their place in it. In-page anchors and the
+    // handoff schemes (mail, phone) are left alone — those are not navigation.
+    function externaliseLinks(root) {
+      Array.prototype.forEach.call((root || document).querySelectorAll('a[href]'), a => {
+        const href = a.getAttribute('href') || '';
+        if (/^(#|\/|\?|mailto:|tel:|javascript:)/i.test(href)) return;
+        if (a.target === '_blank') return;
+        // Not inside the résumé itself. That is a document, not navigation: its links become
+        // annotations in the PDF, and rewriting them would also break the guarantee that the
+        // preview and the printed page are byte-identical markup.
+        if (a.closest('.pr-doc')) return;
+        a.target = '_blank';
+        // noopener is the one that matters: without it the opened page gets a handle on this
+        // one through window.opener.
+        a.rel = 'noopener noreferrer';
+      });
+    }
+
+    function drawFallbackIcons(root, wanted) {
       Array.prototype.forEach.call(root.querySelectorAll('i[data-lucide]'), el => {
-        const inner = ICON_FALLBACK[el.getAttribute('data-lucide')];
+        const name = el.getAttribute('data-lucide');
+        if (!wanted(name)) return;
+        const inner = ICON_FALLBACK[name];
         if (!inner) return;
         // Parsed as SVG, not assigned as innerHTML: an <i> is an HTML element, and HTML parsing
         // would put the children in the wrong namespace and draw nothing.
@@ -1971,6 +2028,44 @@
       dokra:       { label: 'Dokra', tagline: 'Fine hatched lines, cast compact' }
     };
     const PR_TEMPLATE_DEFAULT = 'bhagirathi';
+    // Four to pick from PER TEMPLATE, and a field for anything else. Each set is drawn from
+    // the craft the template is named for rather than from one generic palette — the colours a
+    // pata is painted in are not the colours bronze is cast in. Named, because a swatch with no
+    // name is a colour you cannot ask anyone about.
+    const PR_ACCENTS = {
+      bhagirathi: [
+        { hex: '#4F46E5', label: 'Indigo' },
+        { hex: '#0E7490', label: 'River blue' },
+        { hex: '#0F766E', label: 'Teal' },
+        { hex: '#3F6212', label: 'Reed green' }
+      ],
+      pattachitra: [
+        { hex: '#B45309', label: 'Ochre' },
+        { hex: '#B91C1C', label: 'Hingul red' },
+        { hex: '#1E40AF', label: 'Neel indigo' },
+        { hex: '#7C2D12', label: 'Burnt earth' }
+      ],
+      dokra: [
+        { hex: '#9A6B3F', label: 'Bronze' },
+        { hex: '#A64B2A', label: 'Copper' },
+        { hex: '#2F6B5E', label: 'Verdigris' },
+        { hex: '#4B5563', label: 'Iron' }
+      ]
+    };
+    function prAccents(template) { return PR_ACCENTS[template] || PR_ACCENTS[PR_TEMPLATE_DEFAULT]; }
+    const PR_HEX = /^#[0-9a-f]{6}$/i;
+
+    // Which of near-white or near-black to print on a given colour, by WCAG relative luminance.
+    // The threshold is where the two contrast ratios cross, so whichever side of it a colour
+    // falls on, the text over it is the more readable of the two.
+    function prReadableOn(hex) {
+      const v = String(hex).replace('#', '');
+      const lin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      const L = 0.2126 * lin(parseInt(v.slice(0, 2), 16)) +
+                0.7152 * lin(parseInt(v.slice(2, 4), 16)) +
+                0.0722 * lin(parseInt(v.slice(4, 6), 16));
+      return L > 0.179 ? '#111111' : '#FFFFFF';
+    }
     const PR_FONT_DEFAULT = 'noto';
     const PR_FONT_FALLBACK = 'noto';         // whatever the chosen face lacks is drawn from this
     function prFont(key) { return PR_FONTS[key] || PR_FONTS[PR_FONT_DEFAULT]; }
@@ -1995,13 +2090,14 @@
       tag.textContent = '@media print { @page { size: ' + size + '; margin: 0; } ' +
         '#print-resume { padding: ' + margin + 'mm; --pr-pad: ' + margin + 'mm; } }';
       const el = document.getElementById('print-resume');
-      if (el) { prApplyDocClasses(el, cfg); prEnsureBand(el, cfg); }
+      if (el) prApplyDocClasses(el, cfg);
     }
 
     // The three classes that decide how a .pr-doc looks: density, typeface, template. One place,
     // so the printed page, the live preview and every carousel thumbnail cannot drift apart.
-    // Templates that paint a full-height column need that column as an element. Added and
-    // removed here so switching template cannot leave one behind.
+    // Sheets need the column as a real element, because the PDF export draws what is in the
+    // DOM. #print-resume does not — it is rendered by the browser's own printer, and paints it
+    // with ::before instead, so its markup stays identical to the measuring copy's.
     function prEnsureBand(el, cfg) {
       const wants = (cfg || {}).template === 'pattachitra';
       const band = el.querySelector(':scope > .pr-band');
@@ -2020,6 +2116,16 @@
       el.classList.add('pr-d-' + (cfg.density || 'normal'));
       el.classList.add('pr-f-' + (PR_FONTS[cfg.font] ? cfg.font : PR_FONT_DEFAULT));
       el.classList.add('pr-t-' + (PR_TEMPLATES[cfg.template] ? cfg.template : PR_TEMPLATE_DEFAULT));
+      // Inline, so it beats the template's own default without either knowing about the other.
+      // --pr-on-accent goes with it: anything printed ON the accent has to stay readable,
+      // whatever colour was chosen, and no stylesheet can work that out for itself.
+      if (PR_HEX.test(String(cfg.accent || ''))) {
+        el.style.setProperty('--pr-accent', cfg.accent);
+        el.style.setProperty('--pr-on-accent', prReadableOn(cfg.accent));
+      } else {
+        el.style.removeProperty('--pr-accent');
+        el.style.removeProperty('--pr-on-accent');
+      }
     }
 
     function buildPrintResume(config) {
@@ -2156,6 +2262,25 @@
         return `<p>${logoImg(showLogo(eCfg, e.logo))}<span class="t">${e.company}</span> — ${e.role}${scoreStr} &middot; ${e.period}</p>${descLine}${subs}`;
       }).join('');
 
+      // Pattachitra carries the degrees on its column and gives the internships a section of
+      // their own, rather than nesting them under the college as the flowing templates do.
+      const eduAsideHTML = eduList
+        .filter(e => !(entCfg[e.id] && !entCfg[e.id].include))
+        .map(e => {
+          const eCfg = entCfg[e.id] || {};
+          const score = (eCfg.showScore !== false && e.score) ? ` (${escapeHtml(e.score)})` : '';
+          return `<li><span class="t">${escapeHtml(e.company)}</span>` +
+                 `<div class="pr-aside-sk">${escapeHtml(e.role)}${score} &middot; ${escapeHtml(e.period)}</div></li>`;
+        }).join('');
+      const internHTML = interns.map(intn => {
+        const iCfg = entCfg[intn.id] || {};
+        let out = `<p>${logoImg(showLogo(iCfg, intn.logo))}<span class="t">${escapeHtml(intn.company)}</span> — ${escapeHtml(intn.role)} &middot; ${escapeHtml(intn.period)}</p>`;
+        if (intn.description && iCfg.showDescription !== false) out += `<div class="pr-edu-desc">${formatText(intn.description)}</div>`;
+        const ih = pickHighlights(intn.highlights, iCfg);
+        if (ih.length) out += `<ul class="pr-sub-desc">${ih.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
+        return out;
+      }).join('');
+
       const comp = compCfg.order
         .map(t => ({ c: OVERVIEW_DATA.competencies.find(x => x.title === t), item: compCfg.items[t] }))
         .filter(o => o.c && o.item && o.item.include)
@@ -2187,6 +2312,21 @@
       }).join('');
 
       const template = (config.page && PR_TEMPLATES[config.page.template]) ? config.page.template : PR_TEMPLATE_DEFAULT;
+
+      // A project with no mark of its own still gets one: a letter on a colour derived from its
+      // name, so the same project is the same colour every time and two projects are not.
+      const prNameHue = name => {
+        let h = 0;
+        for (let i = 0; i < String(name).length; i++) h = (h * 31 + String(name).charCodeAt(i)) % 360;
+        return h;
+      };
+      const projChip = pr => {
+        const cfg = projCfg[pr.id] || {};
+        if (cfg.showLogo !== false && pr.logo) return logoImg(pr.logo);
+        const hue = prNameHue(pr.name || '');
+        const letter = escapeHtml((pr.name || '?').trim().charAt(0).toUpperCase());
+        return `<span class="pr-chip" style="background:hsl(${hue} 52% 38%)">${letter}</span>`;
+      };
 
       // Rated skill bars. Which templates use them is a property of the template, not a taste:
       // Bhagirathi is a column of prose and never shows them; Dokra's layout is built around
@@ -2241,10 +2381,11 @@
         const projNames = projOrder
           .map(id => projById[id])
           .filter(pr => pr && (projCfg[pr.id] || {}).include !== false)
-          .map(pr => `<li><span class="t">${escapeHtml(pr.name)}</span></li>`).join('');
+          .map(pr => `<li class="pr-proj-row">${projChip(pr)}<span class="t">${escapeHtml(pr.name)}</span></li>`).join('');
         const projBlock = projNames ? `<h4>Projects</h4><ul>${projNames}</ul>` : '';
-        return (block || lines || projBlock)
-          ? `<aside class="pr-aside">${lines}${block}${projBlock}</aside>` : '';
+        const eduBlock = eduAsideHTML ? `<h4>Education</h4><ul>${eduAsideHTML}</ul>` : '';
+        return (block || lines || projBlock || eduBlock)
+          ? `<aside class="pr-aside">${lines}${block}${projBlock}${eduBlock}</aside>` : '';
       })());
       // Whatever the sidebar carries is not repeated in the flow.
       const compFlow = asideHTML ? '' : comp;
@@ -2291,7 +2432,9 @@
 
         ${projectsHTML ? `<div class="pr-section-h">Projects</div><div class="pr-projects">${projectsHTML}</div>` : ''}
 
-        ${eduHTML ? `<div class="pr-section-h">Education</div><div class="pr-edu">${eduHTML}</div>` : ''}
+        ${template === 'pattachitra'
+            ? (internHTML ? `<div class="pr-section-h">Internships</div><div class="pr-edu">${internHTML}</div>` : '')
+            : (eduHTML ? `<div class="pr-section-h">Education</div><div class="pr-edu">${eduHTML}</div>` : '')}
 
         ${recoHTML ? `<div class="pr-section-h">References</div><div class="pr-reco">${recoHTML}</div>` : ''}
       `;
@@ -4750,7 +4893,10 @@
         skillBars: sPage.skillBars === true,
         // Per-skill level overrides, set by dragging. Export-only, like every other edit: the
         // authored levels in data/overview.js stay the source of truth for what the site shows.
-        skillLevels: (sPage.skillLevels && typeof sPage.skillLevels === 'object') ? sPage.skillLevels : {}
+        skillLevels: (sPage.skillLevels && typeof sPage.skillLevels === 'object') ? sPage.skillLevels : {},
+        // The document's accent. null means "whatever this template was designed in"; anything
+        // else must be a six-digit hex, because it is written straight into a style property.
+        accent: PR_HEX.test(String(sPage.accent || '')) ? String(sPage.accent).toUpperCase() : null
       };
 
       // Hero profile photo toggle.
@@ -5071,7 +5217,7 @@
       //    page counts wrong.
       scaler.style.transform = 'none';
       const laid = pdfLayoutSheets(pagesHost, pdfBreakBlocks(doc), {
-        density: density, font: cfg.font, template: cfg.template,
+        density: density, font: cfg.font, template: cfg.template, accent: cfg.accent,
         pageW: pageW, pageH: dims[1] * MM_PX, pad: pad, usableH: usableH
       });
       laid.forEach((pg, i) => {
@@ -5097,8 +5243,12 @@
         cap.style.fontSize = capPx + 'px';
         cap.style.margin = (capPx * 0.6) + 'px 0 ' + (capPx * 1.6) + 'px';
       });
+      // A transform does not change the space an element RESERVES, so both dimensions have to
+      // be restated at the scaled size. The height already was; the width was left at the full
+      // page, which reserved ~340px of empty room to the right of every preview and put a
+      // horizontal scrollbar under it.
       scaler.style.transform = 'scale(' + scale + ')';
-      scaler.style.width = pageW + 'px';
+      scaler.style.width = (pageW * scale) + 'px';
       scaler.style.height = (pagesHost.offsetHeight * scale) + 'px';
 
       // The sheets above are brand new elements, so whatever editing state was on has to be put
@@ -6186,6 +6336,31 @@
       }
     }
 
+    // Setting the accent does NOT re-render the options: the hex field is one of them, and
+    // rebuilding it under the caret would take the focus away mid-typing.
+    function setPdfAccent(value, typing) {
+      if (!pdfConfig || !pdfConfig.page) return;
+      let hex = value == null ? null : String(value).trim();
+      if (hex && hex.charAt(0) !== '#') hex = '#' + hex;
+      if (hex && !PR_HEX.test(hex)) { if (typing) return; hex = null; }   // half-typed is not an error
+      pdfConfig.page.accent = hex ? hex.toUpperCase() : null;
+      savePdfConfigDebounced();
+      applyPrintPageStyle(pdfConfig);
+      Array.prototype.forEach.call(document.querySelectorAll('.pdf-swatch'), b => {
+        const match = prAccents(pdfConfig.page.template).find(a => a.label === b.getAttribute('title'));
+        const on = !!match && (pdfConfig.page.accent || '') === match.hex;
+        b.setAttribute('aria-checked', String(!!on));
+        b.classList.toggle('border-slate-900', !!on);
+        b.classList.toggle('dark:border-white', !!on);
+        b.classList.toggle('border-transparent', !on);
+      });
+      const field = document.getElementById('pdf-accent-hex');
+      if (field && !typing) field.value = pdfConfig.page.accent || '';
+      renderTemplateThumbs();
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
     function setPdfMobileView(view) {
       const modal = document.getElementById('pdf-modal');
       if (!modal) return;
@@ -6459,6 +6634,21 @@
           // Rendered always, hidden where it means nothing: choosing a template deliberately does
           // NOT re-render this section (that would replace the cards mid-animation), so the
           // control has to already exist for the fast path to reveal it.
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Theme colour</div>' +
+            '<div id="pdf-accent-row" class="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="theme colour">' +
+              prAccents(page.template).map(a =>
+                '<button type="button" role="radio" aria-checked="' + ((page.accent || '').toUpperCase() === a.hex ? 'true' : 'false') + '"' +
+                ' onclick="setPdfAccent(\'' + a.hex + '\')" title="' + a.label + '" aria-label="' + a.label + '"' +
+                ' class="pdf-swatch w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+                ((page.accent || '').toUpperCase() === a.hex ? 'border-slate-900 dark:border-white' : 'border-transparent') +
+                '" style="background:' + a.hex + '"></button>').join('') +
+              '<input id="pdf-accent-hex" type="text" inputmode="text" maxlength="7" spellcheck="false"' +
+                ' value="' + escapeAttr(page.accent || '') + '" placeholder="#RRGGBB" aria-label="Theme colour hex"' +
+                ' oninput="setPdfAccent(this.value, true)"' +
+                ' class="w-[92px] px-2 py-1 rounded-lg text-xs font-mono border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">' +
+              '<button type="button" onclick="setPdfAccent(null)" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-1.5 py-1">Default</button>' +
+            '</div>' +
+            '<p class="text-[11px] text-slate-500 dark:text-slate-400">Drives the rules, bands and bars of whichever template is chosen.</p></div>' +
           '<div id="pdf-skillbars-opt" class="space-y-1.5' + (page.template === 'pattachitra' ? '' : ' hidden') + '">' +
             '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Skills in the sidebar</div>' +
             group('skillBars', page.skillBars ? 'bars' : 'text',
@@ -7168,6 +7358,25 @@
         layoutTemplateDeck();
         const skillOpt = document.getElementById('pdf-skillbars-opt');
         if (skillOpt) skillOpt.classList.toggle('hidden', value !== 'pattachitra');
+        // Each template offers its own palette, so the swatches are redrawn — in place, since
+        // re-rendering the section would replace the deck mid-animation.
+        const swatches = document.getElementById('pdf-accent-row');
+        if (swatches) {
+          Array.prototype.forEach.call(swatches.querySelectorAll('.pdf-swatch'), (b, i) => {
+            const a = prAccents(value)[i];
+            if (!a) { b.hidden = true; return; }
+            b.hidden = false;
+            b.style.background = a.hex;
+            b.title = a.label;
+            b.setAttribute('aria-label', a.label);
+            b.setAttribute('onclick', "setPdfAccent('" + a.hex + "')");
+            const on = (pdfConfig.page.accent || '') === a.hex;
+            b.setAttribute('aria-checked', String(on));
+            b.classList.toggle('border-slate-900', on);
+            b.classList.toggle('dark:border-white', on);
+            b.classList.toggle('border-transparent', !on);
+          });
+        }
         updateResetButton();
         schedulePdfPreview();
         return;
