@@ -46,6 +46,7 @@
   var BONUS_MULT = 5;           // the occasional windfall
   var BONUS_CHANCE = 0.10;      // …and the chance of one, from Manager onward
   var INSTAFIRE_CHANCE = 0.10;  // …and of a bomb that ends it outright
+  var EXTRAS_RUNG = 1;          // both start at the first promotion, with the unprompted drops
   var NIRVANA = 1e9;            // ₹100 crore
   // What each rank costs to take on, what they destroy when they sabotage, and how many
   // packages that destruction is worth. The flat figures are a FLOOR: income doubles with every
@@ -53,15 +54,21 @@
   // Manager and a rounding error after it. The multiples are what keep a sabotage meaning
   // something at the top of the ladder.
   var RANKS = {
-    intern:   { hire: 2500,    floor: 5000,  packets: 3 },
-    manager:  { hire: 10000,   floor: 1e5,   packets: 25 },
-    director: { hire: 1000000, floor: 1e8,   packets: 400 }
+    intern:   { hire: 2500,    floor: 5000,  packets: 3,   hurt: 1,  label: 'Intern' },
+    manager:  { hire: 10000,   floor: 1e5,   packets: 25,  hurt: 6,  label: 'Manager' },
+    director: { hire: 1000000, floor: 1e8,   packets: 400, hurt: 60, label: 'Director' }
   };
   var SABOTAGE_LO = 0.10, SABOTAGE_HI = 0.30;   // per catch, across the ladder
   var DIRECTOR_COOLDOWN = 20;                   // drops before another director destroy can land
   var INTERN_LOSS = 5000;
   var INTERN_SAVED = 0.80;      // how often the boss pulls an intern clear
-  var AUTO_DROP = 4.5;          // seconds between unprompted drops, from Manager onward
+  // Unprompted drops start at the first promotion and speed up exactly as the money does — the
+  // gap is divided by the same 2^rung · 1.05^increments. AUTO_FLOOR is what stops that going to
+  // nothing: taken literally the gap reaches a millisecond by CIO, and the simulation says a
+  // 2.5-second floor is what keeps the run at the length it was built for (about 24 minutes
+  // with the owner hired, 40 without him).
+  var AUTO_DROP = 4.5;
+  var AUTO_FLOOR = 2.5;
 
   // The ladder. Each rung doubles what a package is worth, and the gaps grow faster than that,
   // so the later ones still take longer even as the money gets bigger.
@@ -77,9 +84,11 @@
   ];
   var MANAGER_RUNG = 3;         // where the unprompted drops, the windfalls and the crew start
 
-  // Interns are named, because "an intern" is a headcount and a name is a person.
-  var INTERN_NAMES = ['Ishani', 'Rohit', 'Meera', 'Arjun', 'Tara', 'Dev', 'Nandini', 'Kabir',
-                      'Priya', 'Aditya', 'Sneha', 'Vikram'];
+  // Hires are named, because "an intern" is a headcount and a name is a person. The one the
+  // player steers is not one of them: they are whoever happens to be holding the mouse.
+  var PLAYER_NAME = 'Random Guy';
+  var CREW_NAMES = ['Ishani', 'Rohit', 'Meera', 'Arjun', 'Tara', 'Dev', 'Nandini', 'Kabir',
+                    'Priya', 'Aditya', 'Sneha', 'Vikram'];
 
   var NIRVANA_LINES = [
     'Nirvana. The company needs nothing further.',
@@ -113,6 +122,21 @@
   var SPRITE_W = 10, SPRITE_H = 14;
   var HEAD_ROWS = 8;            // rows 0–7 are the head — what the owner's photo replaces
 
+  // Everybody is the same ten-by-fourteen drawing; what tells them apart is a shirt colour and
+  // one piece of clothing each. Four sprite sheets would be four things to keep in step, and at
+  // twenty pixels tall a silhouette is all anyone reads anyway.
+  //   player   — a flat cap, because whoever is holding the mouse came in off the street
+  //   intern   — a head shorter than everybody else
+  //   manager  — a tie
+  //   director — a tie and the shoulders of a jacket
+  var LOOKS = {
+    lead:     { B: 'B',       K: 'K' },
+    player:   { B: 'playerB', K: 'playerK', cap: true },
+    intern:   { B: 'internB', K: 'crewK',   short: true },
+    manager:  { B: 'mgrB',    K: 'crewK',   tie: true },
+    director: { B: 'dirB',    K: 'crewK',   tie: true, jacket: true }
+  };
+
   // ---------------------------------------------------------------- palettes
   //
   // Slate and stone. The only colour in the whole strip is on the two things a player has to
@@ -123,6 +147,9 @@
       N: '#94a3b8', K: '#475569', S: '#c4b5a5', E: '#1e293b', M: '#475569',
       B: '#7c8ba1', T: '#475569', O: '#334155',
       crewB: '#a9b4c2', crewK: '#7c8ba1',
+      playerB: '#5f6f86', playerK: '#2f3b4d',
+      internB: '#b6c0cd', mgrB: '#94a1b2', dirB: '#6f7c93',
+      tie: '#8a5f5f', jacket: '#55617a',
       cash: '#3f7d55', cashTape: '#a9d3b7', bomb: '#a24b46', fuse: '#c98a86', spark: '#c2b4a3',
       meter: '#e2e8f0', meterFill: '#94a3b8', notch: '#cbd5e1',
       text: '#64748b', good: '#4d7a5c', pip: '#9a7b46', bad: '#9c5f5f', screen: '#cbd5e1'
@@ -132,6 +159,9 @@
       N: '#475569', K: '#94a3b8', S: '#8d7b68', E: '#e2e8f0', M: '#94a3b8',
       B: '#64748b', T: '#475569', O: '#334155',
       crewB: '#475569', crewK: '#64748b',
+      playerB: '#8695ab', playerK: '#b8c4d4',
+      internB: '#3d4757', mgrB: '#55637a', dirB: '#71809b',
+      tie: '#a8756f', jacket: '#8a97ae',
       cash: '#5d8f6e', cashTape: '#24402f', bomb: '#a35b57', fuse: '#8a5f5c', spark: '#a8a29e',
       meter: '#1e293b', meterFill: '#64748b', notch: '#475569',
       text: '#94a3b8', good: '#7fa387', pip: '#bb9a5f', bad: '#c08181', screen: '#334155'
@@ -144,7 +174,7 @@
   var cv, ctx, sky, sctx, shell;
   var dpr = 1, W = 0, H = LOGICAL_H;
   var skyH = 0, skyTop = 0, skyBand = 0, stageLeft = 0;
-  var running = false, rafId = 0, lastT = 0;
+  var running = false, rafId = 0, lastT = 0, lastDraw = 0;
   var onScreen = false, active = false, reduced = false, touch = false;
   var spawnTimer = 0, toastTimer = 0;
   var owner = { name: 'the owner', image: '' };
@@ -162,12 +192,13 @@
     return {
       // crew[0] is whoever the player is watching: the owner once hired, an intern before that.
       crew: [makeWorker('lead', 0.5)],
-      internName: pick(INTERN_NAMES),
+      internName: PLAYER_NAME,
       parked: null,             // the one who was displaced, fishing at the right-hand end
       items: [], puffs: [],
       money: 0, rung: 0, strikes: 0, caught: 0, increments: 0,
       status: 'ok',             // 'ok' | 'pip' | 'fired' | 'nirvana'
-      settled: false, dirCool: 0, sabotages: 0,
+      settled: false, dirCool: 0, sabotages: 0, pending: [],
+      idle: 0, tug: 0, tilt: 0, bang: 0, flicker: 0, drops: 0,
       hired: false, entering: 0, leaving: 0
     };
   }
@@ -198,6 +229,11 @@
   function destroys(kind) {
     var r = RANKS[kind];
     return Math.max(r.floor, r.packets * ((VALUE_LO + VALUE_HI) / 2) * valueScale());
+  }
+  // A bomb on a hire is not a sabotage: it costs a fraction of one, but it does cost.
+  function hurts(kind) {
+    var r = RANKS[kind];
+    return Math.max(r.floor / 4, r.hurt * ((VALUE_LO + VALUE_HI) / 2) * valueScale());
   }
   function live() { return active && onScreen && !document.hidden && !reduced; }
   function over() { return g.status === 'fired' || g.status === 'nirvana'; }
@@ -264,19 +300,20 @@
 
   function spawn(frac, y, bomb) {
     if (!g || over() || !live()) return;
-    var mgr = g.rung >= MANAGER_RUNG;
+    var extras = g.rung >= EXTRAS_RUNG;
     var isBomb = bomb == null ? Math.random() < 0.5 : bomb;
-    var big = !isBomb && mgr && Math.random() < BONUS_CHANCE;
+    var big = !isBomb && extras && Math.random() < BONUS_CHANCE;
     g.items.push({
       x: Math.max(0.02, Math.min(0.98, frac)),
       y: y,
       bomb: isBomb,
       big: big,
-      fatal: isBomb && mgr && Math.random() < INSTAFIRE_CHANCE,
+      fatal: isBomb && extras && Math.random() < INSTAFIRE_CHANCE,
       value: isBomb ? 0 : packetValue() * (big ? BONUS_MULT : 1),
       taken: null
     });
     if (g.items.length > 26) g.items.shift();
+    g.drops++;
     if (g.dirCool > 0) g.dirCool--;
     start();
   }
@@ -328,8 +365,9 @@
     clearTimeout(spawnTimer);
     if (!g || !live() || over()) return;
     var phone = touch && !g.hired;
-    if (!phone && g.rung < MANAGER_RUNG) return;
-    var gap = phone ? 900 + Math.random() * 1500 : AUTO_DROP * 1000 * (0.6 + Math.random() * 0.8);
+    if (!phone && g.rung < EXTRAS_RUNG) return;
+    var gap = phone ? 900 + Math.random() * 1500
+                    : Math.max(AUTO_FLOOR, AUTO_DROP / valueScale()) * 1000 * (0.7 + Math.random() * 0.6);
     spawnTimer = setTimeout(function () {
       spawn(0.06 + Math.random() * 0.88, Math.max(-ITEM, skyH - (260 + Math.random() * 380)));
       scheduleDrop();
@@ -344,18 +382,37 @@
     var r = rung();
     var counts = { intern: 0, manager: 0, director: 0 };
     g.crew.forEach(function (w) { if (counts[w.kind] != null) counts[w.kind]++; });
+    g.pending.forEach(function (h) { counts[h.kind]++; });
     var want = { director: r.directors, manager: r.managers, intern: r.interns };
+    // Queued, not conjured: a promotion authorises the headcount and the people turn up over
+    // the next few packages, one at a time, each with a name and a cost.
     ['director', 'manager', 'intern'].forEach(function (kind) {
       while (counts[kind] < want[kind]) {
-        var w = makeWorker(kind, Math.max(0.03, Math.min(0.97, lead().x + (counts[kind] % 2 ? 0.06 : -0.06))));
-        w.slot = counts[kind];
-        g.crew.push(w);
-        g.money = Math.max(0, g.money - RANKS[kind].hire);
+        g.pending.push({ kind: kind, at: g.caught + 2 + Math.floor(Math.random() * 2) + g.pending.length });
         counts[kind]++;
       }
     });
-    // Interns are shared out over the lead and every manager, so the formations spread rather
-    // than piling four deep on one person.
+  }
+
+  // Anyone whose start date has come round.
+  function arrivals() {
+    for (var i = g.pending.length - 1; i >= 0; i--) {
+      var h = g.pending[i];
+      if (g.caught < h.at) continue;
+      g.pending.splice(i, 1);
+      var w = makeWorker(h.kind, Math.max(0.03, Math.min(0.97, lead().x + (Math.random() < 0.5 ? -0.08 : 0.08))));
+      g.crew.push(w);
+      var cost = RANKS[h.kind].hire;
+      g.money = Math.max(0, g.money - cost);
+      g.puffs.push({ x: w.x, y: groundY() - SPRITE_H * PX - 4, t: 0, text: '-' + money(cost), tone: 'bad' });
+      toast('Hired ' + pick(CREW_NAMES) + ' as ' + RANKS[h.kind].label, 'text');
+      reteam();
+    }
+  }
+
+  // Interns are shared out over the lead and every manager, so the formations spread rather
+  // than piling four deep on one person.
+  function reteam() {
     var bosses = g.crew.filter(function (w) { return w.kind === 'lead' || w.kind === 'manager'; });
     var n = 0;
     g.crew.forEach(function (w) {
@@ -392,24 +449,61 @@
     return worst;
   }
 
-  function claim(w, smallest) {
-    var pw = playW(), gy = groundAbs(), reach = speed() / pw;
-    var best = null, bestKey = smallest ? Infinity : -Infinity, fallback = null, fallbackT = 1e9;
-    for (var i = 0; i < g.items.length; i++) {
-      var p = g.items[i];
-      if (p.bomb || (p.taken && p.taken !== w)) continue;
-      var tt = (gy - ITEM - p.y) / FALL;
-      if (tt <= 0) continue;
-      if (tt < fallbackT) { fallbackT = tt; fallback = p; }
-      if (Math.abs(p.x - w.x) / Math.max(1e-6, reach) > tt * 0.95) continue;
-      if (smallest ? p.value < bestKey : p.value > bestKey) { bestKey = p.value; best = p; }
-    }
-    var go = best || fallback;
-    if (go) go.taken = w;
-    return go;
+  // ONE assignment pass for everybody, once a frame. Each worker choosing for itself in crew
+  // order meant the first manager took the best package and the rest followed it across the
+  // strip, all converging on the same thing while everything else landed. Here the best package
+  // goes to whichever senior can be under it soonest, then the next, and the interns pick up
+  // what is left — smallest first, which is their job.
+  function reachTime(w, it) {
+    var pw = playW(), gy = groundAbs();
+    var land = (gy - ITEM - it.y) / FALL;
+    if (land <= 0) return null;
+    var need = (Math.abs(it.x - w.x) * pw) / Math.max(1, speed() * (w.kind === 'intern' ? 0.9 : 1));
+    return need <= land * 0.95 ? need : null;
   }
 
-  function desire(w) {
+  function assignTargets() {
+    var i, j;
+    for (i = 0; i < g.crew.length; i++) g.crew[i].target = null;
+    for (i = 0; i < g.items.length; i++) g.items[i].taken = null;
+    var cash = [];
+    for (i = 0; i < g.items.length; i++) if (!g.items[i].bomb) cash.push(g.items[i]);
+
+    var seniors = [], interns = [];
+    for (i = 0; i < g.crew.length; i++) {
+      if (g.crew[i].kind === 'intern') interns.push(g.crew[i]);
+      else if (i > 0 || g.hired) seniors.push(g.crew[i]);
+    }
+
+    var give = function (pool, list) {
+      for (var a = 0; a < list.length; a++) {
+        var it = list[a];
+        if (it.taken) continue;
+        var best = null, bestT = Infinity;
+        for (var b = 0; b < pool.length; b++) {
+          if (pool[b].target) continue;
+          var t = reachTime(pool[b], it);
+          if (t != null && t < bestT) { bestT = t; best = pool[b]; }
+        }
+        if (best) { best.target = it; it.taken = best; }
+      }
+    };
+    give(seniors, cash.slice().sort(function (a, b) { return b.value - a.value; }));
+    give(interns, cash.slice().sort(function (a, b) { return a.value - b.value; }));
+  }
+
+  // Where somebody with nothing to chase waits: spread evenly across the strip, so whatever
+  // falls next has somebody near it. Standing where you last caught something is how a team of
+  // eight ends up in one place.
+  function station(w, idx, total) {
+    if (w.kind === 'intern' && w.boss) {
+      var home = anchorFor(w);
+      if (home != null) return home;
+    }
+    return total < 2 ? 0.5 : 0.10 + (idx / (total - 1)) * 0.80;
+  }
+
+  function desire(w, idx, total) {
     var pw = playW();
     if (w === g.crew[0] && !g.hired) {
       var want = cursor != null ? cursor : w.x;
@@ -425,14 +519,8 @@
       return { x: Math.max(0.02, Math.min(0.98, to)), urgent: true };
     }
 
-    if (w.kind === 'intern') {
-      var mine = claim(w, true);
-      var home = anchorFor(w);
-      if (mine && Math.abs(mine.x - w.x) * pw < 90) return { x: mine.x, urgent: false };
-      return { x: home == null ? w.x : home, urgent: false };
-    }
-    var take = claim(w, false);
-    return { x: take ? take.x : w.x, urgent: false };
+    if (w.target) return { x: w.target.x, urgent: false };
+    return { x: station(w, idx, total), urgent: false };
   }
 
   // ---------------------------------------------------------------- simulation
@@ -448,6 +536,16 @@
   }
 
   function cheer(w) { w.jump = 0.62; w.cheer = 0.95; }
+
+  // Good news clears a performance plan: an increment, a bonus or a promotion all count as
+  // having turned it round. The strike goes with it — a plan that is lifted is lifted.
+  function clearPip(why) {
+    if (g.status !== 'pip') return;
+    g.status = 'ok';
+    g.strikes = 0;
+    toast(why + '. The plan is closed.', 'good');
+    syncPanel();
+  }
 
   function promoteIfDue() {
     while (g.rung + 1 < LADDER.length && g.money >= LADDER[g.rung + 1].at) {
@@ -496,9 +594,12 @@
       // A rise comes up at random, about half the times another five have come in.
       if (g.caught % 5 === 0 && Math.random() < 0.5) {
         g.increments++;
-        toast(Math.random() < 0.5 ? 'Increment' : 'Bonus', 'good');
+        var kind = Math.random() < 0.5 ? 'Increment' : 'Bonus';
+        if (g.status === 'pip') clearPip(kind);
+        else toast(kind, 'good');
       }
       promoteIfDue();
+      arrivals();
       syncPanel();
       return;
     }
@@ -515,7 +616,15 @@
       syncPanel();
       return;
     }
-    if (hitBy !== g.crew[0]) return;    // managers and directors look after themselves
+    // A bomb on anyone else on the payroll costs money, and says so in red the same way a
+    // package says its value in green. Only the owner walks away from one.
+    if (hitBy !== g.crew[0]) {
+      var lost = hurts(hitBy.kind);
+      g.money = Math.max(0, g.money - lost);
+      g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0, text: '-' + money(lost), tone: 'bad' });
+      syncPanel();
+      return;
+    }
     if (g.hired) return;                // the owner is not hit; that is what hiring him buys
 
     if (it.fatal) {
@@ -561,7 +670,26 @@
     if (over()) {
       var there = walkTo(lead(), g.status === 'nirvana' ? CINEMA_X : RETIRE_X, dt, BASE_SPEED);
       if (there) g.settled = true;
-      return !there || g.puffs.length > 0;
+      if (!g.settled) return true;
+      // Settled, but not frozen. An idle picture under a résumé still has to be worth the
+      // frames it costs, so the clock here runs slowly and the loop below draws at about eight
+      // a second rather than sixty.
+      g.idle += dt;
+      if (g.status === 'fired') {
+        // Fishing: a bob, the odd sideways look, and every so often a hopeful pull on the rod
+        // that turns out to be nothing.
+        g.tug = Math.max(0, g.tug - dt);
+        g.tilt = Math.max(0, g.tilt - dt);
+        if (g.tug <= 0 && g.tilt <= 0 && Math.random() < dt * 0.55) {
+          if (Math.random() < 0.55) g.tug = 0.9; else g.tilt = 1.1;
+        }
+      } else {
+        // Watching something: the screen flickers, and now and then he nods along to it.
+        g.flicker = (g.flicker + dt * 9) % 1000;
+        g.bang = Math.max(0, g.bang - dt);
+        if (g.bang <= 0 && Math.random() < dt * 0.5) g.bang = 1.3;
+      }
+      return true;
     }
 
     // Somebody is walking on or off the strip; nothing else happens until they arrive.
@@ -574,10 +702,10 @@
       return true;
     }
 
-    g.items.forEach(function (it) { it.taken = null; });
+    assignTargets();
     var busy = false;
-    g.crew.forEach(function (w) {
-      var d = desire(w);
+    g.crew.forEach(function (w, i) {
+      var d = desire(w, i, g.crew.length);
       var sp = speed() * (d.urgent ? 1.35 : 1) * (w.kind === 'intern' ? 0.9 : 1);
       if (!walkTo(w, d.x, dt, sp)) busy = true;
     });
@@ -626,12 +754,14 @@
   function drawFigure(s, w, opts) {
     var pw = playW(), ww = SPRITE_W * PX, hh = SPRITE_H * PX;
     opts = opts || {};
+    var look = LOOKS[opts.look || w.kind] || LOOKS.lead;
     var f = opts.seated ? SEATED : (w.cheer > 0 ? CHEER : FRAMES[w.walk]);
     var left = Math.round(w.x * pw - ww / 2);
     // A promotion is a jump: a half-second arc, with the fist up at the top of it.
     var lift = w.jump > 0 ? Math.sin((1 - w.jump / 0.62) * Math.PI) * 13 : 0;
-    var top = Math.round(groundY() - hh - lift);
-    var from = 0;
+    var top = Math.round(groundY() - hh - lift + (opts.sink || 0));
+    var from = look.short ? 1 : 0;       // an intern stands a head shorter than everyone else
+    var drop = look.short ? PX : 0;
 
     if (opts.photo && head) {
       from = HEAD_ROWS;
@@ -648,32 +778,55 @@
 
     ctx.save();
     if (opts.alpha != null) ctx.globalAlpha = opts.alpha;
+    var flip = (opts.facing != null ? opts.facing : w.facing) < 0;
     for (var r = from; r < SPRITE_H; r++) {
       var row = f[r];
       for (var c = 0; c < SPRITE_W; c++) {
-        var ch = row.charAt(w.facing < 0 ? SPRITE_W - 1 - c : c);
+        var ch = row.charAt(flip ? SPRITE_W - 1 - c : c);
         if (ch === '.') continue;
-        // The crew are the same drawing in quieter colours, so the eye knows who the subject is.
-        var col = s[ch] || s.K;
-        if (opts.quiet) { if (ch === 'B') col = s.crewB; else if (ch === 'K' || ch === 'M') col = s.crewK; }
-        px(col, left + c * PX, top + r * PX, PX, PX);
+        var key = ch === 'B' ? look.B : (ch === 'K' || ch === 'M') ? look.K : ch;
+        px(s[key] || s[ch] || s.K, left + c * PX, top + r * PX + drop, PX, PX);
       }
+    }
+    // The clothing, over the top: the one thing that says which of them this is.
+    if (look.cap) {
+      px(s[look.K], left + 1 * PX, top + 1 * PX + drop, 8 * PX, PX);
+      px(s[look.K], left + 7 * PX, top + 2 * PX + drop, 2 * PX, PX);
+    }
+    if (look.tie && !opts.seated) {
+      px(s.tie, left + 4 * PX, top + 8 * PX + drop, PX, PX);
+      px(s.tie, left + 4 * PX, top + 9 * PX + drop, PX, PX);
+      px(s.tie, left + 4 * PX, top + 10 * PX + drop, PX, PX);
+    }
+    if (look.jacket && !opts.seated) {
+      px(s.jacket, left + 0 * PX, top + 8 * PX + drop, PX, 3 * PX);
+      px(s.jacket, left + 9 * PX, top + 8 * PX + drop, PX, 3 * PX);
+      px(s.jacket, left + 1 * PX, top + 8 * PX + drop, PX, PX);
+      px(s.jacket, left + 8 * PX, top + 8 * PX + drop, PX, PX);
     }
     ctx.restore();
 
+    // A rod out to the right for whoever was displaced. `tug` swings it; `slump` is the moment
+    // after, when there was nothing on the end of it.
     if (opts.seated) {
-      var hx = left + ww, hy = top + 9 * PX;
+      var swing = opts.tug || 0;
+      var hx = left + ww, hy = top + (9 - Math.round(swing * 2)) * PX;
       for (var i = 0; i < 9; i++) px(s.K, hx + i * PX, hy - i * PX, PX, PX);
       var tipX = hx + 9 * PX, tipY = hy - 9 * PX;
-      px(s.near, tipX, tipY, 1, groundY() - 3 - tipY);
-      px(s.cash, tipX - 2, groundY() - 6, 4, 3);
+      px(s.near, tipX, tipY, 1, groundY() - 3 - tipY - Math.round(swing * 10));
+      px(s.cash, tipX - 2, groundY() - 6 - Math.round(swing * 10), 4, 3);
     }
+    // The screen, and whatever is moving on it.
     if (opts.cinema) {
-      var sx = left - 34, sy = groundY() - 32;
-      px(s.screen, sx, sy, 26, 17);
-      px(s.near, sx + 2, sy + 2, 22, 13);
-      px(s.screen, sx + 11, sy + 17, 4, 7);
-      px(s.near, sx + 7, sy + 24, 12, 2);
+      var sx = left - 36, sy = groundY() - 34;
+      px(s.screen, sx, sy, 28, 18);
+      px(s.near, sx + 2, sy + 2, 24, 14);
+      for (var b = 0; b < 5; b++) {
+        var on = (opts.flicker + b * 3) % 7 < 3;
+        px(on ? s.screen : s.near, sx + 4 + b * 4, sy + 4 + ((b * 5 + opts.flicker) % 7), 3, 4);
+      }
+      px(s.screen, sx + 12, sy + 18, 4, 7);
+      px(s.near, sx + 8, sy + 25, 12, 2);
     }
   }
 
@@ -747,13 +900,24 @@
       itemShape(ctx, s, Math.round(it.x * pw - ITEM / 2), Math.round(y), it);
     }
     ctx.globalAlpha = 1;
-    if (g.parked) drawFigure(s, g.parked, { seated: true, quiet: true, alpha: 0.9 });
-    // Back to front, so the lead is never hidden behind somebody they hired.
-    for (i = g.crew.length - 1; i >= 1; i--) drawFigure(s, g.crew[i], { quiet: true, alpha: 0.92 });
+    if (g.parked) drawFigure(s, g.parked, { seated: true, look: 'intern' });
+    // Back to front, so the lead is never hidden behind somebody they hired. Drawn solid: the
+    // ranks are told apart by what they wear, and a translucent sprite over a moving backdrop
+    // is a different colour every frame.
+    for (i = g.crew.length - 1; i >= 1; i--) drawFigure(s, g.crew[i], {});
+    var fishing = g.status === 'fired' && g.settled;
+    var watching = g.status === 'nirvana' && g.settled;
     drawFigure(s, g.crew[0], {
+      look: g.hired ? 'lead' : 'player',
       photo: g.hired,
-      seated: g.status === 'fired' && g.settled,
-      cinema: g.status === 'nirvana' && g.settled,
+      seated: fishing,
+      cinema: watching,
+      // The rod swings on a pull and drops back; the head turns away on a sideways look.
+      tug: fishing ? (g.tug > 0 ? Math.sin((1 - g.tug / 0.9) * Math.PI) : 0) : 0,
+      facing: fishing && g.tilt > 0.55 ? -1 : (watching ? -1 : null),
+      // A nod is the whole figure dipping a pixel or two, which at this size is a headbang.
+      sink: watching && g.bang > 0 ? Math.round(Math.abs(Math.sin((1.3 - g.bang) * 14)) * 2) : 0,
+      flicker: Math.floor(g.flicker),
       alpha: g.status === 'pip' ? 0.68 : 1
     });
     drawMeter(s);
@@ -768,7 +932,10 @@
     var dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016;
     lastT = t;
     var busy = step(dt);
-    draw();
+    // Once the story is over the picture still moves, but there is nothing to be accurate
+    // about: eight frames a second is plenty for a nod and a flickering screen, and it keeps a
+    // finished game off the frame budget of the page it is sitting under.
+    if (!g.settled || (t - lastDraw) > 120) { draw(); lastDraw = t; }
     if (busy && live()) rafId = requestAnimationFrame(frame);
     else running = false;
   }
@@ -843,7 +1010,7 @@
     } else {
       g.hired = false;
       g.parked = null;                       // the one who was fishing comes back to work
-      g.internName = pick(INTERN_NAMES);
+      g.internName = PLAYER_NAME;
       g.leaving = 1;
       toast(owner.name + ' hired away, 100% hike', 'good');
     }
@@ -959,7 +1126,9 @@
                    managers: g.crew.filter(function (w) { return w.kind === 'manager'; }).length,
                    directors: g.crew.filter(function (w) { return w.kind === 'director'; }).length,
                    status: g.status, hired: g.hired, parked: !!g.parked, caught: g.caught,
-                   sabotages: g.sabotages, sabotageChance: sabotageChance() } : null;
+                   sabotages: g.sabotages, sabotageChance: sabotageChance(),
+                   pending: g.pending.length, leadX: g.crew[0].x, settled: g.settled,
+                   drops: g.drops, items: g.items.length } : null;
     }
   };
 
