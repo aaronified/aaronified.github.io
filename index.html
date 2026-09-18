@@ -616,6 +616,17 @@
       -webkit-backdrop-filter: none !important;
     }
 
+    /* The strip's own toast. Its three tones are muted on purpose: a promotion should read as
+       good news, not as a system alert going off under someone's résumé. */
+    #arcade-toast[data-tone="text"] { color: #64748b; }
+    #arcade-toast[data-tone="good"] { color: #4d6f56; }
+    #arcade-toast[data-tone="pip"]  { color: #8a6c3c; }
+    #arcade-toast[data-tone="bad"]  { color: #8f5454; }
+    .dark #arcade-toast[data-tone="text"] { color: #94a3b8; }
+    .dark #arcade-toast[data-tone="good"] { color: #8fb097; }
+    .dark #arcade-toast[data-tone="pip"]  { color: #c4a468; }
+    .dark #arcade-toast[data-tone="bad"]  { color: #c98d8d; }
+
     /* Template carousel: a deck rather than a strip. The chosen template is centred and full
        size; the others sit behind it, turned away and dimmed, close enough to read. Each card
        is a whole page of the user's own résumé at true width, scaled into the card, so the
@@ -959,6 +970,7 @@
   <script src="data/faqs.js"></script>
   <script src="data/recommendations.js"></script>
   <script src="data/chat.js"></script>
+  <script src="assets/arcade.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 transition-colors duration-300 font-sans antialiased overflow-x-hidden relative min-h-screen">
 
@@ -1199,6 +1211,39 @@
 
     <!-- FOOTER -->
     <footer class="mt-20 border-t border-slate-200/50 dark:border-slate-800/50 pt-8 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+
+      <!-- THE STRIP. A small pixel figure who works for a living. Shown only on FAQ and
+           Recommendations, and only once you have scrolled down to him; hidden in print, and
+           absent entirely under prefers-reduced-motion. All of that lives in assets/arcade.js —
+           `hidden` here is the starting state, since the page opens on Overview. -->
+      <div id="arcade" class="hidden print:hidden mb-8 text-left rounded-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden bg-white/40 dark:bg-slate-900/40">
+        <div class="flex flex-col sm:flex-row">
+          <div class="relative flex-1 min-w-0">
+            <canvas id="arcade-stage" tabindex="0" role="img" style="touch-action:none"
+              aria-label="A pixel figure on a small landscape. Parcels and bombs fall on him; he catches the parcels and dodges the bombs. Arrow keys move him, space drops something."
+              class="block w-full outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 dark:focus-visible:ring-amber-400"></canvas>
+            <!-- His news, delivered where it happens rather than over the page. -->
+            <p id="arcade-toast" data-tone="text"
+              class="hidden absolute left-1/2 top-3 -translate-x-1/2 px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap bg-white/85 dark:bg-slate-900/85 border border-slate-200/70 dark:border-slate-700/60 shadow-sm"></p>
+          </div>
+          <div id="arcade-controls" class="flex sm:flex-col sm:justify-between items-center sm:items-stretch gap-3 p-3 sm:w-48 flex-shrink-0 border-t sm:border-t-0 sm:border-l border-slate-200/50 dark:border-slate-800/50">
+            <div class="min-w-0">
+              <div id="arcade-rank" class="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">Intern</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">&#8377;<span id="arcade-profit">0</span> earned</div>
+              <div id="arcade-status" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">In good standing</div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button id="arcade-hire" type="button" aria-pressed="false"
+                class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200/70 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Hire</button>
+              <button id="arcade-reset" type="button" aria-label="Start again"
+                class="hidden p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+                <i data-lucide="loader" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+        </div>
+        <p id="arcade-live" class="sr-only" role="status" aria-live="polite"></p>
+      </div>
+
       <p class="mb-2">&copy; <span id="copyright-year"></span> <span id="copyright-name"></span>. All rights reserved.</p>
       <p>Modular Portfolio Format &bull; Built with Tailwind CSS & Lucide Icons</p>
     </footer>
@@ -1425,6 +1470,18 @@
       // Footer copyright
       document.getElementById('copyright-year').textContent = new Date().getFullYear();
       document.getElementById('copyright-name').textContent = PERSONAL_DATA.name;
+
+      // The strip above the copyright. Guarded, because a résumé that fails to render because a
+      // toy failed to load would be an absurd way to lose a job.
+      if (typeof initArcade === 'function') {
+        try {
+          initArcade({ name: PERSONAL_DATA.name, image: PERSONAL_DATA.profileImage,
+                       section: _currentSection });
+        } catch (e) {
+          const strip = document.getElementById('arcade');
+          if (strip) strip.classList.add('hidden');
+        }
+      }
     });
 
     /* ============================================================
@@ -1928,6 +1985,8 @@
     // Nav pane controller
     function setSection(sectionId, fromRoute) {
       _currentSection = sectionId;
+      // The footer strip lives on two tabs only; it hides itself on the rest.
+      if (typeof arcadeSetSection === 'function') arcadeSetSection(sectionId);
       // Toggle nav tab style
       document.querySelectorAll('.nav-tab').forEach(tab => {
         const id = tab.id.replace('nav-', '');
@@ -2137,9 +2196,9 @@
     const PR_ACCENTS = {
       bhagirathi: [
         { hex: '#4F46E5', label: 'Indigo' },
-        { hex: '#0E7490', label: 'River blue' },
         { hex: '#0F766E', label: 'Teal' },
-        { hex: '#3F6212', label: 'Reed green' }
+        { hex: '#3F6212', label: 'Reed green' },
+        { hex: '#A55428', label: 'Sandbar' }
       ],
       pattachitra: [
         { hex: '#B45309', label: 'Ochre' },
