@@ -369,6 +369,14 @@
        off, so it is truly zero motion — every transition and animation is fully removed
        (not merely shortened), reveal-tagged content is shown outright, and smooth scrolling
        reverts to instant. */
+    /* The overview side panel enters from the right, and on a 320px screen that entrance hangs
+       10px past the edge — sideways scroll on a page with no sideways content. Clipped HERE
+       rather than on <html> or <body>: any overflow value but `visible` makes an element the
+       sticky scroll container for everything inside it, and the nav — which is a sibling of
+       <main>, not a child — would stop sticking. Clipping main leaves the nav's own ancestors
+       untouched. */
+    #main-content { overflow-x: clip; }
+
     html.reduce-motion { scroll-behavior: auto !important; }
     html.reduce-motion *,
     html.reduce-motion *::before,
@@ -428,7 +436,27 @@
         position: fixed; left: -20000px; top: 0; width: 380px; height: 700px;
         border: 0; background: transparent;
       }
+      /* …unless the reader asked to SEE it, in which case it takes the whole panel. It stays
+         the same 380px wide while it is off-screen, so the pagination it computes does not
+         change when the reader switches back and forth. */
+      #pdf-modal.pdf-m-preview #pdf-preview-pane {
+        position: static; width: 100%; min-width: 0; height: auto; flex: 1 1 auto;
+        background: inherit;
+      }
+      #pdf-modal.pdf-m-preview #pdf-modal-body { display: none; }
     }
+    /* Collapsed sections hide their CONTROLS, never their title or their "n of m shown" count:
+       the point of folding them is to see the whole list at once, not to hide what is set. */
+    @media (max-width: 639.98px) {
+      .pdf-section.is-collapsed > div:last-child,
+      .pdf-section.is-collapsed [data-sec-globals] { display: none; }
+    }
+
+    /* The phone view switch: the selected tab is filled, the other is quiet. */
+    .pdf-mview[aria-selected="false"] { color: #475569; background: rgba(148,163,184,.14); }
+    .dark .pdf-mview[aria-selected="false"] { color: #cbd5e1; background: rgba(148,163,184,.14); }
+    .pdf-mview[aria-selected="true"] { background: #4f46e5; color: #fff; }
+    .dark .pdf-mview[aria-selected="true"] { background: #fbbf24; color: #020617; }
 
     /* ==========================================================
        RESUME DOCUMENT STYLES (.pr-doc)
@@ -718,9 +746,12 @@
         </div>
       </div>
 
-      <!-- Tier 2: Section tabs + theme toggle (always visible) -->
+      <!-- Tier 2: Section tabs + controls (always visible).
+           On a phone the controls come FIRST: the chat launcher is anchored bottom-right, and
+           wherever the nav happens to sit low on the screen it covered the theme toggle. The
+           tab strip scrolls, so what the launcher overlaps there can still be reached. -->
       <div class="flex items-center justify-between gap-2 p-2 overflow-x-auto">
-        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
+        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 order-last sm:order-first">
           <button onclick="setSection('overview')" id="nav-overview" class="nav-tab px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">
             Overview
           </button>
@@ -751,6 +782,8 @@
           </svg>
         </button>
 
+        <!-- Controls: typeface, animations, theme. One group, so `order` can move all three. -->
+        <div class="flex items-center gap-2 flex-shrink-0 order-first sm:order-last">
         <!-- Typeface picker. A menu rather than a cycling toggle: four faces is too many to
              discover by pressing a button repeatedly, and each item is set in its own face so
              the choice is made by looking. -->
@@ -778,6 +811,7 @@
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
           </svg>
         </button>
+        </div>
       </div>
     </nav>
 
@@ -894,6 +928,16 @@
         <!-- Body: section rail | settings | live preview.
              The preview renders the very same .pr-doc markup the printer gets, so it cannot
              drift from the output. -->
+        <!-- On a phone there is no room for options AND preview side by side, and hiding the
+             preview is what made it unreachable. One at a time, switched here. -->
+        <div id="pdf-mobile-tabs" class="lg:hidden flex gap-1 px-4 pt-3" role="tablist" aria-label="Save PDF view">
+          <button type="button" role="tab" data-mview="options" aria-selected="true"
+                  onclick="setPdfMobileView('options')"
+                  class="pdf-mview flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">Options</button>
+          <button type="button" role="tab" data-mview="preview" aria-selected="false"
+                  onclick="setPdfMobileView('preview')"
+                  class="pdf-mview flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">Preview</button>
+        </div>
         <div class="flex-1 min-h-0 flex">
           <div id="pdf-modal-body" class="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 py-4"></div>
           <aside id="pdf-preview-pane" class="flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
@@ -921,15 +965,18 @@
             <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
             <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden lg:inline">Text stays selectable and links stay clickable.</span>
           </div>
-          <div class="flex flex-wrap items-center justify-end gap-2">
-            <button id="pdf-cancel" onclick="closePdfModal()" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
-            <button id="pdf-docx" onclick="saveDocx(this)" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+          <!-- Phone: the primary action gets its own full-width row and the two secondary ones
+               share the next, instead of four buttons wrapping into three ragged lines. Cancel
+               is dropped there — the X in the header is right above it and does the same. -->
+          <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <button id="pdf-cancel" onclick="closePdfModal()" class="hidden sm:inline-flex px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
+            <button id="pdf-docx" onclick="saveDocx(this)" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
               <i data-lucide="file-text" class="w-4 h-4"></i>DOCX
             </button>
-            <button id="pdf-print" onclick="generatePdf()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+            <button id="pdf-print" onclick="generatePdf()" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
               <i data-lucide="printer" class="w-4 h-4"></i>Print…
             </button>
-            <button id="pdf-generate" onclick="savePdf(this)" class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
+            <button id="pdf-generate" onclick="savePdf(this)" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
               <i data-lucide="download" class="w-4 h-4"></i>Save PDF
             </button>
           </div>
@@ -960,10 +1007,13 @@
   <div id="chat-widget" class="hidden print:hidden">
 
     <!-- Floating launcher -->
+    <!-- Icon only on a phone: with the label it is 180px wide and sits squarely on top of the
+         nav's own controls whenever the nav lands near the foot of the screen. The label is
+         still the button's accessible name. -->
     <button id="chat-launcher" type="button" aria-expanded="false" aria-controls="chat-panel"
-      class="fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center gap-2 pl-3.5 pr-4 py-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
+      class="fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center gap-2 p-3.5 sm:pl-3.5 sm:pr-4 sm:py-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
       <i data-lucide="message-circle" id="chat-launcher-icon" class="w-5 h-5"></i>
-      <span id="chat-launcher-label">Ask about my work</span>
+      <span id="chat-launcher-label" class="hidden sm:inline">Ask about my work</span>
     </button>
 
     <!-- Panel -->
@@ -3963,7 +4013,9 @@
     let pdfDrag = null;
     let pdfSectionKeys = { work: [], projects: [], edu: [] };
     let _pdfSaveTimer = null;
-    const pdfUi = { expandedComps: new Set() };
+    // openSections: which Save PDF sections are expanded on a PHONE. On a wide screen every
+    // section is always open and this is not consulted.
+    const pdfUi = { expandedComps: new Set(), openSections: new Set(['Page']) };
 
     // --- Small utilities ---
     function escapeHtml(s) {
@@ -5280,6 +5332,41 @@
     }
 
     // --- Modal open / close / generate / reset ---
+    // Which half of the Save PDF screen a phone is showing. On a wide screen both are on
+    // screen at once and this does nothing.
+    function togglePdfSection(section) {
+      if (!section) return;
+      const title = section.getAttribute('data-sec');
+      const open = !section.classList.contains('is-collapsed');
+      section.classList.toggle('is-collapsed', open);
+      if (open) pdfUi.openSections.delete(title); else pdfUi.openSections.add(title);
+      const btn = section.querySelector('.pdf-sec-toggle');
+      if (btn) {
+        btn.setAttribute('aria-expanded', String(!open));
+        btn.setAttribute('aria-label', (open ? 'Expand ' : 'Collapse ') + title);
+        const icon = btn.querySelector('i, svg');
+        if (icon) {
+          const next = document.createElement('i');
+          next.setAttribute('data-lucide', open ? 'chevron-down' : 'chevron-up');
+          next.setAttribute('class', 'w-4 h-4');
+          icon.parentNode.replaceChild(next, icon);
+          drawIcons(btn);
+        }
+      }
+    }
+
+    function setPdfMobileView(view) {
+      const modal = document.getElementById('pdf-modal');
+      if (!modal) return;
+      const preview = view === 'preview';
+      modal.classList.toggle('pdf-m-preview', preview);
+      Array.prototype.forEach.call(modal.querySelectorAll('.pdf-mview'), btn => {
+        btn.setAttribute('aria-selected', String(btn.getAttribute('data-mview') === view));
+      });
+      // Coming into view the pane has a different width, so the sheets are rescaled to it.
+      if (preview) requestAnimationFrame(refreshPdfPreview);
+    }
+
     function openPdfModal() {
       const rec = reconcilePdfConfig(loadPdfConfig());
       pdfConfig = rec.config;
@@ -5299,6 +5386,7 @@
       }
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
+      setPdfMobileView('options');        // always opens on the options, on any width
       document.documentElement.style.overflow = 'hidden';
       const shell = document.getElementById('app-shell');
       if (shell) { shell.setAttribute('inert', ''); shell.setAttribute('aria-hidden', 'true'); }
@@ -5392,11 +5480,21 @@
     // Two-column section row. Left = title + count +
     // universal ("all items") toggles; right = the individual items. Columns stack on narrow widths.
     function pdfSectionRowHTML(title, badgeHTML, globalsHTML, rightHTML) {
-      return '<section class="pdf-section flex flex-col sm:flex-row gap-3 sm:gap-5 py-4 border-t border-slate-200/50 dark:border-slate-800/50 first:border-t-0 first:pt-0">' +
+      // Seventeen screenfuls of settings is not a phone screen. Below `sm` each section is a
+      // disclosure — its title and its count stay visible, its controls fold away — and the
+      // open ones are remembered across the re-render every change triggers.
+      const open = pdfUi.openSections.has(title);
+      return '<section class="pdf-section flex flex-col sm:flex-row gap-3 sm:gap-5 py-4 border-t border-slate-200/50 dark:border-slate-800/50 first:border-t-0 first:pt-0' +
+        (open ? '' : ' is-collapsed') + '" data-sec="' + escapeAttr(title) + '">' +
         '<div class="w-full sm:w-44 md:w-52 flex-shrink-0 space-y-2 sm:self-start sm:sticky sm:top-0 sm:z-10 sm:bg-white/85 sm:dark:bg-slate-900/85 sm:backdrop-blur-sm sm:py-1.5 sm:rounded-lg">' +
-          '<div><h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">' + escapeHtml(title) + '</h3>' +
-            (badgeHTML ? '<div class="mt-0.5">' + badgeHTML + '</div>' : '') + '</div>' +
-          (globalsHTML ? '<div class="rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-dashed border-indigo-400/40 dark:border-amber-400/40 p-2.5 space-y-1.5">' +
+          '<div class="flex items-start justify-between gap-2">' +
+            '<div><h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">' + escapeHtml(title) + '</h3>' +
+              (badgeHTML ? '<div class="mt-0.5">' + badgeHTML + '</div>' : '') + '</div>' +
+            '<button type="button" class="pdf-sec-toggle sm:hidden -mt-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors"' +
+              ' aria-expanded="' + (open ? 'true' : 'false') + '" aria-label="' + escapeAttr((open ? 'Collapse ' : 'Expand ') + title) + '">' +
+              '<i data-lucide="' + (open ? 'chevron-up' : 'chevron-down') + '" class="w-4 h-4"></i></button>' +
+          '</div>' +
+          (globalsHTML ? '<div data-sec-globals class="rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-dashed border-indigo-400/40 dark:border-amber-400/40 p-2.5 space-y-1.5">' +
             '<div class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-indigo-500/90 dark:text-amber-400/90"><i data-lucide="layers" class="w-3 h-3"></i> All items</div>' +
             globalsHTML + '</div>' : '') +
         '</div>' +
@@ -5850,6 +5948,7 @@
       body.addEventListener('click', function (e) {
         const t = e.target;
         let el;
+        if ((el = t.closest('.pdf-sec-toggle'))) { togglePdfSection(el.closest('.pdf-section')); return; }
         if ((el = t.closest('.pdf-page-opt'))) { setPageOption(el.getAttribute('data-page-key'), el.getAttribute('data-page-value')); return; }
         if ((el = t.closest('.pdf-tmpl-card'))) { setPageOption('template', el.getAttribute('data-template')); return; }
         if ((el = t.closest('.pdf-bulk-flag'))) { toggleBulk(el); return; }
