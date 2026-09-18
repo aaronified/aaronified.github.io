@@ -1,5 +1,16 @@
 # Interactive Resume Template
 
+[![Live site](https://img.shields.io/website?url=https%3A%2F%2Faaronified.github.io&label=live&style=flat-square)](https://aaronified.github.io/)
+[![Pages](https://img.shields.io/badge/hosted%20on-GitHub%20Pages-222?logo=github&style=flat-square)](https://pages.github.com/)
+[![No build step](https://img.shields.io/badge/build-none-brightgreen?style=flat-square)](#how-the-repo-is-organized)
+[![Runtime dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen?style=flat-square)](#how-the-repo-is-organized)
+[![Last commit](https://img.shields.io/github/last-commit/aaronified/aaronified.github.io?style=flat-square)](https://github.com/aaronified/aaronified.github.io/commits/main)
+[![Repo size](https://img.shields.io/github/repo-size/aaronified/aaronified.github.io?style=flat-square)](https://github.com/aaronified/aaronified.github.io)
+
+<!-- Badges say only what is true today. A CI badge goes here once there is a workflow behind it;
+     a licence badge once there is a LICENSE file. Fork this and the first two badges will point
+     at this repo until you change the owner/name in the URLs. -->
+
 A single-page, interactive resume / portfolio site you can host for free on **GitHub Pages** —
 see it live at [aaronified.github.io](https://aaronified.github.io/) as an example.
 No build step, no framework, no dependencies to install — just static HTML, a CDN copy of
@@ -618,8 +629,9 @@ as PDF** then hands off to your browser's print dialog — choose *Save as PDF*.
 Three columns. The **rail** on the left lists every section with its count and jumps you to it. The
 middle column holds the settings. The **live preview** on the right renders the *actual* document —
 not an impression of it: the print stylesheet lives in a shared `.pr-doc` scope used by both the
-preview and the printed page, and a test asserts the two compute identical styles, so the preview
-cannot drift from the output. Dashed guides mark where each page would end, and the header reads
+preview and the printed page, and a test asserts the two compute identical styles *and* identical
+geometry — every selector the stylesheet defines, across both paper sizes and all three densities —
+so drift in the styling or the page box gets caught rather than shipped. Dashed guides mark where each page would end, and the header reads
 e.g. *"3 pages (last ~40%) · A4 · normal"* — the fill of the last page being what tells you whether
 one more trim saves a page. Page breaks are the browser's to make, so treat the guides as close but
 indicative. Below 1024px the preview hides and below 768px the rail does; the settings remain.

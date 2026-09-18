@@ -459,7 +459,6 @@
     .pr-doc .pr-projects .pr-proj-item > p { margin: 0; }
     .pr-doc .pr-projects .t { font-weight: 700; }
     .pr-doc .pr-projects .pr-proj-link { color: #1d4ed8 !important; white-space: nowrap; }
-    .pr-doc .pr-projects .pr-proj-tech { margin: 1px 0 0 14px; font-size: 0.9em; color: #555; }
     /* real bullets (override the CDN reset) */
     .pr-doc .pr-projects ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }
     .pr-doc .pr-projects li { margin: 0.5px 0; }
@@ -489,9 +488,9 @@
 
     /* Live preview in the Save PDF screen: a paper-coloured card at true page width,
        scaled down to the pane. Page-break guides are drawn where a page would end. */
-    .pdf-page { background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.18), 0 8px 24px rgba(15,23,42,.10); position: relative; }
-    .pdf-page-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #94a3b8; pointer-events: none; }
-    .pdf-page-guide span { position: absolute; right: 4px; top: 3px; font: 600 10px/1 'Inter', sans-serif; color: #94a3b8; letter-spacing: .04em; }
+    .pdf-page { background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.18), 0 8px 24px rgba(15,23,42,.10); position: relative; overflow: hidden; }
+    .pdf-page + .pdf-caption { margin: 6px 0 18px; font: 600 11px/1 'Inter', sans-serif; color: #64748b; letter-spacing: .03em; text-align: right; }
+    .pdf-measure { position: absolute; left: -10000px; top: 0; visibility: hidden; }
     .pdf-rail-item { display: block; width: 100%; text-align: left; border-radius: 0.6rem; padding: 0.35rem 0.6rem; font-size: 12px; font-weight: 600; }
 
     @media print {
@@ -756,22 +755,29 @@
               <span id="pdf-preview-meta" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
             </div>
             <div id="pdf-preview-scroll" class="flex-1 overflow-y-auto p-4">
-              <div id="pdf-preview-scaler" class="relative origin-top-left">
-                <!-- inert + aria-hidden: this is a picture of the document, not a second copy to
-                     tab through. pdfTrapFocus() already skips anything inside [inert]. -->
-                <div id="pdf-preview-page" class="pdf-page" inert aria-hidden="true"><div id="pdf-preview-doc" class="pr-doc"></div></div>
+              <!-- inert + aria-hidden: a picture of the document, not a second copy to tab
+                   through. pdfTrapFocus() already skips anything inside [inert]. -->
+              <div id="pdf-preview-scaler" class="relative origin-top-left" inert aria-hidden="true">
+                <!-- Off-screen measuring copy: the whole document at content width, which is what
+                     the paginator measures block heights from. -->
+                <div id="pdf-preview-doc" class="pr-doc pdf-measure"></div>
+                <!-- Real sheets, one element per page. -->
+                <div id="pdf-preview-pages"></div>
               </div>
             </div>
           </aside>
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
-          <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
-          <div class="flex items-center gap-2">
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
+          <div class="flex items-center justify-between sm:justify-start gap-3">
+            <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
+            <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">Pick <em>Save as PDF</em> in the dialog — a one-click PDF and DOCX are coming.</span>
+          </div>
+          <div class="flex items-center justify-end gap-2">
             <button id="pdf-cancel" onclick="closePdfModal()" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
             <button id="pdf-generate" onclick="generatePdf()" class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
-              <i data-lucide="download" class="w-4 h-4"></i>Print / Save as PDF
+              <i data-lucide="printer" class="w-4 h-4"></i>Print…
             </button>
           </div>
         </div>
@@ -2712,7 +2718,10 @@
       return {
         id: o.id, kind: o.kind, section: o.section,
         title: o.title || '', subtitle: o.subtitle || '', meta: o.meta || '',
-        body: o.body || '', bullets: o.bullets || [], keywords: o.keywords || []
+        body: o.body || '', bullets: o.bullets || [], keywords: o.keywords || [],
+        // Real named skills/tech from the data. `keywords` also carries generic matching words,
+        // which must never be offered to a visitor as something to ask about.
+        skills: o.skills || []
       };
     }
 
@@ -2733,7 +2742,7 @@
       // Core competencies — the skills questions land here.
       (overview.competencies || []).forEach((c, i) => docs.push(chatDoc({
         id: 'comp-' + i, kind: 'competency', section: 'overview',
-        title: c.title, subtitle: 'Core competency', body: c.description,
+        title: c.title, subtitle: 'Core competency', body: c.description, skills: c.skills || [],
         keywords: (c.skills || []).concat(['skill', 'skills', 'expertise', 'strength', 'tools', 'tech', 'technology', 'stack'])
       })));
 
@@ -2771,7 +2780,7 @@
         id: 'proj-' + p.id, kind: 'project', section: 'projects',
         title: p.name, subtitle: p.tagline || '',
         meta: [p.status, p.period].filter(Boolean).join('  ·  '),
-        body: p.summary, bullets: p.highlights || [],
+        body: p.summary, bullets: p.highlights || [], skills: p.tech || [],
         keywords: (p.tech || []).concat(['project', 'projects', 'built', 'build', 'side', 'open', 'source', 'github', 'repo', 'code'])
       })));
 
@@ -3279,6 +3288,20 @@
       };
     }
 
+    // Chips are things the VISITOR says, so anything written in the owner's first person has to
+    // be turned around before it becomes one. The résumé's own FAQ headings are written as "What's
+    // my leadership philosophy?", which would read as the visitor asking about their own career.
+    function chatToVisitorVoice(q) {
+      return String(q || '')
+        .replace(/\bam I\b/gi, 'are you')
+        .replace(/\bwas I\b/gi, 'were you')
+        .replace(/\bI\b/g, 'you')
+        .replace(/\bmyself\b/gi, 'yourself')
+        .replace(/\bmine\b/gi, 'yours')
+        .replace(/\bmy\b/g, 'your').replace(/\bMy\b/g, 'Your')
+        .replace(/\bme\b/g, 'you').replace(/\bMe\b/g, 'You');
+    }
+
     // Fill a template. An unfilled {placeholder} means the data wasn't there, so no chip.
     function chatTpl(name, vars, fallback) {
       const t = chatFollowCfg().templates;
@@ -3352,10 +3375,12 @@
         if (other) add('project', chatTpl('project', { project: other.title }, 'What is {project}?'), other.id);
       }
 
-      // A skill named in this entry, pointing at wherever it is covered in depth.
-      (doc.keywords || []).slice(0, 12).forEach(k => {
+      // A real named skill from this entry, pointing at wherever it is covered in depth.
+      // Only doc.skills: doc.keywords also holds generic matching words ("approach", "faq"),
+      // which produced chips like "Where have you used approach?".
+      (doc.skills || []).slice(0, 12).forEach(k => {
         const skill = String(k || '');
-        if (skill.length < 3 || /^(project|projects|built|build|side|open|source|github|repo|code|skill|skills|job|role|work|worked|working|experience|company|employer|position)$/i.test(skill)) return;
+        if (skill.length < 3) return;
         const target = docs.filter(d => d.id !== doc.id && chatTokens(skill).every(t => d.tf[t]))[0];
         if (target) add('skill', chatTpl('skill', { skill: skill }, 'Where have you used {skill}?'), target.id);
       });
@@ -3375,7 +3400,7 @@
         terms.forEach(t => { if (f.tf[t]) n++; });
         if (n > bestHits) { bestHits = n; bestFaq = f; }
       });
-      if (bestFaq) add('faq', bestFaq.title, bestFaq.id);
+      if (bestFaq) add('faq', chatToVisitorVoice(bestFaq.title), bestFaq.id);
 
       return out;
     }
@@ -3984,6 +4009,65 @@
       return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
     }
 
+    // --- Pagination ---------------------------------------------------------
+    // Dividing total height by page height is wrong, because the print stylesheet marks every
+    // entry `break-inside: avoid`: a block that does not fit moves WHOLE to the next page and
+    // leaves the rest of the previous one empty. So the preview models the same rule — split the
+    // document into the blocks the printer cannot break, then fill sheets one block at a time.
+    //
+    // It is a model, not the print engine: widow/orphan handling and a block taller than a page
+    // can still differ. It is close enough to answer the only question the screen is for — will
+    // this fit, and what would trimming buy.
+
+    // The blocks a page break may fall between, in document order, each with its height.
+    function pdfBreakBlocks(root) {
+      const blocks = [];
+      const push = (node, wrapTag, wrapClass) => {
+        // offsetHeight, not getBoundingClientRect: the measuring node lives inside the scaled
+        // preview, and a rect would come back multiplied by that scale — which silently packed
+        // nearly twice as much onto every page.
+        const cs = getComputedStyle(node);
+        const margin = (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+        blocks.push({ node: node, height: node.offsetHeight + margin, wrapTag: wrapTag || null, wrapClass: wrapClass || null,
+                      isHeading: node.classList && node.classList.contains('pr-section-h') });
+      };
+      Array.prototype.forEach.call(root.children, node => {
+        if (node.tagName === 'TABLE') {
+          // Each <tbody class="pr-entry"> is one role: never split, per the print stylesheet.
+          Array.prototype.forEach.call(node.tBodies, tb => push(tb, 'table', node.className));
+        } else if (node.children.length && /pr-(projects|reco|comp|edu)/.test(node.className)) {
+          Array.prototype.forEach.call(node.children, ch => push(ch, 'div', node.className));
+        } else {
+          push(node);
+        }
+      });
+      return blocks;
+    }
+
+    // Greedy fill, one block at a time. A heading left stranded at the foot of a page moves down
+    // with the block it introduces, which is what the printer does too.
+    function pdfPaginate(blocks, usableH) {
+      const pages = [];
+      let page = [], used = 0;
+      blocks.forEach(b => {
+        if (used > 0 && used + b.height > usableH + 0.5) { pages.push({ blocks: page, used: used }); page = []; used = 0; }
+        page.push(b);
+        used += b.height;
+      });
+      if (page.length) pages.push({ blocks: page, used: used });
+
+      for (let i = 0; i < pages.length - 1; i++) {
+        const last = pages[i].blocks[pages[i].blocks.length - 1];
+        if (last && last.isHeading && pages[i].blocks.length > 1) {
+          pages[i].blocks.pop();
+          pages[i].used -= last.height;
+          pages[i + 1].blocks.unshift(last);
+          pages[i + 1].used += last.height;
+        }
+      }
+      return pages;
+    }
+
     // --- Live preview + section rail ---------------------------------------
     // The preview renders buildPrintResumeHTML() into a .pr-doc card at true page width and
     // scales it to the pane, so it is the print output rather than an impression of it. Page
@@ -4001,11 +4085,11 @@
 
     function refreshPdfPreview() {
       const pane = document.getElementById('pdf-preview-pane');
-      const page = document.getElementById('pdf-preview-page');
       const doc = document.getElementById('pdf-preview-doc');
+      const pagesHost = document.getElementById('pdf-preview-pages');
       const scaler = document.getElementById('pdf-preview-scaler');
       const scroll = document.getElementById('pdf-preview-scroll');
-      if (!pane || !page || !doc || !scaler || !scroll || !pdfConfig) return;
+      if (!pane || !doc || !pagesHost || !scaler || !scroll || !pdfConfig) return;
       // A hidden pane has no width, so every measurement would be nonsense — page count
       // included. openPdfModal() calls back once the dialog is actually on screen.
       if (pane.offsetParent === null) return;
@@ -4013,40 +4097,57 @@
       const cfg = pdfConfig.page || { size: 'a4', density: 'normal' };
       const dims = PR_PAGE_MM[cfg.size] || PR_PAGE_MM.a4;
       const marginMm = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
+      const pad = marginMm * MM_PX;
       const pageW = dims[0] * MM_PX;
       const usableH = (dims[1] - 2 * marginMm) * MM_PX;
+      const density = cfg.density || 'normal';
 
-      page.style.width = pageW + 'px';
-      page.style.padding = (marginMm * MM_PX) + 'px';
-      doc.className = 'pr-doc pr-d-' + (cfg.density || 'normal');
+      // 1. Render the whole document off-screen at content width and measure it.
+      doc.className = 'pr-doc pdf-measure pr-d-' + density;
+      doc.style.width = (pageW - 2 * pad) + 'px';
       doc.innerHTML = buildPrintResumeHTML(pdfConfig);
+      const pages = pdfPaginate(pdfBreakBlocks(doc), usableH);
 
-      // Guides every usable page height, measured from the top of the content box.
-      page.querySelectorAll('.pdf-page-guide').forEach(g => g.remove());
-      const contentH = doc.scrollHeight;
-      const pages = Math.max(1, Math.ceil(contentH / usableH));
-      for (let i = 1; i < pages; i++) {
-        const g = document.createElement('div');
-        g.className = 'pdf-page-guide';
-        g.style.top = (marginMm * MM_PX + i * usableH) + 'px';
-        g.innerHTML = '<span>PAGE ' + (i + 1) + '</span>';
-        page.appendChild(g);
-      }
+      // 2. Lay the blocks out on real sheets, one element per page.
+      pagesHost.innerHTML = '';
+      pages.forEach((pg, i) => {
+        const sheet = document.createElement('div');
+        sheet.className = 'pdf-page pr-doc pr-d-' + density;
+        sheet.style.width = pageW + 'px';
+        sheet.style.minHeight = (dims[1] * MM_PX) + 'px';
+        sheet.style.padding = pad + 'px';
+        let wrap = null, wrapKey = '';
+        pg.blocks.forEach(b => {
+          const key = b.wrapTag ? b.wrapTag + '|' + b.wrapClass : '';
+          if (!key) { wrap = null; wrapKey = ''; sheet.appendChild(b.node.cloneNode(true)); return; }
+          if (key !== wrapKey) {
+            wrap = document.createElement(b.wrapTag);
+            wrap.className = b.wrapClass;
+            wrapKey = key;
+            sheet.appendChild(wrap);
+          }
+          wrap.appendChild(b.node.cloneNode(true));
+        });
+        pagesHost.appendChild(sheet);
 
+        const cap = document.createElement('div');
+        cap.className = 'pdf-caption';
+        cap.textContent = 'Page ' + (i + 1) + ' of ' + pages.length +
+          ' \u00b7 ' + Math.round((pg.used / usableH) * 100) + '% full';
+        pagesHost.appendChild(cap);
+      });
+
+      // 3. Scale the sheets to the pane.
       const avail = Math.max(120, scroll.clientWidth - 32);
       const scale = Math.min(1, avail / pageW);
       scaler.style.transform = 'scale(' + scale + ')';
       scaler.style.width = pageW + 'px';
-      scaler.style.height = (page.offsetHeight * scale) + 'px';
+      scaler.style.height = (pagesHost.offsetHeight * scale) + 'px';
 
       const meta = document.getElementById('pdf-preview-meta');
       if (meta) {
-        // Page count alone hides what density bought: compact and normal can both round up
-        // to 3. The fill of the last page is what says whether one more trim saves a page.
-        const lastFill = Math.round(((contentH % usableH) / usableH || 1) * 100);
-        meta.textContent = pages + (pages === 1 ? ' page' : ' pages') +
-          (pages > 1 ? ' (last ~' + lastFill + '%)' : '') + ' · ' +
-          (cfg.size === 'letter' ? 'Letter' : 'A4') + ' · ' + (cfg.density || 'normal');
+        meta.textContent = pages.length + (pages.length === 1 ? ' page' : ' pages') + ' \u00b7 ' +
+          (cfg.size === 'letter' ? 'Letter' : 'A4') + ' \u00b7 ' + density;
       }
     }
 
