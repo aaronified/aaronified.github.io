@@ -2143,8 +2143,8 @@
       ],
       pattachitra: [
         { hex: '#B45309', label: 'Ochre' },
-        { hex: '#B91C1C', label: 'Hingul red' },
-        { hex: '#1E40AF', label: 'Neel indigo' },
+        { hex: '#9F3A2F', label: 'Hingul red' },
+        { hex: '#31527D', label: 'Neel indigo' },
         { hex: '#7C2D12', label: 'Burnt earth' }
       ],
       dokra: [
@@ -6851,11 +6851,22 @@
           '">' + escapeHtml(f.label) + '</button>';
       }).join('');
 
-      // The controls live in the section's own column and the deck gets the room. Each group
-      // is a label and a control; the paragraphs that used to explain them said what a swatch
-      // and a paper size already say.
+      // The sidebar keeps what is set once and left alone — typeface, paper, density. The two
+      // colours and the skills switch belong under the deck instead: they are template-specific,
+      // and they read as a caption to the card you just picked.
       const controls =
         '<div class="space-y-3">' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
+            '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div></div>' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Paper</div>' +
+            group('size', page.size, [{ v: 'a4', label: 'A4' }, { v: 'letter', label: 'US Letter' }]) + '</div>' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Density</div>' +
+            group('density', page.density, [
+              { v: 'compact', label: 'Compact' }, { v: 'normal', label: 'Normal' }, { v: 'roomy', label: 'Roomy' }]) + '</div>' +
+        '</div>';
+
+      const deckControls =
+        '<div class="flex flex-wrap gap-x-6 gap-y-3 pt-3 mt-1 border-t border-slate-200/50 dark:border-slate-800/50">' +
           // Two colours, two jobs: the background a template paints, and what is drawn on it.
           '<div id="pdf-theme-opt" class="space-y-1.5' + (prThemes(page.template) ? '' : ' hidden') + '">' +
             '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Theme colour <span class="normal-case tracking-normal font-normal">(background)</span></div>' +
@@ -6893,13 +6904,6 @@
             '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Skills in the sidebar</div>' +
             group('skillBars', page.skillBars ? 'bars' : 'text',
               [{ v: 'text', label: 'Competency text' }, { v: 'bars', label: 'Rated bars' }]) + '</div>' +
-          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
-            '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div></div>' +
-          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Paper</div>' +
-            group('size', page.size, [{ v: 'a4', label: 'A4' }, { v: 'letter', label: 'US Letter' }]) + '</div>' +
-          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Density</div>' +
-            group('density', page.density, [
-              { v: 'compact', label: 'Compact' }, { v: 'normal', label: 'Normal' }, { v: 'roomy', label: 'Roomy' }]) + '</div>' +
         '</div>';
 
       const right =
@@ -6917,7 +6921,7 @@
             Object.keys(PR_TEMPLATES).map(k =>
               '<span class="pdf-tmpl-dot" data-dot="' + escapeAttr(k) + '" aria-current="' +
               (k === (page.template || PR_TEMPLATE_DEFAULT) ? 'true' : 'false') + '"></span>').join('') +
-          '</div></div>';
+          '</div>' + deckControls + '</div>';
 
       return pdfSectionRowHTML('Page', '', controls, right, 'sm:w-60 md:w-64');
     }
@@ -7645,6 +7649,10 @@
         drawIcons();
         // Paper size changes the thumbnails' aspect; template and font change what is in them.
         renderTemplateThumbs();
+        // outerHTML replaced the deck, so the element the wheel and swipe handlers were bound
+        // to no longer exists. Without this, side-scrolling the carousel works until you touch
+        // any other Page control and then silently stops.
+        wireTemplateSwipe();
       }
       updateResetButton();
       schedulePdfPreview();
