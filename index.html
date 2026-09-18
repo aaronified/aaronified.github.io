@@ -621,11 +621,11 @@
        is a whole page of the user's own résumé at true width, scaled into the card, so the
        choice is made by looking at the document rather than by reading a name for it. */
     .pdf-tmpl-deck {
-      position: relative; height: 258px; perspective: 1100px;
+      position: relative; height: 350px; perspective: 1400px;
       touch-action: pan-y; user-select: none; overflow: hidden;
     }
     .pdf-tmpl-card {
-      position: absolute; top: 4px; left: 50%; width: 132px; margin-left: -66px;
+      position: absolute; top: 4px; left: 50%; width: 184px; margin-left: -92px;
       transform-origin: 50% 50%;
       /* No will-change. It pins the card into a composited layer, and a layer holding a
          document scaled to 16% is rasterised once and then stretched — which is what made the
@@ -642,7 +642,7 @@
     .pdf-tmpl-dot { transition: width .45s cubic-bezier(.34, 1.56, .64, 1), background-color .3s ease; }
     .reduce-motion .pdf-tmpl-card,
     .reduce-motion .pdf-tmpl-dot { transition: none; }
-    .pdf-tmpl-thumb { height: 175px; position: relative; }
+    .pdf-tmpl-thumb { height: 246px; position: relative; }
     .pdf-tmpl-scaler { transform-origin: top left; position: absolute; top: 0; left: 0; }
     .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(15, 23, 42, .45); }
     .dark .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(0, 0, 0, .7); }
@@ -6879,10 +6879,10 @@
           '<div class="relative">' +
           '<div id="pdf-tmpl-strip" class="pdf-tmpl-deck" role="radiogroup" aria-label="template">' + cards + '</div>' +
           '<button type="button" id="pdf-tmpl-prev" onclick="stepTemplate(-1)" aria-label="Previous template"' +
-            ' class="absolute left-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
+            ' class="absolute left-0 top-[112px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
             '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>' +
           '<button type="button" id="pdf-tmpl-next" onclick="stepTemplate(1)" aria-label="Next template"' +
-            ' class="absolute right-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
+            ' class="absolute right-0 top-[112px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
             '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>' +
           '</div>' +
           '<div class="pdf-tmpl-dots" aria-hidden="true">' +
@@ -7327,7 +7327,7 @@
     // measured and reduced to a bar — grey for prose, darker for headings, blue where the
     // résumé highlights something — and the bars are drawn into a canvas. What the deck then
     // scrolls is three bitmaps: no text rendering, no layout, nothing to go wrong.
-    const PR_THUMB_W = 124;
+    const PR_THUMB_W = 174;
     const PR_THUMB_INK = {
       body:    'rgba(71, 85, 105, .62)',
       heading: 'rgba(15, 23, 42, .92)',
@@ -7471,7 +7471,7 @@
       if (!strip) return;
       const cards = Array.prototype.slice.call(strip.querySelectorAll('.pdf-tmpl-card'));
       const at = Math.max(0, cards.findIndex(c => c.getAttribute('aria-checked') === 'true'));
-      const STEP = 74, TILT = 26, SHRINK = 0.14;
+      const STEP = 104, TILT = 26, SHRINK = 0.14;
       cards.forEach((card, i) => {
         const d = i - at;
         const depth = Math.min(Math.abs(d), 2);
