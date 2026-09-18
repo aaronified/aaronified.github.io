@@ -677,15 +677,17 @@
     .pr-doc.pr-t-pattachitra .pr-sb-n { font-weight: 700; font-size: 0.95em; }
     .pr-doc.pr-t-dokra .pr-sb-l,
     .pr-doc.pr-t-pattachitra .pr-sb-l { font-size: 0.82em; color: #64748b; letter-spacing: .04em; }
+    /* Pills, not hairlines: a bar four steps long reads better as a rounded track with a
+       rounded fill sitting in it than as a rule someone forgot to finish. */
     .pr-doc.pr-t-dokra .pr-sb-t,
     .pr-doc.pr-t-pattachitra .pr-sb-t {
-      grid-column: 1 / -1; display: block; height: 3.5px; margin-top: 1.5px;
-      background: #e2e8f0; border-radius: 2px; overflow: hidden;
+      grid-column: 1 / -1; display: block; height: 7px; margin-top: 2px;
+      background: rgba(100, 116, 139, .22); border-radius: 999px; overflow: hidden;
     }
     .pr-doc.pr-t-dokra .pr-sb-f,
-    .pr-doc.pr-t-pattachitra .pr-sb-f { display: block; height: 100%; background: var(--pr-accent); border-radius: 2px; }
+    .pr-doc.pr-t-pattachitra .pr-sb-f { display: block; height: 100%; background: var(--pr-accent); border-radius: 999px; }
     .pr-doc.pr-t-dokra .pr-sb-f { background: var(--pr-accent); }
-    .pr-doc.pr-t-dokra .pr-sb-t { height: 3px; }
+
     /* In Pattachitra the bars live on the painted column, so they take its palette. */
     .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-n { color: var(--pr-cream); font-size: 0.9em; }
     .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-l { color: #b9a897; font-size: 0.78em; }
@@ -871,6 +873,7 @@
       padding: 0 14px calc(4px * var(--pr-gap)) 0;
       border-right: 1px solid #cfd5dc; break-inside: avoid;
     }
+    .pr-doc.pr-t-dokra .pr-dokra-head,
     .pr-doc.pr-t-dokra .pr-aside h4,
     .pr-doc.pr-t-dokra .pr-section-h {
       /* the bronze rules under Dokra's heads stay inside the columns — two columns meeting the
@@ -879,17 +882,22 @@
       color: var(--pr-cast); background: none; border-bottom: 2px solid var(--pr-bronze);
       padding: 0 0 2px; margin: calc(8px * var(--pr-gap)) 0 calc(3px * var(--pr-gap));
     }
-    .pr-doc.pr-t-dokra .pr-aside h4:first-child { margin-top: 0; }
+    .pr-doc.pr-t-dokra .pr-aside h4:first-child,
+    .pr-doc.pr-t-dokra .pr-dokra-head { margin-top: 0; }
+    .pr-doc.pr-t-dokra .pr-aside ul { list-style: none; margin: 0 0 calc(6px * var(--pr-gap)); padding: 0; }
+    .pr-doc.pr-t-dokra .pr-aside li { margin: 0 0 calc(3px * var(--pr-gap)); font-size: 0.95em; }
+    .pr-doc.pr-t-dokra .pr-aside .t { font-weight: 700; }
+    .pr-doc.pr-t-dokra .pr-aside .pr-aside-sk { font-size: 0.9em; color: #52606d; }
     .pr-doc.pr-t-dokra .pr-aside .pr-summary { margin: 0; font-size: 0.95em; }
 
-    /* A table establishes a block formatting context, so a full-width one cannot sit beside a
-       float — it drops below it, leaving the top half of the right column empty. Letting it
-       size to the space that is left puts the career back alongside the skills, and it returns
-       to the full width on the pages where there is no column beside it. */
-    .pr-doc.pr-t-dokra table.pr-traj,
-    .pr-doc.pr-t-dokra .pr-projects,
-    .pr-doc.pr-t-dokra .pr-edu,
-    .pr-doc.pr-t-dokra .pr-reco { width: auto; min-width: calc(50% - 9px); }
+    /* The projects take the other half of the opening row. */
+    .pr-doc.pr-t-dokra .pr-dokra-right {
+      float: right; width: calc(50% - 9px); margin: 0 0 calc(6px * var(--pr-gap)) 0;
+    }
+    .pr-doc.pr-t-dokra .pr-dokra-right .pr-proj-item { break-inside: avoid; }
+    /* Everything after the two columns runs the full width beneath them — the roles, which is
+       the part that grows as a career does. */
+    .pr-doc.pr-t-dokra .pr-section-h { clear: both; }
     .pr-doc.pr-t-dokra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td {
       border-top: 1px solid #cfd5dc; padding-top: calc(4px * var(--pr-gap));
     }
@@ -2488,12 +2496,35 @@
       // left with the career beside them. Like Pattachitra's, the left column is a floated
       // block, so the one-flow paginator still measures it and page two simply runs full width
       // — the left column's content is finite and belongs on the opening page anyway.
+      // Dokra is built for someone whose experience is still short: what they know and what
+      // they have studied come first, what they have built sits beside it, and the roles run
+      // underneath. A long career would fill the bottom; a short one does not have to pretend.
       const dokraAside = (template !== 'dokra') ? '' : (() => {
         const about = (sumCfg.include !== false && summaryHtml)
           ? `<h4>About</h4><p class="pr-summary" data-edit="sum">${summaryHtml}</p>` : '';
         const bars = skillBarsHTML ? `<h4>Skills</h4>${skillBarsHTML}` : '';
-        return (about || bars) ? `<aside class="pr-aside">${about}${bars}</aside>` : '';
+        const edu = eduList
+          .filter(e => !(entCfg[e.id] && !entCfg[e.id].include))
+          .map(e => {
+            const eCfg = entCfg[e.id] || {};
+            const score = (eCfg.showScore !== false && e.score) ? ` (${escapeHtml(e.score)})` : '';
+            const desc = (eCfg.showDescription !== false && e.description)
+              ? `<div class="pr-aside-sk">${formatText(e.description)}</div>` : '';
+            return `<li><span class="t">${escapeHtml(e.company)}</span>` +
+                   `<div class="pr-aside-sk">${escapeHtml(e.role)}${score} &middot; ${escapeHtml(e.period)}</div>${desc}</li>`;
+          }).join('');
+        const eduBlock = edu ? `<h4>Education</h4><ul>${edu}</ul>` : '';
+        return (about || bars || eduBlock)
+          ? `<aside class="pr-aside">${about}${bars}${eduBlock}</aside>` : '';
       })();
+      // …and the projects take the other half of that row.
+      // Two top-level blocks rather than one wrapper: pdfBreakBlocks already splits a
+      // `.pr-projects` container into its items, so the column can run over a page break. As a
+      // single wrapper it was one 1,244px block that could not be split and overflowed the page
+      // by 21% the moment there were a few projects.
+      const dokraRight = (template !== 'dokra' || !projectsHTML) ? ''
+        : `<h4 class="pr-dokra-right pr-dokra-head">Projects</h4>` +
+          `<div class="pr-projects pr-dokra-right">${projectsHTML}</div>`;
 
       const asideHTML = dokraAside || ((template !== 'pattachitra') ? '' : (() => {
         const skills = compCfg.order
@@ -2552,7 +2583,7 @@
       // beside everything, so its aside comes first; Dokra's banner spans the full page and the
       // column starts under it, so there the aside comes after the banner and the strip.
       return `
-        ${template === 'dokra' ? heroHTML + asideHTML : asideHTML + heroHTML}
+        ${template === 'dokra' ? heroHTML + asideHTML + dokraRight : asideHTML + heroHTML}
 
         ${(sumCfg.include !== false && sumFlow) ? `<div class="pr-section-h">Summary</div><p class="pr-summary" data-edit="sum">${sumFlow}</p>` : ''}
 
@@ -2560,9 +2591,9 @@
 
         ${workRows ? `<div class="pr-section-h">Career Trajectory</div><table class="pr-traj">${workRows}</table>` : ''}
 
-        ${projectsHTML ? `<div class="pr-section-h">Projects</div><div class="pr-projects">${projectsHTML}</div>` : ''}
+        ${(projectsHTML && template !== 'dokra') ? `<div class="pr-section-h">Projects</div><div class="pr-projects">${projectsHTML}</div>` : ''}
 
-        ${template === 'pattachitra'
+        ${(template === 'pattachitra' || template === 'dokra')
             ? (internHTML ? `<div class="pr-section-h">Internships</div><div class="pr-edu">${internHTML}</div>` : '')
             : (eduHTML ? `<div class="pr-section-h">Education</div><div class="pr-edu">${eduHTML}</div>` : '')}
 
