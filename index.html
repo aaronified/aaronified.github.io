@@ -500,7 +500,6 @@
     .pdf-page + .pdf-caption { font-weight: 600; font-family: 'Inter', sans-serif; line-height: 1.1; color: #475569; letter-spacing: .02em; text-align: right; }
     .dark .pdf-page + .pdf-caption { color: #cbd5e1; }
     .pdf-measure { position: absolute; left: -10000px; top: 0; visibility: hidden; }
-    .pdf-rail-item { display: block; width: 100%; text-align: left; border-radius: 0.6rem; padding: 0.35rem 0.6rem; font-size: 12px; font-weight: 600; }
 
     @media print {
       /* Paper size and margin are rewritten at runtime by applyPrintPageStyle() from the
@@ -756,8 +755,7 @@
              The preview renders the very same .pr-doc markup the printer gets, so it cannot
              drift from the output. -->
         <div class="flex-1 min-h-0 flex">
-          <nav id="pdf-rail" class="hidden md:block w-44 flex-shrink-0 overflow-y-auto border-r border-slate-200/50 dark:border-slate-800/50 py-4 px-3 space-y-0.5" aria-label="Sections"></nav>
-          <div id="pdf-modal-body" class="flex-1 min-w-0 overflow-y-auto px-6 py-4"></div>
+          <div id="pdf-modal-body" class="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 py-4"></div>
           <aside id="pdf-preview-pane" class="hidden lg:flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50">
               <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live preview</span>
@@ -4231,32 +4229,6 @@
       }
     }
 
-    // Rail: one entry per section in the settings column, built from what renderPdfModal wrote.
-    function renderPdfRail() {
-      const rail = document.getElementById('pdf-rail');
-      const body = document.getElementById('pdf-modal-body');
-      if (!rail || !body) return;
-      const sections = Array.prototype.slice.call(body.querySelectorAll('.pdf-section'));
-      rail.innerHTML = sections.map((sec, i) => {
-        const h = sec.querySelector('h3');
-        const badge = sec.querySelector('[id$="-badge"]');
-        sec.setAttribute('data-pdf-section-index', i);
-        return '<button type="button" class="pdf-rail-item text-slate-600 dark:text-slate-300 hover:bg-indigo-500/10 dark:hover:bg-amber-400/10 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" data-pdf-goto="' + i + '">' +
-          escapeHtml(h ? h.textContent : 'Section') +
-          (badge ? '<span class="block text-[10px] font-medium text-slate-400 dark:text-slate-500">' + escapeHtml(badge.textContent) + '</span>' : '') +
-          '</button>';
-      }).join('');
-      if (!rail.dataset.wired) {
-        rail.dataset.wired = '1';
-        rail.addEventListener('click', e => {
-          const btn = e.target.closest('[data-pdf-goto]');
-          if (!btn) return;
-          const target = body.querySelector('[data-pdf-section-index="' + btn.getAttribute('data-pdf-goto') + '"]');
-          if (target) target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
-        });
-      }
-    }
-
     /* ============================================================
        PDF EXPORT (assets/vendor/jspdf.umd.min.js, loaded on demand)
 
@@ -4542,7 +4514,7 @@
       const u32 = v => [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF];
       files.forEach(f => {
         const name = enc.encode(f.name);
-        const data = enc.encode(f.data);
+        const data = (f.data instanceof Uint8Array) ? f.data : enc.encode(f.data);
         const crc = crc32(data);
         const local = [].concat([0x50, 0x4B, 0x03, 0x04], u16(20), u16(0), u16(0), u16(0), u16(0),
           u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0));
@@ -4569,11 +4541,43 @@
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Word wants the picture bytes in the package, so every image is fetched and downscaled
+    // first (the same routine the PDF uses) and looked up during the build.
+    const EMU_PER_PX = 9525;
+    async function docxCollectImages(root) {
+      const map = new Map();
+      const imgs = Array.prototype.slice.call(root.querySelectorAll('img'));
+      await Promise.all(imgs.map(async el => {
+        if (map.has(el.src)) return;
+        // offsetWidth, not a rect: the measuring node sits inside the scaled preview.
+        const w = Math.max(1, el.offsetWidth || 13);
+        const h = Math.max(1, el.offsetHeight || w);
+        const data = await pdfImageData(el.src, w, h);
+        if (data) map.set(el.src, { data: data, w: w, h: h });
+      }));
+      return map;
+    }
+
+    function docxDrawing(img, id, relId) {
+      const cx = Math.round(img.w * EMU_PER_PX), cy = Math.round(img.h * EMU_PER_PX);
+      const A = 'http://schemas.openxmlformats.org/drawingml/2006/';
+      return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+        '<wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:docPr id="' + id + '" name="Image' + id + '"/>' +
+        '<a:graphic xmlns:a="' + A + 'main"><a:graphicData uri="' + A + 'picture">' +
+        '<pic:pic xmlns:pic="' + A + 'picture"><pic:nvPicPr><pic:cNvPr id="' + id + '" name="Image' + id + '"/>' +
+        '<pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="' + relId + '"/>' +
+        '<a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/>' +
+        '<a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+        '</pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
+    }
+
     // Walk the rendered document and turn it into Word paragraphs. Reusing the DOM means the
     // selections, order and (later) edits come along without a second content pipeline.
-    function docxFromDocument(root) {
+    function docxFromDocument(root, images) {
       const rels = [];
+      const media = [];
       const body = [];
+      images = images || new Map();
       const relFor = url => {
         const found = rels.filter(r => r.url === url)[0];
         if (found) return found.id;
@@ -4584,19 +4588,28 @@
 
       const runsOf = el => {
         const out = [];
-        const walk = (node, bold, link) => {
+        const walk = (node, bold, link, colour) => {
           if (node.nodeType === Node.TEXT_NODE) {
             const text = node.nodeValue.replace(/\s+/g, ' ');
-            if (text.trim()) out.push({ text: text, bold: bold, link: link });
+            if (text.trim()) out.push({ text: text, bold: bold, link: link, colour: colour });
             return;
           }
-          if (node.nodeType !== Node.ELEMENT_NODE || node.tagName === 'IMG') return;
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          if (node.tagName === 'IMG') {
+            const img = images.get(node.src);
+            if (img) out.push({ img: img });
+            return;
+          }
           const cs = getComputedStyle(node);
           const b = bold || (parseInt(cs.fontWeight, 10) || 400) >= 600;
           const l = (node.tagName === 'A' && node.getAttribute('href')) ? node.href : link;
-          Array.prototype.forEach.call(node.childNodes, ch => walk(ch, b, l));
+          // The inline highlights print bold blue; carry that into Word rather than flattening
+          // every run to black.
+          const m = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(cs.color || '');
+          const hex = m ? ((+m[1] << 16) + (+m[2] << 8) + (+m[3])).toString(16).padStart(6, '0') : colour;
+          Array.prototype.forEach.call(node.childNodes, ch => walk(ch, b, l, hex));
         };
-        walk(el, false, null);
+        walk(el, false, null, null);
         return out;
       };
 
@@ -4605,13 +4618,23 @@
         if (!runs.length) return;
         const props = ['<w:pPr>'];
         if (opts.bullet) props.push('<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>');
+        if (opts.rule) props.push('<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="2" w:color="D4D4D4"/></w:pBdr>');
+        if (opts.tabRight) props.push('<w:tabs><w:tab w:val="right" w:pos="9639"/></w:tabs>');
         props.push('<w:spacing w:before="' + (opts.before || 0) + '" w:after="' + (opts.after == null ? 60 : opts.after) + '"/>');
         props.push('</w:pPr>');
         const xml = runs.map(r => {
           const fmt = '<w:rPr>' + (r.bold ? '<w:b/>' : '') +
-            (r.link ? '<w:color w:val="1D4ED8"/><w:u w:val="single"/>' : '') +
+            (r.link ? '<w:color w:val="1D4ED8"/><w:u w:val="single"/>'
+                    : (r.colour && r.colour !== '2d2d2d' && r.colour !== '000000' ? '<w:color w:val="' + r.colour.toUpperCase() + '"/>' : '')) +
             (opts.size ? '<w:sz w:val="' + opts.size + '"/><w:szCs w:val="' + opts.size + '"/>' : '') + '</w:rPr>';
-          const run = '<w:r>' + fmt + '<w:t xml:space="preserve">' + xmlEsc(r.text) + '</w:t></w:r>';
+          if (r.img) {
+            const idx = media.length + 1;
+            const relId = 'rIdImg' + idx;
+            media.push({ name: 'word/media/image' + idx + '.jpeg', data: r.img.data, relId: relId });
+            return docxDrawing(r.img, 1000 + idx, relId);
+          }
+          const run = '<w:r>' + fmt + (r.tab ? '<w:tab/>' : '') +
+            '<w:t xml:space="preserve">' + xmlEsc(r.text) + '</w:t></w:r>';
           return r.link ? '<w:hyperlink r:id="' + relFor(r.link) + '">' + run + '</w:hyperlink>' : run;
         }).join('');
         body.push('<w:p>' + props.join('') + xml + '</w:p>');
@@ -4621,31 +4644,43 @@
         if (section.classList.contains('pr-hero')) {
           const name = section.querySelector('.pr-name');
           const title = section.querySelector('.pr-title');
+          const photo = section.querySelector('img');
+          if (photo && images.get(photo.src)) para([{ img: images.get(photo.src) }], { after: 60 });
           if (name) para([{ text: name.textContent.trim(), bold: true }], { size: 40, after: 40 });
           if (title) para(runsOf(title), { size: 22, after: 40 });
           Array.prototype.forEach.call(section.querySelectorAll('.pr-meta'), m => para(runsOf(m), { size: 18, after: 40 }));
           return;
         }
         if (section.classList.contains('pr-section-h')) {
-          para([{ text: section.textContent.trim(), bold: true }], { size: 26, before: 200, after: 80 });
+          para([{ text: section.textContent.trim(), bold: true }], { size: 26, before: 200, after: 60, rule: true });
           return;
         }
         if (section.tagName === 'TABLE') {
           Array.prototype.forEach.call(section.tBodies, tb => {
             const co = tb.querySelector('.co'), role = tb.querySelector('.role'), period = tb.querySelector('.period');
             const head = [];
+            const logo = tb.querySelector('img');
+            if (logo && images.get(logo.src)) head.push({ img: images.get(logo.src) });
             const coLink = co ? co.querySelector('a') : null;
             if (co) head.push({ text: co.textContent.trim(), bold: true, link: coLink ? coLink.href : null });
             if (role) head.push({ text: ' ' + role.textContent.trim(), bold: false });
-            if (period) head.push({ text: '  —  ' + period.textContent.trim(), bold: false });
-            para(head, { before: 120, after: 20 });
+            if (period) head.push({ text: period.textContent.trim(), bold: false, tab: true });
+            para(head, { before: 120, after: 20, tabRight: true });
             const lead = tb.querySelector('.lead');
             if (lead) para(runsOf(lead), { after: 20 });
             Array.prototype.forEach.call(tb.querySelectorAll('li'), li => para(runsOf(li), { bullet: true, after: 0 }));
           });
           return;
         }
-        const items = section.children.length ? Array.prototype.slice.call(section.children) : [section];
+        // Block children (the competency paragraphs, the project blocks) are separate paragraphs;
+        // inline children (the highlight spans inside the summary) belong to their parent. Getting
+        // this wrong dropped every word of prose around the highlights.
+        const kids = Array.prototype.slice.call(section.children);
+        const hasBlockChildren = kids.some(k => {
+          const d = getComputedStyle(k).display;
+          return d !== 'inline' && d !== 'inline-block' && d !== 'none';
+        });
+        const items = hasBlockChildren ? kids : [section];
         items.forEach(item => {
           if (item.tagName === 'UL' || item.tagName === 'OL') {
             Array.prototype.forEach.call(item.children, li => para(runsOf(li), { bullet: true, after: 0 }));
@@ -4659,16 +4694,17 @@
         });
       });
 
-      return { body: body.join(''), rels: rels };
+      return { body: body.join(''), rels: rels, media: media };
     }
 
-    function docxBuild(root) {
-      const built = docxFromDocument(root);
+    async function docxBuild(root) {
+      const built = docxFromDocument(root, await docxCollectImages(root));
       const NS = 'http://schemas.openxmlformats.org/';
       const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<Types xmlns="' + NS + 'package/2006/content-types">' +
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
         '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Default Extension="jpeg" ContentType="image/jpeg"/>' +
         '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
         '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
         '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
@@ -4682,6 +4718,7 @@
         '<Relationship Id="rId2" Type="' + NS + 'officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
         '<Relationship Id="rId3" Type="' + NS + 'officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
         built.rels.map(r => '<Relationship Id="' + r.id + '" Type="' + NS + 'officeDocument/2006/relationships/hyperlink" Target="' + xmlEsc(r.url) + '" TargetMode="External"/>').join('') +
+        built.media.map(m => '<Relationship Id="' + m.relId + '" Type="' + NS + 'officeDocument/2006/relationships/image" Target="' + m.name.replace('word/', '') + '"/>').join('') +
         '</Relationships>';
       const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
       const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -4693,10 +4730,18 @@
         '<w:lvlText w:val="•"/><w:pPr><w:ind w:left="360" w:hanging="180"/></w:pPr></w:lvl></w:abstractNum>' +
         '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>';
       const documentXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-        '<w:document xmlns:w="' + W + '" xmlns:r="' + NS + 'officeDocument/2006/relationships"><w:body>' +
+        '<w:document xmlns:w="' + W + '" xmlns:r="' + NS + 'officeDocument/2006/relationships" ' +
+        'xmlns:wp="' + NS + 'drawingml/2006/wordprocessingDrawing"><w:body>' +
         built.body +
         '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850"/></w:sectPr>' +
         '</w:body></w:document>';
+      // dataURL → bytes for each picture part
+      const mediaParts = built.media.map(m => {
+        const bin = atob(String(m.data).split(',')[1] || '');
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return { name: m.name, data: bytes };
+      });
       return zipStore([
         { name: '[Content_Types].xml', data: contentTypes },
         { name: '_rels/.rels', data: rootRels },
@@ -4704,16 +4749,16 @@
         { name: 'word/_rels/document.xml.rels', data: docRels },
         { name: 'word/styles.xml', data: styles },
         { name: 'word/numbering.xml', data: numbering }
-      ]);
+      ].concat(mediaParts));
     }
 
-    function saveDocx(btn) {
+    async function saveDocx(btn) {
       const label = btn && btn.innerHTML;
       try {
         if (btn) { btn.disabled = true; btn.innerHTML = 'Building...'; }
         const root = document.getElementById('pdf-preview-doc');
         if (!root || !root.children.length) throw new Error('nothing to export');
-        const blob = new Blob([docxBuild(root)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        const blob = new Blob([await docxBuild(root)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = pdfFileName('docx');
@@ -4832,7 +4877,6 @@
       body.innerHTML = html;
       if (window.lucide) lucide.createIcons();
       refreshPdfModifiedHighlights();
-      renderPdfRail();
       refreshPdfPreview();
     }
 
@@ -4840,7 +4884,7 @@
     // universal ("all items") toggles; right = the individual items. Columns stack on narrow widths.
     function pdfSectionRowHTML(title, badgeHTML, globalsHTML, rightHTML) {
       return '<section class="pdf-section flex flex-col sm:flex-row gap-3 sm:gap-5 py-4 border-t border-slate-200/50 dark:border-slate-800/50 first:border-t-0 first:pt-0">' +
-        '<div class="w-full sm:w-48 md:w-52 flex-shrink-0 space-y-2 sm:self-start sm:sticky sm:top-1">' +
+        '<div class="w-full sm:w-44 md:w-52 flex-shrink-0 space-y-2 sm:self-start sm:sticky sm:top-0 sm:z-10 sm:bg-white/85 sm:dark:bg-slate-900/85 sm:backdrop-blur-sm sm:py-1.5 sm:rounded-lg">' +
           '<div><h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">' + escapeHtml(title) + '</h3>' +
             (badgeHTML ? '<div class="mt-0.5">' + badgeHTML + '</div>' : '') + '</div>' +
           (globalsHTML ? '<div class="rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-dashed border-indigo-400/40 dark:border-amber-400/40 p-2.5 space-y-1.5">' +
