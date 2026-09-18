@@ -566,6 +566,23 @@
     .pr-doc .pr-traj li { margin: 0.5px 0; }
     .pr-doc .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
 
+    /* ==========================================================
+       GLASS, WHERE IT IS WORTH PAYING FOR
+
+       backdrop-filter re-reads and blurs everything behind an element on every frame it is on
+       screen. On an overlay that is the point: the page really does move behind the sticky nav,
+       the modals and the floating menus. On a card sitting IN the page it buys nothing — what
+       is behind it is the background, not content — and there were 44 of those. Together they
+       turned 39 frames out of 150 of a scroll into dropped frames; without them, one. The two
+       renderings are indistinguishable in a screenshot.
+
+       So glass is opt-in: add `pr-glass` to something that genuinely floats over the page.
+       ========================================================== */
+    [class*="backdrop-blur"]:not(.pr-glass) {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
     /* Template carousel: a deck rather than a strip. The chosen template is centred and full
        size; the others sit behind it, turned away and dimmed, close enough to read. Each card
        is a whole page of the user's own résumé at true width, scaled into the card, so the
@@ -576,16 +593,28 @@
     }
     .pdf-tmpl-card {
       position: absolute; top: 4px; left: 50%; width: 132px; margin-left: -66px;
-      transform-origin: 50% 50%; will-change: transform, opacity;
-      transition: transform .45s cubic-bezier(.22, 1, .36, 1), opacity .45s ease, box-shadow .45s ease;
+      transform-origin: 50% 50%;
+      /* No will-change. It pins the card into a composited layer, and a layer holding a
+         document scaled to 16% is rasterised once and then stretched — which is what made the
+         thumbnails' text blurry. The card in front is also given a purely 2D transform below,
+         for the same reason: a rotateY of zero degrees still promotes the layer. */
+      /* Overshoot and settle, rather than glide to a stop — the deck should feel sprung. */
+      transition: transform .52s cubic-bezier(.34, 1.56, .64, 1),
+                  opacity .34s ease-out, box-shadow .4s ease-out;
     }
-    .reduce-motion .pdf-tmpl-card { transition: none; }
+    /* The cards behind follow a beat late, so the deck moves as a stack rather than as one
+       rigid piece. That lag is most of what reads as rubbery. */
+    .pdf-tmpl-card[data-depth="1"] { transition-delay: .04s; }
+    .pdf-tmpl-card[data-depth="2"] { transition-delay: .08s; }
+    .pdf-tmpl-dot { transition: width .45s cubic-bezier(.34, 1.56, .64, 1), background-color .3s ease; }
+    .reduce-motion .pdf-tmpl-card,
+    .reduce-motion .pdf-tmpl-dot { transition: none; }
     .pdf-tmpl-thumb { height: 175px; position: relative; }
     .pdf-tmpl-scaler { transform-origin: top left; position: absolute; top: 0; left: 0; }
     .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(15, 23, 42, .45); }
     .dark .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(0, 0, 0, .7); }
     .pdf-tmpl-dots { display: flex; justify-content: center; gap: 6px; }
-    .pdf-tmpl-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(100, 116, 139, .35); transition: all .3s ease; }
+    .pdf-tmpl-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(100, 116, 139, .35); }
     .pdf-tmpl-dot[aria-current="true"] { width: 18px; background: #4f46e5; }
     .dark .pdf-tmpl-dot[aria-current="true"] { background: #fbbf24; }
 
@@ -753,7 +782,7 @@
     </header>
 
     <!-- STICKY NAVIGATION BAR (identity tier + section tabs tier) -->
-    <nav style="animation-delay:90ms" class="animate-fade-in-down sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md shadow-lg dark:shadow-slate-950/20 overflow-hidden print:hidden">
+    <nav style="animation-delay:90ms" class="pr-glass animate-fade-in-down sticky top-4 z-40 mb-10 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md shadow-lg dark:shadow-slate-950/20 overflow-hidden print:hidden">
 
       <!-- Tier 1: Condensed identity — revealed once the hero scrolls out of view -->
       <div id="mini-identity" class="accordion-grid">
@@ -811,8 +840,6 @@
               <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
             </svg>
           </button>
-          <div id="settings-menu" role="menu" aria-labelledby="settings-btn" hidden
-               class="absolute right-0 mt-2 z-50 w-[232px] max-h-[70vh] overflow-y-auto p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
         </div>
 
         <!-- Typeface picker. A menu rather than a cycling toggle: four faces is too many to
@@ -826,8 +853,6 @@
               <polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>
             </svg>
           </button>
-          <div id="font-menu" role="menu" aria-labelledby="font-toggle-btn" hidden
-               class="absolute right-0 mt-2 z-50 min-w-[190px] p-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
         </div>
 
         <!-- Animations Toggle Button -->
@@ -956,7 +981,7 @@
   <div id="pdf-modal" class="hidden fixed inset-0 z-[60] print:hidden" role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title" aria-hidden="true">
     <div class="absolute inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm"></div>
     <div class="relative min-h-full flex items-start sm:items-center justify-center p-4 sm:p-6" onclick="if(event.target===this)closePdfModal()">
-      <div id="pdf-modal-panel" class="w-full max-w-7xl max-h-[92vh] flex flex-col rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+      <div id="pdf-modal-panel" class="w-full max-w-7xl max-h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-2xl overflow-hidden">
 
         <!-- Header -->
         <div class="flex items-start justify-between gap-3 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
@@ -1080,6 +1105,14 @@
   <!-- ASK-ME CHAT (screen-only; body-level sibling so the print rule
        `body > *:not(#print-resume){display:none}` hides it — plus print:hidden.
        Populated and unhidden by initChat(), only when CHAT_CONFIG.enabled.) -->
+  <!-- The nav's tiers are rounded and scroll sideways, so both carry an overflow that CLIPS an
+       absolutely positioned child: a menu opened inside the nav showed one item of four. These
+       live at body level instead and are positioned against their button when they open. -->
+  <div id="font-menu" role="menu" aria-labelledby="font-toggle-btn" hidden
+       class="pr-glass fixed z-[58] min-w-[190px] p-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
+  <div id="settings-menu" role="menu" aria-labelledby="settings-btn" hidden
+       class="pr-glass fixed z-[58] w-[232px] max-h-[70vh] overflow-y-auto p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
+
   <div id="chat-widget" class="hidden print:hidden">
 
     <!-- Floating launcher -->
@@ -1087,14 +1120,14 @@
          width of the screen and sitting on the nav's own controls. A 56px round target is
          easier to hit than the pill was, and the label is still the accessible name. -->
     <button id="chat-launcher" type="button" aria-expanded="false" aria-controls="chat-panel"
-      class="fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:pl-3.5 sm:pr-4 sm:py-3 rounded-full sm:rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
+      class="pr-glass fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:pl-3.5 sm:pr-4 sm:py-3 rounded-full sm:rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
       <i data-lucide="message-circle" id="chat-launcher-icon" class="w-7 h-7 sm:w-5 sm:h-5"></i>
       <span id="chat-launcher-label" class="hidden sm:inline">Ask about my work</span>
     </button>
 
     <!-- Panel -->
     <div id="chat-panel" role="dialog" aria-labelledby="chat-title" aria-hidden="true"
-      class="hidden fixed z-[55] bottom-3 right-3 left-3 sm:left-auto sm:bottom-5 sm:right-5 sm:w-[380px] max-h-[min(78vh,620px)] flex flex-col rounded-3xl bg-white/85 dark:bg-slate-900/85 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-2xl overflow-hidden">
+      class="pr-glass hidden fixed z-[55] bottom-3 right-3 left-3 sm:left-auto sm:bottom-5 sm:right-5 sm:w-[380px] max-h-[min(78vh,620px)] flex flex-col rounded-3xl bg-white/85 dark:bg-slate-900/85 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-2xl overflow-hidden">
 
       <!-- Header -->
       <div class="flex items-start gap-3 px-4 py-3 border-b border-slate-200/50 dark:border-slate-800/50">
@@ -1376,6 +1409,25 @@
       if (btn) { btn.setAttribute('aria-expanded', 'false'); if (refocus) btn.focus(); }
       document.removeEventListener('keydown', popoverKeydown, true);
       document.removeEventListener('pointerdown', popoverOutside, true);
+      window.removeEventListener('scroll', popoverDismiss, true);
+      window.removeEventListener('resize', popoverDismiss);
+    }
+    function popoverDismiss() { closePopover(false); }
+
+    // Under the button, right edges aligned, nudged back inside the viewport if that would put
+    // it off the edge — and flipped above the button when there is no room below.
+    function positionPopover(menu, btn) {
+      if (!btn) return;
+      const r = btn.getBoundingClientRect();
+      const mw = menu.offsetWidth, mh = menu.offsetHeight;
+      const GAP = 8, EDGE = 8;
+      let left = r.right - mw;
+      left = Math.max(EDGE, Math.min(left, window.innerWidth - mw - EDGE));
+      let top = r.bottom + GAP;
+      if (top + mh > window.innerHeight - EDGE && r.top - GAP - mh > EDGE) top = r.top - GAP - mh;
+      menu.style.left = Math.round(left) + 'px';
+      menu.style.top = Math.round(top) + 'px';
+      menu.style.right = 'auto';
     }
     function popoverKeydown(e) { if (e.key === 'Escape') { e.stopPropagation(); closePopover(true); } }
     function popoverOutside(e) {
@@ -1392,11 +1444,22 @@
       render();
       menu.hidden = false;
       if (btn) btn.setAttribute('aria-expanded', 'true');
+      positionPopover(menu, btn);
       _openPopover = { menuId, btnId };
       document.addEventListener('keydown', popoverKeydown, true);
       document.addEventListener('pointerdown', popoverOutside, true);
       const first = menu.querySelector('button');
-      if (first) first.focus();
+      // preventScroll, and the dismiss-on-scroll listeners go on a frame later: moving focus
+      // into the menu scrolls its container, and that scroll would otherwise close the menu
+      // the instant it opened.
+      if (first) first.focus({ preventScroll: true });
+      // The nav is sticky, so the button moves as the page scrolls. Rather than chase it, the
+      // menu closes — which is what every other menu on a page does.
+      requestAnimationFrame(() => {
+        if (!_openPopover || _openPopover.menuId !== menuId) return;
+        window.addEventListener('scroll', popoverDismiss, true);
+        window.addEventListener('resize', popoverDismiss);
+      });
     }
     function closeFontMenu(refocus) { if (_openPopover && _openPopover.menuId === 'font-menu') closePopover(refocus); }
     function toggleFontMenu() { togglePopover('font-menu', 'font-toggle-btn', renderFontMenu); }
@@ -4660,9 +4723,25 @@
     let _pdfFontWait = null;
     const _pdfFontTried = new Set();     // families we have already asked for, once each
 
-    function schedulePdfPreview() {
-      if (_pdfPreviewTimer) clearTimeout(_pdfPreviewTimer);
-      _pdfPreviewTimer = setTimeout(() => { _pdfPreviewTimer = null; refreshPdfPreview(); }, 120);
+    // Two speeds. A discrete control — a checkbox, a paper size, a template — has nothing to
+    // wait for, so it coalesces on the next frame and the preview moves with the press; a fixed
+    // 120ms timer there was most of the 210ms it used to take to see anything happen. Typing
+    // still waits, because re-laying the document out on every keystroke is the one case a
+    // debounce is for.
+    let _pdfPreviewRaf = null;
+    function schedulePdfPreview(quiet) {
+      if (quiet) {
+        if (_pdfPreviewRaf) { cancelAnimationFrame(_pdfPreviewRaf); _pdfPreviewRaf = null; }
+        if (_pdfPreviewTimer) clearTimeout(_pdfPreviewTimer);
+        _pdfPreviewTimer = setTimeout(() => { _pdfPreviewTimer = null; refreshPdfPreview(); }, 160);
+        return;
+      }
+      if (_pdfPreviewTimer) { clearTimeout(_pdfPreviewTimer); _pdfPreviewTimer = null; }
+      if (_pdfPreviewRaf) return;
+      _pdfPreviewRaf = requestAnimationFrame(() => {
+        _pdfPreviewRaf = null;
+        refreshPdfPreview();
+      });
     }
 
     const PR_PAGE_MM = { a4: [210, 297], letter: [215.9, 279.4] };
@@ -5712,7 +5791,7 @@
       // re-rendering under the caret would move it.
       host.addEventListener('focusout', e => {
         const field = e.target.closest && e.target.closest('[data-edit]');
-        if (field && pdfCommitEdit(field)) schedulePdfPreview();
+        if (field && pdfCommitEdit(field)) schedulePdfPreview(true);
       });
       document.addEventListener('selectionchange', () => { if (pdfUi.editing) pdfSyncEditToolbar(); });
     }
@@ -6516,8 +6595,13 @@
         const depth = Math.min(Math.abs(d), 2);
         const scale = Math.max(0.6, 1 - SHRINK * depth);
         const x = d * STEP;
-        const tilt = d === 0 ? 0 : (d < 0 ? TILT : -TILT);
-        card.style.transform = 'translateX(' + x + 'px) scale(' + scale + ') rotateY(' + tilt + 'deg)';
+        // The front card gets a 2D transform and no rotation at all, so the browser renders its
+        // text rather than scaling a picture of it. The cards behind are turned away and dimmed;
+        // they are there to be recognised, not read.
+        const tilt = d < 0 ? TILT : -TILT;
+        card.style.transform = d === 0
+          ? 'translateX(' + x + 'px) scale(' + scale + ')'
+          : 'translateX(' + x + 'px) scale(' + scale + ') rotateY(' + tilt + 'deg)';
         card.style.opacity = depth === 0 ? '1' : depth === 1 ? '0.72' : '0.4';
         card.style.zIndex = String(10 - depth);
         card.setAttribute('data-depth', String(depth));
@@ -6548,13 +6632,25 @@
       if (!strip || strip.dataset.swipeWired) return;
       strip.dataset.swipeWired = '1';
       let x0 = null, y0 = null;
+      // Trackpad and shift-wheel: a horizontal scroll over the deck steps through it. One
+      // gesture is many wheel events, so a short cooldown keeps it to one card per flick.
+      let wheelAt = 0;
+      strip.addEventListener('wheel', e => {
+        const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!dx || Math.abs(dx) < 6) return;
+        e.preventDefault();
+        const now = Date.now();
+        if (now - wheelAt < 420) return;
+        wheelAt = now;
+        stepTemplate(dx > 0 ? 1 : -1);
+      }, { passive: false });
       strip.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; });
       strip.addEventListener('pointerup', e => {
         if (x0 == null) return;
         const dx = e.clientX - x0, dy = e.clientY - y0;
         x0 = null;
         // A horizontal drag, not a tap and not a scroll.
-        if (Math.abs(dx) < 36 || Math.abs(dx) < Math.abs(dy)) return;
+        if (Math.abs(dx) < 28 || Math.abs(dx) < Math.abs(dy)) return;
         const keys = Object.keys(PR_TEMPLATES);
         const at = keys.indexOf((pdfConfig.page || {}).template || PR_TEMPLATE_DEFAULT);
         const next = keys[Math.min(keys.length - 1, Math.max(0, at + (dx < 0 ? 1 : -1)))];
@@ -6588,6 +6684,27 @@
       pdfConfig.page[key] = value;
       savePdfConfigDebounced();
       applyPrintPageStyle(pdfConfig);
+
+      // Choosing a template must NOT rebuild the section. Rebuilding replaces the cards with
+      // new elements, and a brand new element has nothing to transition FROM — which is why
+      // the deck used to snap into place instead of moving. Nothing in the card markup depends
+      // on which template is chosen, only which card is marked, so mark it and let the deck
+      // animate itself.
+      if (key === 'template') {
+        Array.prototype.forEach.call(document.querySelectorAll('.pdf-tmpl-card'), card => {
+          const on = card.getAttribute('data-template') === value;
+          card.setAttribute('aria-checked', String(on));
+          card.classList.toggle('border-indigo-500', on);
+          card.classList.toggle('dark:border-amber-400', on);
+          card.classList.toggle('border-slate-200/70', !on);
+          card.classList.toggle('dark:border-slate-700/60', !on);
+        });
+        layoutTemplateDeck();
+        updateResetButton();
+        schedulePdfPreview();
+        return;
+      }
+
       const body = document.getElementById('pdf-modal-body');
       const section = body && body.querySelector('.pdf-section');
       if (section) {
