@@ -497,6 +497,10 @@
     .pr-doc.pr-f-atkinson :where(.pr-name, .pr-title, .pr-section-h) { font-family: 'Noto Sans Resume', Arial, sans-serif; }
     .pr-doc.pr-f-serif    { font-family: 'Source Serif Resume', 'Noto Sans Resume', Georgia, serif; }
     .pr-doc {
+      /* Templates are made of colour — a painted column, a banner, a filled section head. A
+         printer drops backgrounds by default, which would print every template as the plain
+         one. */
+      print-color-adjust: exact; -webkit-print-color-adjust: exact;
       color: #2d2d2d;
       background: #fff;
       font-size: var(--pr-font);
@@ -673,8 +677,10 @@
     .pr-doc.pr-t-bhagirathi .pr-hero {
       background: #eef2ff;
       border-bottom: 2px solid #4f46e5;
-      padding: calc(6px * var(--pr-gap)) 10px calc(6px * var(--pr-gap));
-      margin-bottom: calc(9px * var(--pr-gap));
+      /* Out to the paper edge, through the document's padding. */
+      margin: calc(-1 * var(--pr-pad, 0px)) calc(-1 * var(--pr-pad, 0px)) calc(9px * var(--pr-gap));
+      padding: calc(6px * var(--pr-gap)) var(--pr-pad, 10px);
+      padding-top: calc(var(--pr-pad, 0px) + 6px * var(--pr-gap));
     }
     .dark .pr-doc.pr-t-bhagirathi .pr-hero { background: #eef2ff; }   /* the document is always on white paper */
 
@@ -741,7 +747,11 @@
     .pr-doc.pr-t-pattachitra .pr-section-h {
       border-bottom: 0; text-transform: uppercase; letter-spacing: .1em;
       font-size: 0.86em; color: var(--pr-cream); background: var(--pr-ochre);
-      padding: 2px 8px; margin: calc(9px * var(--pr-gap)) 0 calc(4px * var(--pr-gap));
+      /* The painted title bars run out to the right paper edge — a panel title on a pata is not
+         inset from the border, it meets it. */
+      padding: 2px 8px; margin: calc(9px * var(--pr-gap)) calc(-1 * var(--pr-pad, 0px))
+                                calc(4px * var(--pr-gap)) 0;
+      padding-right: calc(var(--pr-pad, 0px) + 8px);
     }
     .pr-doc.pr-t-pattachitra .pr-hero { margin-bottom: calc(7px * var(--pr-gap)); }
     .pr-doc.pr-t-pattachitra .pr-name { letter-spacing: -.01em; color: var(--pr-ink); }
@@ -753,24 +763,85 @@
     .pr-doc.pr-t-pattachitra table.pr-traj { border-left: 2px solid #e7d7c3; padding-left: 8px; }
     .pr-doc.pr-t-pattachitra .pr-summary { padding-top: 1px; padding-bottom: 1px; }
 
-    /* --- Dokra: lost-wax casting — fine hatched lines, everything drawn tight. The one-pager.
-       The leading is restated per density rather than derived: a custom property cannot be
-       defined in terms of itself. --- */
-    .pr-doc.pr-t-dokra             { --pr-lead: 1.26; --pr-gap: 0.82; }
-    .pr-doc.pr-t-dokra.pr-d-compact { --pr-lead: 1.18; --pr-gap: 0.6; }
-    .pr-doc.pr-t-dokra.pr-d-roomy   { --pr-lead: 1.36; --pr-gap: 1.2; }
-    .pr-doc.pr-t-dokra .pr-section-h {
-      font-size: 0.88em; font-weight: 700; text-transform: uppercase; letter-spacing: .14em;
-      border-bottom: 0; padding: 0 0 1px; color: #3f3f46;
-      margin: calc(8px * var(--pr-gap)) 0 calc(2px * var(--pr-gap));
-      background: repeating-linear-gradient(90deg, #d4d4d8 0 1px, transparent 1px 4px) bottom left / 100% 1px no-repeat;
+    /* --- Dokra: lost-wax casting — bronze poured into a mould. A banner across the head of
+       the page, a contact strip under it, then About and Skills down the left with the career
+       running beside them. The left column is floated, so the one-flow paginator measures it
+       and page two runs full width; its content is finite and belongs on the opening page. --- */
+    .pr-doc.pr-t-dokra {
+      --pr-cast: #2f3640;        /* the mould: near-black, slightly cool */
+      --pr-bronze: #9a6b3f;      /* the metal */
+      --pr-ash: #eceef1;         /* the sand it is cast in */
+      --pr-lead: 1.3; --pr-gap: 0.9;
+      background: var(--pr-ash) !important;
     }
-    .pr-doc.pr-t-dokra .pr-hero { gap: 10px; margin-bottom: calc(6px * var(--pr-gap)); }
-    .pr-doc.pr-t-dokra .pr-hero img { width: 58px; height: 58px; border-radius: 3px; }
-    .pr-doc.pr-t-dokra .pr-name { font-size: 1.6em; letter-spacing: -.015em; }
+    .pr-doc.pr-t-dokra.pr-d-compact { --pr-lead: 1.2; --pr-gap: 0.68; }
+    .pr-doc.pr-t-dokra.pr-d-roomy   { --pr-lead: 1.4; --pr-gap: 1.25; }
+
+    /* Banner and strip bleed back out to the paper edge, through whatever padding the density
+       set. --pr-pad is published by the sheet; in print the page margin does the same job and
+       the banner simply starts at the margin. */
+    .pr-doc.pr-t-dokra .pr-hero,
+    .pr-doc.pr-t-dokra .pr-strip {
+      margin-left: calc(-1 * var(--pr-pad, 0px)); margin-right: calc(-1 * var(--pr-pad, 0px));
+      padding-left: var(--pr-pad, 0px); padding-right: var(--pr-pad, 0px);
+    }
+    .pr-doc.pr-t-dokra .pr-hero {
+      margin-top: calc(-1 * var(--pr-pad, 0px));
+      background: var(--pr-cast); color: #fff;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding-top: calc(10px * var(--pr-gap)); padding-bottom: calc(10px * var(--pr-gap));
+      margin-bottom: 0; text-align: center;
+    }
+    .pr-doc.pr-t-dokra .pr-hero img {
+      width: 62px; height: 62px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85);
+      object-fit: cover; object-position: top;
+    }
+    .pr-doc.pr-t-dokra .pr-name {
+      font-size: 1.85em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      color: #fff; line-height: 1.1;
+    }
+    .pr-doc.pr-t-dokra .pr-title {
+      font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+      font-size: 0.82em; color: #c9b9a6; margin-top: 2px;
+    }
+    .pr-doc.pr-t-dokra .pr-strip {
+      background: #dfe3e8; color: #33393f;
+      padding-top: calc(5px * var(--pr-gap)); padding-bottom: calc(5px * var(--pr-gap));
+      margin-bottom: calc(8px * var(--pr-gap));
+      display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      font-size: 0.9em; border-bottom: 2px solid var(--pr-bronze);
+    }
+    .pr-doc.pr-t-dokra .pr-strip .pr-meta { margin: 0; }
+
+    /* The left column. */
+    /* Two equal columns under the header. The gutter is taken out of both sides so the pair
+       really is 50/50 rather than 50 and whatever is left. */
+    .pr-doc.pr-t-dokra .pr-aside {
+      float: left; width: calc(50% - 9px); margin: 0 18px calc(6px * var(--pr-gap)) 0;
+      padding: 0 14px calc(4px * var(--pr-gap)) 0;
+      border-right: 1px solid #cfd5dc; break-inside: avoid;
+    }
+    .pr-doc.pr-t-dokra .pr-aside h4,
+    .pr-doc.pr-t-dokra .pr-section-h {
+      /* the bronze rules under Dokra's heads stay inside the columns — two columns meeting the
+         paper edge would read as one */
+      font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: .13em;
+      color: var(--pr-cast); background: none; border-bottom: 2px solid var(--pr-bronze);
+      padding: 0 0 2px; margin: calc(8px * var(--pr-gap)) 0 calc(3px * var(--pr-gap));
+    }
+    .pr-doc.pr-t-dokra .pr-aside h4:first-child { margin-top: 0; }
+    .pr-doc.pr-t-dokra .pr-aside .pr-summary { margin: 0; font-size: 0.95em; }
+
+    /* A table establishes a block formatting context, so a full-width one cannot sit beside a
+       float — it drops below it, leaving the top half of the right column empty. Letting it
+       size to the space that is left puts the career back alongside the skills, and it returns
+       to the full width on the pages where there is no column beside it. */
+    .pr-doc.pr-t-dokra table.pr-traj,
+    .pr-doc.pr-t-dokra .pr-projects,
+    .pr-doc.pr-t-dokra .pr-edu,
+    .pr-doc.pr-t-dokra .pr-reco { width: auto; min-width: calc(50% - 9px); }
     .pr-doc.pr-t-dokra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td {
-      border-top: 0; padding-top: calc(4px * var(--pr-gap));
-      background: repeating-linear-gradient(90deg, #e4e4e7 0 1px, transparent 1px 3px) top left / 100% 1px no-repeat;
+      border-top: 1px solid #cfd5dc; padding-top: calc(4px * var(--pr-gap));
     }
     .pr-doc.pr-t-dokra .pr-edu p { margin: 1.5px 0; }
     .pr-doc.pr-t-dokra li { margin: 0 !important; }
@@ -784,6 +855,8 @@
 
     /* Live preview in the Save PDF screen: a paper-coloured card at true page width,
        scaled down to the pane. Page-break guides are drawn where a page would end. */
+    /* A sheet is white paper unless the template paints it — .pr-doc's own background wins,
+       which is how Dokra's cast-sand ground reaches the page. */
     .pdf-page { background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.18), 0 8px 24px rgba(15,23,42,.10); position: relative; overflow: hidden; }
     /* The caption lives inside the scaled preview, so its size is set in JS as 11px ÷ scale —
        at 0.57 a plain 11px label renders at 6px and cannot be read. Colour is theme-aware. */
@@ -1914,7 +1987,13 @@
       }
       const size = cfg.size === 'letter' ? 'Letter' : 'A4';
       const margin = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
-      tag.textContent = '@media print { @page { size: ' + size + '; margin: ' + margin + 'mm; } }';
+      // The page margin is ZERO and the document carries it as padding instead. With the
+      // margin on @page there is no way for anything to reach the paper edge — a header band
+      // or a painted column stops short of it on every side, which is not a design, it is a
+      // limitation. Moving it inside means the same white space, plus the ability to bleed out
+      // through it with a negative margin of --pr-pad.
+      tag.textContent = '@media print { @page { size: ' + size + '; margin: 0; } ' +
+        '#print-resume { padding: ' + margin + 'mm; --pr-pad: ' + margin + 'mm; } }';
       const el = document.getElementById('print-resume');
       if (el) { prApplyDocClasses(el, cfg); prEnsureBand(el, cfg); }
     }
@@ -2135,7 +2214,18 @@
       // panels instead of in the flow. It is a floated block, so what follows wraps beside it
       // and then resumes full width — the one-flow pagination model is untouched, and page two
       // onwards simply has no sidebar.
-      const asideHTML = (template !== 'pattachitra') ? '' : (() => {
+      // Dokra is a two-column sheet: a banner, a contact strip, then About and Skills down the
+      // left with the career beside them. Like Pattachitra's, the left column is a floated
+      // block, so the one-flow paginator still measures it and page two simply runs full width
+      // — the left column's content is finite and belongs on the opening page anyway.
+      const dokraAside = (template !== 'dokra') ? '' : (() => {
+        const about = (sumCfg.include !== false && summaryHtml)
+          ? `<h4>About</h4><p class="pr-summary" data-edit="sum">${summaryHtml}</p>` : '';
+        const bars = skillBarsHTML ? `<h4>Skills</h4>${skillBarsHTML}` : '';
+        return (about || bars) ? `<aside class="pr-aside">${about}${bars}</aside>` : '';
+      })();
+
+      const asideHTML = dokraAside || ((template !== 'pattachitra') ? '' : (() => {
         const skills = compCfg.order
           .map(t => ({ c: OVERVIEW_DATA.competencies.find(x => x.title === t), item: compCfg.items[t] }))
           .filter(o => o.c && o.item && o.item.include)
@@ -2146,29 +2236,56 @@
         const lines = contacts ? `<h4>Contact</h4><div class="pr-meta">${contacts}</div>` : '';
         const block = wantsBars ? `<h4>Skills</h4>${skillBarsHTML}`
                                 : (skills ? `<h4>Competencies</h4><ul>${skills}</ul>` : '');
-        return (block || lines) ? `<aside class="pr-aside">${lines}${block}</aside>` : '';
-      })();
-      // When the sidebar carries them, they are not repeated in the flow.
+        // Projects go on the column too — named there, detailed in the flow below, the way a
+        // pata names each panel before telling it.
+        const projNames = projOrder
+          .map(id => projById[id])
+          .filter(pr => pr && (projCfg[pr.id] || {}).include !== false)
+          .map(pr => `<li><span class="t">${escapeHtml(pr.name)}</span></li>`).join('');
+        const projBlock = projNames ? `<h4>Projects</h4><ul>${projNames}</ul>` : '';
+        return (block || lines || projBlock)
+          ? `<aside class="pr-aside">${lines}${block}${projBlock}</aside>` : '';
+      })());
+      // Whatever the sidebar carries is not repeated in the flow.
       const compFlow = asideHTML ? '' : comp;
-      const contactFlow = asideHTML ? '' : contacts;
+      // Dokra keeps its contacts, but as a strip under the banner rather than beside the name.
+      const contactFlow = (asideHTML && template !== 'dokra') ? '' : contacts;
+      const sumFlow = dokraAside ? '' : summaryHtml;
 
+      const facts = `<strong>Experience:</strong> ${computeExperience()}${base ? '  &middot;  <strong>Base:</strong> ' + base.value : ''}`;
+      // Dokra sets the name in a banner of its own, with the contact lines in a strip below it;
+      // the other templates keep name, title and contacts together beside the photo.
+      const heroHTML = (template === 'dokra')
+        ? `<div class="pr-hero">
+             ${heroShowImage ? `<img src="${PERSONAL_DATA.profileImage}" alt="">` : ''}
+             <div>
+               <div class="pr-name">${PERSONAL_DATA.name}</div>
+               <div class="pr-title">${PERSONAL_DATA.title}</div>
+             </div>
+           </div>
+           <div class="pr-strip">
+             ${contactFlow ? `<div class="pr-meta">${contactFlow}</div>` : ''}
+             <div class="pr-meta">${facts}</div>
+           </div>`
+        : `<div class="pr-hero">
+             ${heroShowImage ? `<img src="${PERSONAL_DATA.profileImage}" alt="">` : ''}
+             <div>
+               <div class="pr-name">${PERSONAL_DATA.name}</div>
+               <div class="pr-title">${PERSONAL_DATA.title}</div>
+               ${contactFlow ? `<div class="pr-meta">${contactFlow}</div>` : ''}
+               <div class="pr-meta">${facts}</div>
+             </div>
+           </div>`;
+
+      // Order matters: a float has to PRECEDE what wraps around it. Pattachitra's column runs
+      // beside everything, so its aside comes first; Dokra's banner spans the full page and the
+      // column starts under it, so there the aside comes after the banner and the strip.
       return `
-        ${asideHTML}
-        <div class="pr-hero">
-          ${heroShowImage ? `<img src="${PERSONAL_DATA.profileImage}" alt="">` : ''}
-          <div>
-            <div class="pr-name">${PERSONAL_DATA.name}</div>
-            <div class="pr-title">${PERSONAL_DATA.title}</div>
-            ${contactFlow ? `<div class="pr-meta">${contactFlow}</div>` : ''}
-            <div class="pr-meta"><strong>Experience:</strong> ${computeExperience()}${base ? '  &middot;  <strong>Base:</strong> ' + base.value : ''}</div>
-          </div>
-        </div>
+        ${template === 'dokra' ? heroHTML + asideHTML : asideHTML + heroHTML}
 
-        ${sumCfg.include !== false ? `<div class="pr-section-h">Summary</div><p class="pr-summary" data-edit="sum">${summaryHtml}</p>` : ''}
+        ${(sumCfg.include !== false && sumFlow) ? `<div class="pr-section-h">Summary</div><p class="pr-summary" data-edit="sum">${sumFlow}</p>` : ''}
 
-        ${wantsBars && template === 'dokra'
-            ? `<div class="pr-section-h">Skills</div>${skillBarsHTML}`
-            : (compFlow ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${compFlow}</div>` : '')}
+        ${compFlow ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${compFlow}</div>` : ''}
 
         ${workRows ? `<div class="pr-section-h">Career Trajectory</div><table class="pr-traj">${workRows}</table>` : ''}
 
@@ -4769,6 +4886,8 @@
         sheet.style.width = opts.pageW + 'px';
         sheet.style.minHeight = opts.pageH + 'px';
         sheet.style.padding = opts.pad + 'px';
+        // Exposed so a template can bleed a band or a banner back out to the paper edge.
+        sheet.style.setProperty('--pr-pad', opts.pad + 'px');
         body = document.createElement('div');
         body.className = 'pdf-sheet-body';
         // Pattachitra's painted column runs the full height of EVERY sheet, so it belongs to
@@ -4938,7 +5057,13 @@
       //    the Word export are taken from.
       doc.className = 'pr-doc pdf-measure';
       prApplyDocClasses(doc, cfg);
-      doc.style.width = (pageW - 2 * pad) + 'px';
+      // The measuring copy is a SHEET, geometrically: full page width, the same padding, and
+      // the same --pr-pad. It used to be just the content box, which was fine until a template
+      // bled a band back out through the padding — then the block being measured was narrower
+      // than the block being drawn, and the two disagreed about how tall it was.
+      doc.style.width = pageW + 'px';
+      doc.style.padding = pad + 'px';
+      doc.style.setProperty('--pr-pad', pad + 'px');
       doc.innerHTML = buildPrintResumeHTML(pdfConfig);
 
       // 2. Fill real sheets, measuring each as it fills. The scale comes off first: a rect read
