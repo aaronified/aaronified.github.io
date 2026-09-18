@@ -495,7 +495,10 @@
     /* Live preview in the Save PDF screen: a paper-coloured card at true page width,
        scaled down to the pane. Page-break guides are drawn where a page would end. */
     .pdf-page { background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.18), 0 8px 24px rgba(15,23,42,.10); position: relative; overflow: hidden; }
-    .pdf-page + .pdf-caption { margin: 6px 0 18px; font: 600 11px/1 'Inter', sans-serif; color: #64748b; letter-spacing: .03em; text-align: right; }
+    /* The caption lives inside the scaled preview, so its size is set in JS as 11px ÷ scale —
+       at 0.57 a plain 11px label renders at 6px and cannot be read. Colour is theme-aware. */
+    .pdf-page + .pdf-caption { font-weight: 600; font-family: 'Inter', sans-serif; line-height: 1.1; color: #475569; letter-spacing: .02em; text-align: right; }
+    .dark .pdf-page + .pdf-caption { color: #cbd5e1; }
     .pdf-measure { position: absolute; left: -10000px; top: 0; visibility: hidden; }
     .pdf-rail-item { display: block; width: 100%; text-align: left; border-radius: 0.6rem; padding: 0.35rem 0.6rem; font-size: 12px; font-weight: 600; }
 
@@ -4210,6 +4213,13 @@
       // 3. Scale the sheets to the pane.
       const avail = Math.max(120, scroll.clientWidth - 32);
       const scale = Math.min(1, avail / pageW);
+      // Everything inside the scaler shrinks, captions included — so they are sized in the
+      // scaler's own units such that they land at a readable size on screen.
+      const capPx = 11 / scale;
+      Array.prototype.forEach.call(pagesHost.querySelectorAll('.pdf-caption'), cap => {
+        cap.style.fontSize = capPx + 'px';
+        cap.style.margin = (capPx * 0.6) + 'px 0 ' + (capPx * 1.6) + 'px';
+      });
       scaler.style.transform = 'scale(' + scale + ')';
       scaler.style.width = pageW + 'px';
       scaler.style.height = (pagesHost.offsetHeight * scale) + 'px';
