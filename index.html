@@ -757,7 +757,9 @@
             </div>
             <div id="pdf-preview-scroll" class="flex-1 overflow-y-auto p-4">
               <div id="pdf-preview-scaler" class="relative origin-top-left">
-                <div id="pdf-preview-page" class="pdf-page"><div id="pdf-preview-doc" class="pr-doc"></div></div>
+                <!-- inert + aria-hidden: this is a picture of the document, not a second copy to
+                     tab through. pdfTrapFocus() already skips anything inside [inert]. -->
+                <div id="pdf-preview-page" class="pdf-page" inert aria-hidden="true"><div id="pdf-preview-doc" class="pr-doc"></div></div>
               </div>
             </div>
           </aside>
@@ -3620,8 +3622,8 @@
     }
 
     /* ============================================================
-       PDF EXPORT SELECTION SCREEN
-       An intermediate modal (opened by the "Print PDF" triggers) that
+       SAVE PDF SCREEN
+       The export screen (opened by the "Save PDF" triggers) that
        curates what buildPrintResume() renders — competency order/text,
        and per-role include / description / achievement selection. All
        choices persist in localStorage ('pdfExportConfig') and are
@@ -4039,7 +4041,11 @@
 
       const meta = document.getElementById('pdf-preview-meta');
       if (meta) {
-        meta.textContent = pages + (pages === 1 ? ' page' : ' pages') + ' · ' +
+        // Page count alone hides what density bought: compact and normal can both round up
+        // to 3. The fill of the last page is what says whether one more trim saves a page.
+        const lastFill = Math.round(((contentH % usableH) / usableH || 1) * 100);
+        meta.textContent = pages + (pages === 1 ? ' page' : ' pages') +
+          (pages > 1 ? ' (last ~' + lastFill + '%)' : '') + ' · ' +
           (cfg.size === 'letter' ? 'Letter' : 'A4') + ' · ' + (cfg.density || 'normal');
       }
     }

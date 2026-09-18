@@ -589,10 +589,10 @@ A few notes:
 
 ## Downloadable PDF Resume
 
-The **Print PDF** button (under the profile photo, and in the sticky bar) opens a **selection
-screen** where you curate exactly what goes into the export, then **Generate PDF** hands off to your
-browser's print dialog — choose *Save as PDF*. This prints a **separate, compact one/two-page layout**
-(built from the same data), not the on-screen page:
+The **Save PDF** button (under the profile photo, and in the sticky bar) opens the export screen:
+a **section rail**, the **settings**, and a **live preview** of the document itself. **Print / Save
+as PDF** then hands off to your browser's print dialog — choose *Save as PDF*. What you get is a
+**separate, compact layout** built from the same data, not the on-screen page:
 
 - **Hero** — photo left; name, tagline, contacts (incl. the live web URL from `PERSONAL_DATA.website`
   or the auto-detected host), and computed **Experience · Base** on the right.
@@ -613,7 +613,16 @@ browser's print dialog — choose *Save as PDF*. This prints a **separate, compa
   **bold blue** (no pills/backgrounds).
 - FAQ and Recommendations are omitted.
 
-### The selection screen
+### The export screen
+
+Three columns. The **rail** on the left lists every section with its count and jumps you to it. The
+middle column holds the settings. The **live preview** on the right renders the *actual* document —
+not an impression of it: the print stylesheet lives in a shared `.pr-doc` scope used by both the
+preview and the printed page, and a test asserts the two compute identical styles, so the preview
+cannot drift from the output. Dashed guides mark where each page would end, and the header reads
+e.g. *"3 pages (last ~40%) · A4 · normal"* — the fill of the last page being what tells you whether
+one more trim saves a page. Page breaks are the browser's to make, so treat the guides as close but
+indicative. Below 1024px the preview hides and below 768px the rail does; the settings remain.
 
 Everything below tailors the **PDF only** — the on-screen page never changes — and your choices are
 **saved to `localStorage`** (`pdfExportConfig`), so they persist across sessions rather than resetting
