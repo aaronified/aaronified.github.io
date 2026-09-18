@@ -4388,17 +4388,25 @@
     const PDF_IMG_OVERSAMPLE = 2;
     const _pdfImgCache = {};
 
-    // "50% 50%" / "top" / "left 20%" → the fraction of the overflow to trim off each side, the
+    // "50% 0%" / "top" / "left 20%" → the fraction of the overflow to trim off each side, the
     // way object-position does it. Default centre, which is what logos and quotation portraits
-    // use; the hero photo sets `top` and must keep the face in frame.
+    // use; the hero photo sets `top` and must keep the face in frame. Computed style always
+    // gives two components, but the single-keyword forms are handled too: `top` means "centred
+    // horizontally, flush to the top", not "top-left".
     function pdfObjectPosition(value) {
-      const words = { left: 0, top: 0, center: 0.5, centre: 0.5, right: 1, bottom: 1 };
-      const parts = String(value || '50% 50%').trim().split(/\s+/).slice(0, 2);
-      const frac = t => (t in words ? words[t] : /%$/.test(t) ? parseFloat(t) / 100 : 0.5);
-      const x = frac(parts[0]);
-      const y = parts.length > 1 ? frac(parts[1]) : (parts[0] === 'top' || parts[0] === 'bottom' ? x : 0.5);
-      const flip = parts.length > 1 && (parts[1] === 'left' || parts[1] === 'right');
-      return flip ? { x: y, y: x } : { x: isFinite(x) ? x : 0.5, y: isFinite(y) ? y : 0.5 };
+      const X = { left: 0, center: 0.5, right: 1 };
+      const Y = { top: 0, center: 0.5, bottom: 1 };
+      const frac = (t, words) => (t in words ? words[t] : /%$/.test(t) ? parseFloat(t) / 100 : NaN);
+      const parts = String(value == null ? '' : value).trim().toLowerCase().split(/\s+/).filter(Boolean);
+      let x = 0.5, y = 0.5;
+      if (parts.length === 1) {
+        if (parts[0] in Y && !(parts[0] in X)) y = Y[parts[0]];
+        else x = frac(parts[0], X);
+      } else if (parts.length >= 2) {
+        x = frac(parts[0], X);
+        y = frac(parts[1], Y);
+      }
+      return { x: isFinite(x) ? x : 0.5, y: isFinite(y) ? y : 0.5 };
     }
 
     async function pdfImageData(src, wPx, hPx, objectPosition) {
