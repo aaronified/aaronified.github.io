@@ -388,8 +388,8 @@
     /* The document's own typeface, vendored and subset (assets/fonts/). The exported PDF embeds
        these very files, so the preview and the file cannot disagree about metrics — and it works
        with no network at all. One family, two weights: headings differ by weight and size. */
-    @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-resume-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-    @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-resume-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
     /* ==========================================================
        RESUME DOCUMENT STYLES (.pr-doc)
@@ -781,7 +781,7 @@
             <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
             <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden lg:inline">Text stays selectable and links stay clickable.</span>
           </div>
-          <div class="flex items-center justify-end gap-2">
+          <div class="flex flex-wrap items-center justify-end gap-2">
             <button id="pdf-cancel" onclick="closePdfModal()" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
             <button id="pdf-docx" onclick="saveDocx(this)" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
               <i data-lucide="file-text" class="w-4 h-4"></i>DOCX
@@ -1443,7 +1443,7 @@
         const eCfg = entCfg[e.id] || {};
         const subs = nested[i].map(intn => {
           const iCfg = entCfg[intn.id] || {};
-          let s = `<p class="pr-sub">↳ ${logoImg(showLogo(iCfg, intn.logo))}<span class="t">${intn.company}</span> — ${intn.role} &middot; ${intn.period}</p>`;
+          let s = `<p class="pr-sub">&rsaquo; ${logoImg(showLogo(iCfg, intn.logo))}<span class="t">${intn.company}</span> — ${intn.role} &middot; ${intn.period}</p>`;
           if (intn.description && iCfg.showDescription !== false) s += `<div class="pr-sub-desc">${formatText(intn.description)}</div>`;
           const ih = pickHighlights(intn.highlights, iCfg);
           if (ih.length) {
@@ -4144,6 +4144,7 @@
     // final pagination.
     let _pdfPreviewTimer = null;
     let _pdfFontWait = null;
+    let _pdfFontWaited = false;
 
     function schedulePdfPreview() {
       if (_pdfPreviewTimer) clearTimeout(_pdfPreviewTimer);
@@ -4167,13 +4168,16 @@
       // The document's own webfont loads asynchronously, and font-display: swap means the first
       // layout happens in the fallback face. Measuring then pages the document against the wrong
       // metrics — pages overflowed by ~50px — so wait for the real face and lay out once.
-      if (document.fonts && !document.fonts.check('400 10pt "Noto Sans Resume"')) {
+      // Waited for once. If the face never arrives (a 404, a blocked request) check() stays
+      // false forever, so a second wait would re-enter this function without end: lay out in
+      // the fallback instead and let the preview be approximate rather than absent.
+      if (document.fonts && !_pdfFontWaited && !document.fonts.check('400 10pt "Noto Sans Resume"')) {
         if (!_pdfFontWait) {
           _pdfFontWait = Promise.all([
             document.fonts.load('400 10pt "Noto Sans Resume"'),
             document.fonts.load('700 10pt "Noto Sans Resume"')
           ]).catch(() => {});
-          _pdfFontWait.then(() => { _pdfFontWait = null; refreshPdfPreview(); });
+          _pdfFontWait.then(() => { _pdfFontWait = null; _pdfFontWaited = true; refreshPdfPreview(); });
         }
         return;
       }
@@ -4202,8 +4206,12 @@
       laid.forEach((pg, i) => {
         const cap = document.createElement('div');
         cap.className = 'pdf-caption';
+        // Reported, not clamped: a block that cannot be split (break-inside: avoid) can
+        // be taller than the page on its own, and a caption reading "100% full" would
+        // hide the one thing the user needs to know: this page runs off the paper.
+        const fill = Math.round((pg.used / usableH) * 100);
         cap.textContent = 'Page ' + (i + 1) + ' of ' + laid.length +
-          ' \u00b7 ' + Math.min(100, Math.round((pg.used / usableH) * 100)) + '% full';
+          ' \u00b7 ' + fill + '% full' + (fill > 100 ? ' \u2014 overflows' : '');
         pagesHost.insertBefore(cap, pg.el.nextSibling);
       });
       const pages = laid;
@@ -4255,24 +4263,109 @@
       return _pdfLibPromise;
     }
 
-    async function pdfFetchBase64(url) {
+    async function pdfFetchBytes(url) {
       const res = await fetch(url);
       if (!res.ok) throw new Error(url + ' → ' + res.status);
-      const bytes = new Uint8Array(await res.arrayBuffer());
+      return new Uint8Array(await res.arrayBuffer());
+    }
+
+    function pdfBase64(bytes) {
       let bin = '';
       for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
       return btoa(bin);
     }
 
+    // Which characters the embedded font can actually draw, read from the font's own `cmap`
+    // table. jsPDF draws a character the font has no glyph for as NOTHING — no box, no gap,
+    // it simply vanishes from the file — so the export has to know the coverage to be able to
+    // say so. Reading it from the same bytes that get embedded means the answer cannot drift
+    // from the file that ships. Formats 4 (BMP) and 12 (full Unicode) cover every real font.
+    function ttfCoverage(bytes) {
+      const cover = new Set();
+      try {
+        const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        let cmap = 0;
+        const tables = dv.getUint16(4);
+        for (let i = 0; i < tables; i++) {
+          const rec = 12 + 16 * i;
+          if (String.fromCharCode(bytes[rec], bytes[rec + 1], bytes[rec + 2], bytes[rec + 3]) === 'cmap') {
+            cmap = dv.getUint32(rec + 8);
+            break;
+          }
+        }
+        if (!cmap) return cover;
+        let best = 0, bestFmt = -1;
+        const subs = dv.getUint16(cmap + 2);
+        for (let i = 0; i < subs; i++) {
+          const off = cmap + dv.getUint32(cmap + 4 + 8 * i + 4);
+          const fmt = dv.getUint16(off);
+          const rank = fmt === 12 ? 2 : fmt === 4 ? 1 : 0;
+          if (rank > bestFmt) { bestFmt = rank; best = off; }
+        }
+        const fmt = bestFmt >= 0 ? dv.getUint16(best) : 0;
+        if (fmt === 4) {
+          const segs = dv.getUint16(best + 6) / 2;
+          const ends = best + 14, starts = ends + segs * 2 + 2;
+          const deltas = starts + segs * 2, ranges = deltas + segs * 2;
+          for (let s = 0; s < segs; s++) {
+            const end = dv.getUint16(ends + s * 2), start = dv.getUint16(starts + s * 2);
+            const delta = dv.getInt16(deltas + s * 2), ro = dv.getUint16(ranges + s * 2);
+            for (let c = start; c <= end && c !== 0xFFFF; c++) {
+              let g;
+              if (!ro) g = (c + delta) & 0xFFFF;
+              else {
+                const at = ranges + s * 2 + ro + (c - start) * 2;
+                if (at + 1 >= bytes.byteLength) continue;
+                g = dv.getUint16(at);
+                if (g) g = (g + delta) & 0xFFFF;
+              }
+              if (g) cover.add(c);
+            }
+          }
+        } else if (fmt === 12) {
+          const groups = dv.getUint32(best + 12);
+          for (let i = 0; i < groups && cover.size < 0x40000; i++) {
+            const at = best + 16 + i * 12;
+            const start = dv.getUint32(at), end = dv.getUint32(at + 4);
+            for (let c = start; c <= end && cover.size < 0x40000; c++) cover.add(c);
+          }
+        }
+      } catch (e) { /* an unreadable cmap means "cannot tell", not "nothing is covered" */ }
+      return cover;
+    }
+
+    // Set by pdfRegisterFonts, read by the coverage check below.
+    let _pdfCoverage = null;
+
     // The very files the preview renders with, embedded in the file.
     async function pdfRegisterFonts(doc) {
-      const faces = [['assets/fonts/noto-sans-resume-regular.ttf', 'normal'],
-                     ['assets/fonts/noto-sans-resume-bold.ttf', 'bold']];
+      const faces = [['assets/fonts/noto-sans-regular.ttf', 'normal'],
+                     ['assets/fonts/noto-sans-bold.ttf', 'bold']];
       for (const [url, style] of faces) {
         const name = url.split('/').pop();
-        doc.addFileToVFS(name, await pdfFetchBase64(url));
+        const bytes = await pdfFetchBytes(url);
+        if (style === 'normal') _pdfCoverage = ttfCoverage(bytes);
+        doc.addFileToVFS(name, pdfBase64(bytes));
         doc.addFont(name, PDF_FONT, style);
       }
+    }
+
+    // Characters in the document that the embedded font cannot draw, deduplicated and in the
+    // order they appear. Empty when the coverage could not be read — a guard that cannot be
+    // sure stays quiet rather than crying wolf on every export.
+    function pdfMissingGlyphs(roots) {
+      if (!_pdfCoverage || !_pdfCoverage.size) return [];
+      const missing = [];
+      const seen = new Set();
+      for (const root of roots) {
+        for (const ch of (root.textContent || '')) {
+          const cp = ch.codePointAt(0);
+          if (cp < 0x20 || seen.has(ch) || _pdfCoverage.has(cp)) continue;
+          seen.add(ch);
+          missing.push(ch);
+        }
+      }
+      return missing;
     }
 
     // Images are fetched (not canvas-copied from the page), so a cross-origin logo cannot taint
@@ -4459,11 +4552,16 @@
           author: (typeof PERSONAL_DATA !== 'undefined' && PERSONAL_DATA.name) || '',
           creator: 'aaronified.github.io'
         });
+        pdfLastMissing = pdfMissingGlyphs(sheets);
         return doc;
       } finally {
         if (scaler) scaler.style.transform = prevTransform;
       }
     }
+
+    // Characters the last export could not draw. Reported to the user rather than dropped in
+    // silence: a résumé that quietly loses a word is worse than one that says it did.
+    let pdfLastMissing = [];
 
     async function savePdf(btn) {
       const label = btn && btn.innerHTML;
@@ -4471,6 +4569,12 @@
         if (btn) { btn.disabled = true; btn.innerHTML = 'Building PDF…'; }
         const doc = await exportResumePdf();
         doc.save(pdfFileName('pdf'));
+        if (pdfLastMissing.length) {
+          alert('Saved — but the embedded font has no glyph for ' + pdfLastMissing.join(' ') +
+                ', so ' + (pdfLastMissing.length === 1 ? 'it is' : 'they are') +
+                ' missing from the PDF. Print to PDF instead to keep ' +
+                (pdfLastMissing.length === 1 ? 'it' : 'them') + '.');
+        }
       } catch (e) {
         alert('Could not build the PDF: ' + e.message + '\nYou can still use Print.');
       } finally {
@@ -4573,7 +4677,19 @@
 
     // Walk the rendered document and turn it into Word paragraphs. Reusing the DOM means the
     // selections, order and (later) edits come along without a second content pipeline.
+    // DOCX page geometry in twips (1/1440 in), taken from the same size and density the PDF
+    // uses. Without this the Word file is always A4 at 15mm however the user set the export.
+    function docxPageMetrics() {
+      const page = (typeof pdfConfig !== 'undefined' && pdfConfig && pdfConfig.page) || {};
+      const dims = PR_PAGE_MM[page.size] || PR_PAGE_MM.a4;
+      const marginMm = PR_MARGIN_MM[page.density] || PR_MARGIN_MM.normal;
+      const T = 1440 / 25.4;
+      const w = Math.round(dims[0] * T), m = Math.round(marginMm * T);
+      return { w: w, h: Math.round(dims[1] * T), margin: m, usable: w - 2 * m };
+    }
+
     function docxFromDocument(root, images) {
+      const metrics = docxPageMetrics();
       const rels = [];
       const media = [];
       const body = [];
@@ -4619,14 +4735,17 @@
         const props = ['<w:pPr>'];
         if (opts.bullet) props.push('<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>');
         if (opts.rule) props.push('<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="2" w:color="D4D4D4"/></w:pBdr>');
-        if (opts.tabRight) props.push('<w:tabs><w:tab w:val="right" w:pos="9639"/></w:tabs>');
+        if (opts.tabRight) props.push('<w:tabs><w:tab w:val="right" w:pos="' + metrics.usable + '"/></w:tabs>');
         props.push('<w:spacing w:before="' + (opts.before || 0) + '" w:after="' + (opts.after == null ? 60 : opts.after) + '"/>');
         props.push('</w:pPr>');
         const xml = runs.map(r => {
+          // CT_RPr is a sequence, not a bag: Word rejects a document whose run properties are
+          // out of schema order. It runs ... b ... color ... sz, szCs ... u ...
           const fmt = '<w:rPr>' + (r.bold ? '<w:b/>' : '') +
-            (r.link ? '<w:color w:val="1D4ED8"/><w:u w:val="single"/>'
+            (r.link ? '<w:color w:val="1D4ED8"/>'
                     : (r.colour && r.colour !== '2d2d2d' && r.colour !== '000000' ? '<w:color w:val="' + r.colour.toUpperCase() + '"/>' : '')) +
-            (opts.size ? '<w:sz w:val="' + opts.size + '"/><w:szCs w:val="' + opts.size + '"/>' : '') + '</w:rPr>';
+            (opts.size ? '<w:sz w:val="' + opts.size + '"/><w:szCs w:val="' + opts.size + '"/>' : '') +
+            (r.link ? '<w:u w:val="single"/>' : '') + '</w:rPr>';
           if (r.img) {
             const idx = media.length + 1;
             const relId = 'rIdImg' + idx;
@@ -4699,6 +4818,7 @@
 
     async function docxBuild(root) {
       const built = docxFromDocument(root, await docxCollectImages(root));
+      const metrics = docxPageMetrics();
       const NS = 'http://schemas.openxmlformats.org/';
       const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<Types xmlns="' + NS + 'package/2006/content-types">' +
@@ -4733,7 +4853,9 @@
         '<w:document xmlns:w="' + W + '" xmlns:r="' + NS + 'officeDocument/2006/relationships" ' +
         'xmlns:wp="' + NS + 'drawingml/2006/wordprocessingDrawing"><w:body>' +
         built.body +
-        '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850"/></w:sectPr>' +
+        '<w:sectPr><w:pgSz w:w="' + metrics.w + '" w:h="' + metrics.h + '"/>' +
+        '<w:pgMar w:top="' + metrics.margin + '" w:right="' + metrics.margin + '" w:bottom="' +
+        metrics.margin + '" w:left="' + metrics.margin + '"/></w:sectPr>' +
         '</w:body></w:document>';
       // dataURL → bytes for each picture part
       const mediaParts = built.media.map(m => {

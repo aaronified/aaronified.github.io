@@ -629,8 +629,11 @@ All three render the **same curated layout** built from the same data, not the o
 - **The PDF is the preview, transcribed.** The generator does not lay the document out a second
   time: the browser has already done that in the preview, so the exporter walks those sheets and
   writes each line where the browser put it. Two layout engines would drift; one cannot.
-- **Fonts are embedded** from `assets/fonts/` — subsets of Noto Sans, 12 KB each, the same files
-  the preview renders with. That is why **₹** and accented characters survive.
+- **Fonts are embedded** from `assets/fonts/` — the complete Noto Sans, regular and bold, the
+  same files the preview renders with. One global font, not a subset, so no character can
+  change shape between the screen and the file; that is why **₹** and accented characters
+  survive. Anything even Noto Sans cannot draw (CJK, emoji) is **reported** after the save
+  rather than dropped in silence — see [`assets/fonts/README.md`](assets/fonts/README.md).
 - **Colours:** body text is dark grey, headings are black, and all inline highlights render as
   **bold blue** (no pills/backgrounds).
 - FAQ and Recommendations are omitted.
