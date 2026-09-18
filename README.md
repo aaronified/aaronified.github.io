@@ -605,6 +605,10 @@ browser's print dialog — choose *Save as PDF*. This prints a **separate, compa
   you set on the selection screen.
 - **Education** — degrees, with any **internships nested under the college** attended at that time
   (matched automatically by date).
+- **Links are real links.** Contact lines, employer names and project URLs are anchors, so they
+  stay **clickable in the exported PDF**. One caveat worth knowing: every browser's own *Save as
+  PDF* preserves them, but Windows' *Microsoft Print to PDF* is a printer driver and flattens
+  everything — pick the browser's PDF option, not that one.
 - **Colours:** body text is dark grey, headings are black, and all inline highlights render as
   **bold blue** (no pills/backgrounds).
 - FAQ and Recommendations are omitted.
@@ -622,6 +626,9 @@ way to the next section — and a **right column** with the individual items. Ev
 that flip all of a section's child toggles at once (e.g. hide every logo, or every reference photo).
 Per-item toggles are packed into compact rows to keep scrolling short.
 
+- **Page** — paper size (**A4** or **US Letter**) and density (**Compact / Normal / Roomy**). Density
+  moves text size, leading, block spacing *and* page margins together, so it genuinely changes how
+  much fits: on this résumé, compact is ~2.0 pages where normal is ~2.4 and roomy ~3.0.
 - **Contact Details** — universal: profile photo. Per line (reorderable via ▲/▼ arrows or drag):
   include phone, GitHub, email, LinkedIn, and the derived live web URL.
 - **Summary** — include toggle plus an editor to rewrite the opening paragraph for this export.

@@ -386,6 +386,8 @@
     #print-resume { display: none; }
 
     @media print {
+      /* Paper size and margin are rewritten at runtime by applyPrintPageStyle() from the
+         Page settings; this is the fallback if that has not run yet. */
       @page { margin: 12mm; }
 
       /* Hide the on-screen app entirely; show only the compact resume */
@@ -393,12 +395,20 @@
       #print-resume { display: block !important; }
 
       /* Colour system: body = very dark grey, headers = black, highlights = bold blue */
+      /* Density: one control drives text size, leading and the gaps between blocks, so
+         "compact" really does buy a page rather than just shrinking the type. */
+      #print-resume { --pr-font: 9.5pt; --pr-lead: 1.32; --pr-gap: 1; }
+      #print-resume.pr-d-compact { --pr-font: 9pt;  --pr-lead: 1.24; --pr-gap: 0.7; }
+      #print-resume.pr-d-roomy   { --pr-font: 10pt; --pr-lead: 1.44; --pr-gap: 1.45; }
       #print-resume {
         font-family: 'Inter', Arial, sans-serif;
         color: #2d2d2d;
-        font-size: 9.5pt;
-        line-height: 1.32;
+        font-size: var(--pr-font);
+        line-height: var(--pr-lead);
       }
+      /* Links keep the surrounding colour — they exist to be clickable in the PDF, not to
+         decorate the page. The project URL is the one that reads as a link. */
+      #print-resume a { color: inherit; text-decoration: none; }
       #print-resume * { box-shadow: none !important; }
       #print-resume img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       #print-resume .pr-logo { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
@@ -421,32 +431,32 @@
       }
 
       /* Hero: photo left, details right */
-      .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: 9px; }
+      .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: calc(9px * var(--pr-gap)); }
       .pr-hero img { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; object-position: top; flex: 0 0 auto; }
-      .pr-name { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 18pt; font-weight: 800; line-height: 1.08; }
-      .pr-title { font-weight: 600; font-size: 10pt; margin-top: 1px; }
-      .pr-meta { font-size: 8.5pt; margin-top: 3px; }
+      .pr-name { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.9em; font-weight: 800; line-height: 1.08; }
+      .pr-title { font-weight: 600; font-size: 1.05em; margin-top: 1px; }
+      .pr-meta { font-size: 0.9em; margin-top: 3px; }
       .pr-meta a { color: inherit; text-decoration: none; }
 
       .pr-section-h {
-        font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 11pt; font-weight: 700;
-        margin: 10px 0 4px; border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
+        font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.16em; font-weight: 700;
+        margin: calc(10px * var(--pr-gap)) 0 calc(4px * var(--pr-gap)); border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
       }
       .pr-summary { margin: 0; }
       .pr-comp p { margin: 2.5px 0; }
       .pr-comp .t, .pr-edu .t { font-weight: 700; }
       .pr-edu p { margin: 2px 0; }
-      .pr-edu .pr-edu-desc { margin: 0 0 3px 18px; font-size: 8.7pt; }   /* optional education description (toggled in the selection screen) */
-      .pr-edu .pr-sub { margin: 1px 0 1px 14px; font-size: 9pt; }   /* internship header nested under its college */
-      .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 8.7pt; }   /* internship description/bullets */
+      .pr-edu .pr-edu-desc { margin: 0 0 3px 18px; font-size: 0.92em; }   /* optional education description (toggled in the selection screen) */
+      .pr-edu .pr-sub { margin: 1px 0 1px 14px; font-size: 0.95em; }   /* internship header nested under its college */
+      .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 0.92em; }   /* internship description/bullets */
       .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
 
       /* Projects: each project is a break-avoid block — name · summary, optional tech line + bullets. */
-      .pr-projects .pr-proj-item { margin: 3px 0; break-inside: avoid; }
+      .pr-projects .pr-proj-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
       .pr-projects .pr-proj-item > p { margin: 0; }
       .pr-projects .t { font-weight: 700; }
-      .pr-projects .pr-proj-link { color: #1d4ed8; white-space: nowrap; }
-      .pr-projects .pr-proj-tech { margin: 1px 0 0 14px; font-size: 8.5pt; color: #555; }
+      .pr-projects .pr-proj-link { color: #1d4ed8 !important; white-space: nowrap; }
+      .pr-projects .pr-proj-tech { margin: 1px 0 0 14px; font-size: 0.9em; color: #555; }
       .pr-projects ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }   /* real bullets (override CDN reset) */
       .pr-projects li { margin: 0.5px 0; }
 
@@ -460,18 +470,18 @@
       .pr-traj .co { font-weight: 700; white-space: nowrap; }
       .pr-traj .role { white-space: nowrap; }
       .pr-traj .period { text-align: right; white-space: nowrap; padding-left: 10px; }
-      .pr-traj .detail td { padding: 0 0 5px; }
+      .pr-traj .detail td { padding: 0 0 calc(5px * var(--pr-gap)); }
       .pr-traj .lead { margin-bottom: 1px; }
       .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }  /* real bullets (override CDN reset) */
       .pr-traj li { margin: 0.5px 0; }
-      .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: 6px; }
+      .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
 
       /* References / recommenders as professional contacts (quote text omitted) */
-      .pr-reco .pr-reco-item { margin: 3px 0; break-inside: avoid; }
+      .pr-reco .pr-reco-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
       .pr-reco .pr-reco-item p { margin: 0; }
       .pr-reco .pr-reco-img { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
       .pr-reco .name { font-weight: 700; color: #000; }
-      .pr-reco .pr-reco-meta { margin: 1px 0 0 18px; font-size: 8.7pt; }
+      .pr-reco .pr-reco-meta { margin: 1px 0 0 18px; font-size: 0.92em; }
     }
   </style>
   
@@ -1233,9 +1243,32 @@
 
     // Build the compact print/PDF resume (hidden on screen; shown only when printing).
     // Purpose-built layout — independent of the screen DOM. Reuses the same data + helpers.
+    // Paper size and margin can only be set through an @page rule, and @page ignores CSS
+    // custom properties — so the rule is rewritten as text whenever the settings change.
+    const PR_MARGIN_MM = { compact: 10, normal: 12, roomy: 16 };
+    function applyPrintPageStyle(config) {
+      const cfg = (config && config.page) || (pdfConfig && pdfConfig.page) ||
+        ((reconcilePdfConfig(loadPdfConfig()).config || {}).page) || { size: 'a4', density: 'normal' };
+      let tag = document.getElementById('pr-page-style');
+      if (!tag) {
+        tag = document.createElement('style');
+        tag.id = 'pr-page-style';
+        document.head.appendChild(tag);   // appended last, so it wins over the fallback @page
+      }
+      const size = cfg.size === 'letter' ? 'Letter' : 'A4';
+      const margin = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
+      tag.textContent = '@media print { @page { size: ' + size + '; margin: ' + margin + 'mm; } }';
+      const el = document.getElementById('print-resume');
+      if (el) {
+        el.classList.remove('pr-d-compact', 'pr-d-normal', 'pr-d-roomy');
+        el.classList.add('pr-d-' + (cfg.density || 'normal'));
+      }
+    }
+
     function buildPrintResume(config) {
       const el = document.getElementById('print-resume');
       if (el) el.innerHTML = buildPrintResumeHTML(config);
+      applyPrintPageStyle(config);
     }
 
     // Returns the print résumé HTML for a config (reused verbatim by the on-screen live preview).
@@ -1270,7 +1303,7 @@
       const contacts = contactOrder
         .map(k => choiceByKey[k])
         .filter(cc => cc && !(contactCfg[cc.key] && contactCfg[cc.key].include === false))
-        .map(cc => `<a href="${cc.href}">${cc.label}</a>`)
+        .map(cc => `<a href="${escapeAttr(cc.href)}">${escapeHtml(cc.label)}</a>`)
         .join(' &middot; ');
 
       const heroShowImage = !(config.hero && config.hero.showImage === false);
@@ -1298,7 +1331,7 @@
           if (relText) headBits.push(escapeHtml(relText));
           const metaBits = [];
           if (ic.showContacts !== false) {
-            if (r.linkedin) metaBits.push(escapeHtml(r.linkedin.replace(/^https?:\/\/(www\.)?/, '')));
+            if (r.linkedin) metaBits.push(`<a href="${escapeAttr(r.linkedin)}">${escapeHtml(r.linkedin.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
             if (ic.email) metaBits.push(escapeHtml(ic.email));
             if (ic.mobile) metaBits.push(escapeHtml(ic.mobile));
           }
@@ -1310,13 +1343,15 @@
 
       // Each ROLE is its own break-avoid block (so a multi-role org can span a page break, and a
       // separator rule falls between every role — including two roles at the same org).
-      const roleBlock = (logo, co, role, period, desc, highlights) => {
+      // `link` makes the employer name a real anchor: browsers that export PDF (all of them
+      // except Windows' "Microsoft Print to PDF" driver) turn it into a clickable annotation.
+      const roleBlock = (logo, co, role, period, desc, highlights, link) => {
         let d = desc ? `<div class="lead">${formatText(desc)}</div>` : '';
         if (highlights && highlights.length) {
           d += `<ul>${highlights.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
         }
         return '<tbody class="pr-entry">'
-          + `<tr><td class="who">${logoImg(logo)}<span class="co">${co}</span> <span class="role">— ${role}</span></td><td class="period">${period}</td></tr>`
+          + `<tr><td class="who">${logoImg(logo)}<span class="co">${link ? `<a href="${escapeAttr(link)}">${co}</a>` : co}</span> <span class="role">— ${role}</span></td><td class="period">${period}</td></tr>`
           + `<tr class="detail"><td colspan="2">${d}</td></tr>`
           + '</tbody>';
       };
@@ -1330,14 +1365,14 @@
             if (cfg && !cfg.include) return '';
             return roleBlock(showLogo(cfg, e.logo), co, r.role, r.period,
               (cfg && !cfg.showDescription) ? '' : r.description,
-              pickHighlights(r.highlights, cfg));
+              pickHighlights(r.highlights, cfg), e.link);
           }).join('');
         }
         const cfg = entCfg[e.id];
         if (cfg && !cfg.include) return '';
         return roleBlock(showLogo(cfg, e.logo), co, e.role, e.period,
           (cfg && !cfg.showDescription) ? '' : e.description,
-          pickHighlights(e.highlights, cfg));
+          pickHighlights(e.highlights, cfg), e.link);
       }).join('');
 
       // Education, with internships nested under the college attended at the time (matched by date).
@@ -1384,7 +1419,9 @@
         if (cfg && !cfg.include) return '';
         const showDesc = !(cfg && cfg.showDescription === false);
         const primaryLink = (p.links && p.links[0]) ? p.links[0].href : '';
-        const linkHtml = primaryLink ? ` <span class="pr-proj-link">${escapeHtml(primaryLink.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</span>` : '';
+        const linkHtml = primaryLink
+          ? ` <a class="pr-proj-link" href="${escapeAttr(primaryLink)}">${escapeHtml(primaryLink.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>`
+          : '';
         const descHtml = (showDesc && p.summary) ? ' — ' + formatText(p.summary) : '';
         let body = `<p>${logoImg(showLogo(cfg, p.logo))}<span class="t">${escapeHtml(p.name)}</span>${descHtml}${linkHtml}</p>`;
         const hls = pickHighlights(p.highlights, cfg);
@@ -3821,6 +3858,14 @@
         entries[meta.key] = node;
       });
 
+      // Paper size + density. Density drives text size, leading, block gaps AND the page
+      // margin together, so one control genuinely changes how much fits on a page.
+      const sPage = saved.page || {};
+      const page = {
+        size: (sPage.size === 'letter') ? 'letter' : 'a4',
+        density: (sPage.density === 'compact' || sPage.density === 'roomy') ? sPage.density : 'normal'
+      };
+
       // Hero profile photo toggle.
       const sHero = saved.hero || {};
       const hero = { showImage: typeof sHero.showImage === 'boolean' ? sHero.showImage : true };
@@ -3897,7 +3942,7 @@
       });
       const projects = { order: projOrder, items: projItems };
 
-      return { config: { v: PDF_CONFIG_VERSION, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
+      return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
     }
 
     // --- Modal open / close / generate / reset ---
@@ -3978,6 +4023,7 @@
     function resetPdfConfig() {
       pdfConfig = reconcilePdfConfig(null).config;
       savePdfConfig(pdfConfig);
+      applyPrintPageStyle(pdfConfig);   // paper/density live in an injected @page rule, not the DOM
       pdfUi.expandedComps.clear();
       renderPdfModal([]);
       updateResetButton();
@@ -3994,6 +4040,7 @@
           '<div><p class="font-semibold mb-1">Your saved choices were updated</p><ul class="list-disc pl-4 space-y-0.5">' +
           changes.map(c => '<li>' + escapeHtml(c) + '</li>').join('') + '</ul></div></div>';
       }
+      html += renderPageSectionHTML();
       html += renderContactsSectionHTML();
       html += renderSummarySectionHTML();
       html += renderCompetencySectionHTML();
@@ -4072,6 +4119,32 @@
       updateContactsBadge();
       if (window.lucide) lucide.createIcons();
       refreshPdfModifiedHighlights();
+    }
+
+    // Paper size + density, as two small segmented controls.
+    function renderPageSectionHTML() {
+      const page = pdfConfig.page || { size: 'a4', density: 'normal' };
+      const group = (name, current, options) =>
+        '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="' + escapeAttr(name) + '">' +
+        options.map(o =>
+          '<button type="button" role="radio" aria-checked="' + (o.v === current ? 'true' : 'false') + '"' +
+          ' class="pdf-page-opt px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+          (o.v === current
+            ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 border-transparent'
+            : 'text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50') +
+          '" data-page-key="' + escapeAttr(name) + '" data-page-value="' + escapeAttr(o.v) + '">' +
+          escapeHtml(o.label) + '</button>').join('') + '</div>';
+
+      const right =
+        '<div class="space-y-3">' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Paper</div>' +
+            group('size', page.size, [{ v: 'a4', label: 'A4' }, { v: 'letter', label: 'US Letter' }]) + '</div>' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Density</div>' +
+            group('density', page.density, [
+              { v: 'compact', label: 'Compact' }, { v: 'normal', label: 'Normal' }, { v: 'roomy', label: 'Roomy' }]) +
+            '<p class="text-[11px] text-slate-500 dark:text-slate-400">Sets text size, spacing and page margins together \u2014 compact fits noticeably more per page.</p></div>' +
+        '</div>';
+      return pdfSectionRowHTML('Page', '', '', right);
     }
 
     function renderSummarySectionHTML() {
@@ -4397,6 +4470,7 @@
       body.addEventListener('click', function (e) {
         const t = e.target;
         let el;
+        if ((el = t.closest('.pdf-page-opt'))) { setPageOption(el.getAttribute('data-page-key'), el.getAttribute('data-page-value')); return; }
         if ((el = t.closest('.pdf-bulk-flag'))) { toggleBulk(el); return; }
         if ((el = t.closest('.pdf-entry-logo'))) { toggleEntrySwitch(el.closest('.pdf-entry').dataset.entryKey, el, 'showLogo'); return; }
         if ((el = t.closest('.pdf-sort-up')) || (el = t.closest('.pdf-sort-down'))) {
@@ -4488,6 +4562,21 @@
           '<button type="button" class="pdf-sort-up p-0.5 rounded text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" aria-label="Move ' + escapeAttr(label) + ' up"' + (idx === 0 ? ' disabled aria-disabled="true"' : '') + '><i data-lucide="chevron-up" class="w-4 h-4"></i></button>' +
           '<button type="button" class="pdf-sort-down p-0.5 rounded text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" aria-label="Move ' + escapeAttr(label) + ' down"' + (idx === total - 1 ? ' disabled aria-disabled="true"' : '') + '><i data-lucide="chevron-down" class="w-4 h-4"></i></button>' +
         '</div>';
+    }
+
+    function setPageOption(key, value) {
+      if (!pdfConfig.page || (key !== 'size' && key !== 'density')) return;
+      if (pdfConfig.page[key] === value) return;
+      pdfConfig.page[key] = value;
+      savePdfConfigDebounced();
+      applyPrintPageStyle(pdfConfig);
+      const body = document.getElementById('pdf-modal-body');
+      const section = body && body.querySelector('.pdf-section');
+      if (section) {
+        section.outerHTML = renderPageSectionHTML();
+        if (window.lucide) lucide.createIcons();
+      }
+      updateResetButton();
     }
 
     function toggleCompInclude(title, btn) {
