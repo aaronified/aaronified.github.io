@@ -391,6 +391,18 @@
     @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
     @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
+    /* Below lg the live preview is not SHOWN, but it must still be LAID OUT. The sheets it
+       holds are what both exports are transcribed from, so a display:none pane means "nothing
+       to export" on every phone and small laptop — with the Save PDF and DOCX buttons sitting
+       right there, enabled. Parked off-screen instead, at a fixed width so the pagination it
+       computes does not depend on the viewport. */
+    @media (max-width: 1023.98px) {
+      #pdf-preview-pane {
+        position: fixed; left: -20000px; top: 0; width: 380px; height: 700px;
+        border: 0; background: transparent;
+      }
+    }
+
     /* ==========================================================
        RESUME DOCUMENT STYLES (.pr-doc)
        Deliberately OUTSIDE @media print: one set of rules styles both
@@ -756,7 +768,7 @@
              drift from the output. -->
         <div class="flex-1 min-h-0 flex">
           <div id="pdf-modal-body" class="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 py-4"></div>
-          <aside id="pdf-preview-pane" class="hidden lg:flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
+          <aside id="pdf-preview-pane" class="flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50">
               <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live preview</span>
               <span id="pdf-preview-meta" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
@@ -4161,9 +4173,10 @@
       const scaler = document.getElementById('pdf-preview-scaler');
       const scroll = document.getElementById('pdf-preview-scroll');
       if (!pane || !doc || !pagesHost || !scaler || !scroll || !pdfConfig) return;
-      // A hidden pane has no width, so every measurement would be nonsense — page count
-      // included. openPdfModal() calls back once the dialog is actually on screen.
-      if (pane.offsetParent === null) return;
+      // A pane that is not laid out has no width, so every measurement would be nonsense —
+      // page count included. openPdfModal() calls back once the dialog is really up. This is
+      // NOT the small-viewport case: there the pane is parked off-screen, still laid out.
+      if (!pane.getClientRects().length) return;
 
       // The document's own webfont loads asynchronously, and font-display: swap means the first
       // layout happens in the fallback face. Measuring then pages the document against the wrong
@@ -4374,8 +4387,23 @@
     // and a résumé nobody can email is not an export.
     const PDF_IMG_OVERSAMPLE = 2;
     const _pdfImgCache = {};
-    async function pdfImageData(src, wPx, hPx) {
-      const key = src + '@' + Math.round(wPx) + 'x' + Math.round(hPx);
+
+    // "50% 50%" / "top" / "left 20%" → the fraction of the overflow to trim off each side, the
+    // way object-position does it. Default centre, which is what logos and quotation portraits
+    // use; the hero photo sets `top` and must keep the face in frame.
+    function pdfObjectPosition(value) {
+      const words = { left: 0, top: 0, center: 0.5, centre: 0.5, right: 1, bottom: 1 };
+      const parts = String(value || '50% 50%').trim().split(/\s+/).slice(0, 2);
+      const frac = t => (t in words ? words[t] : /%$/.test(t) ? parseFloat(t) / 100 : 0.5);
+      const x = frac(parts[0]);
+      const y = parts.length > 1 ? frac(parts[1]) : (parts[0] === 'top' || parts[0] === 'bottom' ? x : 0.5);
+      const flip = parts.length > 1 && (parts[1] === 'left' || parts[1] === 'right');
+      return flip ? { x: y, y: x } : { x: isFinite(x) ? x : 0.5, y: isFinite(y) ? y : 0.5 };
+    }
+
+    async function pdfImageData(src, wPx, hPx, objectPosition) {
+      const pos = pdfObjectPosition(objectPosition);
+      const key = src + '@' + Math.round(wPx) + 'x' + Math.round(hPx) + '@' + pos.x + ',' + pos.y;
       if (_pdfImgCache[key] !== undefined) return _pdfImgCache[key];
       try {
         const res = await fetch(src, { mode: 'cors' });
@@ -4401,16 +4429,19 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#ffffff';            // JPEG carries no alpha
         ctx.fillRect(0, 0, cw, ch);
-        // Cover-fit, matching the object-fit: cover the page uses for photos and logos.
+        // Cover-fit, matching the object-fit: cover the page uses for photos and logos — and
+        // trimmed where the element's own object-position says to trim.
         const sw = source.width, sh = source.height;
         const ratio = Math.max(cw / sw, ch / sh);
         const dw = sw * ratio, dh = sh * ratio;
-        ctx.drawImage(source, (cw - dw) / 2, 0, dw, dh);
+        ctx.drawImage(source, (cw - dw) * pos.x, (ch - dh) * pos.y, dw, dh);
         _pdfImgCache[key] = canvas.toDataURL('image/jpeg', 0.85);
+        return _pdfImgCache[key];
       } catch (e) {
-        _pdfImgCache[key] = null;   // a logo that will not load must not fail the export
+        // A logo that will not load must not fail the export — but a transient failure must not
+        // be remembered as permanent either, or every later export of this session loses it too.
+        return null;
       }
-      return _pdfImgCache[key];
     }
 
     // Split a text node into the lines the BROWSER broke it into, each with its own box.
@@ -4479,7 +4510,7 @@
         const box = el.getBoundingClientRect();
 
         if (el.tagName === 'IMG' && el.src) {
-          jobs.push(pdfImageData(el.src, box.width, box.height).then(data => {
+          jobs.push(pdfImageData(el.src, box.width, box.height, cs.objectPosition).then(data => {
             if (!data) return;
             try { doc.addImage(data, 'JPEG', X(box.left), Y(box.top), box.width * PX, box.height * PX); } catch (e) {}
           }));
@@ -4656,7 +4687,7 @@
         // offsetWidth, not a rect: the measuring node sits inside the scaled preview.
         const w = Math.max(1, el.offsetWidth || 13);
         const h = Math.max(1, el.offsetHeight || w);
-        const data = await pdfImageData(el.src, w, h);
+        const data = await pdfImageData(el.src, w, h, getComputedStyle(el).objectPosition);
         if (data) map.set(el.src, { data: data, w: w, h: h });
       }));
       return map;
@@ -4692,6 +4723,8 @@
       const metrics = docxPageMetrics();
       const rels = [];
       const media = [];
+      const mediaByData = new Map();
+      let drawingId = 1;
       const body = [];
       images = images || new Map();
       const relFor = url => {
@@ -4747,10 +4780,16 @@
             (opts.size ? '<w:sz w:val="' + opts.size + '"/><w:szCs w:val="' + opts.size + '"/>' : '') +
             (r.link ? '<w:u w:val="single"/>' : '') + '</w:rPr>';
           if (r.img) {
-            const idx = media.length + 1;
-            const relId = 'rIdImg' + idx;
-            media.push({ name: 'word/media/image' + idx + '.jpeg', data: r.img.data, relId: relId });
-            return docxDrawing(r.img, 1000 + idx, relId);
+            // One part per distinct picture, not per appearance: the same employer logo shows up
+            // beside every role there, and a file that stores it five times is five times the size.
+            let part = mediaByData.get(r.img.data);
+            if (!part) {
+              const idx = media.length + 1;
+              part = { name: 'word/media/image' + idx + '.jpeg', data: r.img.data, relId: 'rIdImg' + idx };
+              media.push(part);
+              mediaByData.set(r.img.data, part);
+            }
+            return docxDrawing(r.img, 1000 + drawingId++, part.relId);
           }
           const run = '<w:r>' + fmt + (r.tab ? '<w:tab/>' : '') +
             '<w:t xml:space="preserve">' + xmlEsc(r.text) + '</w:t></w:r>';
@@ -5002,7 +5041,7 @@
       refreshPdfPreview();
     }
 
-    // Two-column section row (scrolls with the modal — no sticky sidebar). Left = title + count +
+    // Two-column section row. Left = title + count +
     // universal ("all items") toggles; right = the individual items. Columns stack on narrow widths.
     function pdfSectionRowHTML(title, badgeHTML, globalsHTML, rightHTML) {
       return '<section class="pdf-section flex flex-col sm:flex-row gap-3 sm:gap-5 py-4 border-t border-slate-200/50 dark:border-slate-800/50 first:border-t-0 first:pt-0">' +

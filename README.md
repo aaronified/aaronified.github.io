@@ -605,8 +605,8 @@ a **section rail**, the **settings**, and a **live preview** of the document its
 
 | Button | What it does |
 |---|---|
-| **Save PDF** | Builds the PDF in your browser and downloads it, correctly named. Text stays selectable, links stay clickable, fonts are embedded. ~77 KB, no dialog. |
-| **DOCX** | A real Word file, written without a library. Deliberately **single-column** — an ATS reads multi-column layouts in the wrong order, so this is the one to upload to a form. |
+| **Save PDF** | Builds the PDF in your browser and downloads it, correctly named. Text stays selectable, links stay clickable, fonts are embedded. Around 150 KB for three pages, no dialog. |
+| **DOCX** | A real Word file, written without a library — around 115 KB. Deliberately **single-column** — an ATS reads multi-column layouts in the wrong order, so this is the one to upload to a form. |
 | **Print…** | Your browser's print dialog, if you want paper or its own PDF writer. |
 
 All three render the **same curated layout** built from the same data, not the on-screen page:
