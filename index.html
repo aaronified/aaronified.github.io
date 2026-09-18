@@ -445,6 +445,15 @@
       }
       #pdf-modal.pdf-m-preview #pdf-modal-body { display: none; }
     }
+    /* Editable runs get a quiet dotted underline so it is obvious what can be changed, and the
+       one being edited is lifted out of the page's own colours. */
+    .pr-editing [data-edit] { outline: 1px dashed rgba(79, 70, 229, .45); outline-offset: 2px; border-radius: 2px; }
+    .pr-editing [data-edit]:focus { outline: 2px solid #4f46e5; background: rgba(79, 70, 229, .06); }
+    .pdf-mark-btn[aria-pressed="true"] { background: #4f46e5; color: #fff; border-color: transparent; }
+    .dark .pdf-mark-btn[aria-pressed="true"] { background: #fbbf24; color: #020617; }
+    #pdf-edit-toggle[aria-pressed="true"] { background: #4f46e5; color: #fff; border-color: transparent; }
+    .dark #pdf-edit-toggle[aria-pressed="true"] { background: #fbbf24; color: #020617; }
+
     /* Collapsed sections hide their CONTROLS, never their title or their "n of m shown" count:
        the point of folding them is to see the whole list at once, not to hide what is set. */
     @media (max-width: 639.98px) {
@@ -557,12 +566,28 @@
     .pr-doc .pr-traj li { margin: 0.5px 0; }
     .pr-doc .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
 
-    /* Template carousel thumbnails: a whole page at true width, scaled into the card and
-       clipped to A4 proportions. Rendered from the user's own data, so the choice is made by
-       looking at the document rather than by reading a name for it. */
+    /* Template carousel: a deck rather than a strip. The chosen template is centred and full
+       size; the others sit behind it, turned away and dimmed, close enough to read. Each card
+       is a whole page of the user's own résumé at true width, scaled into the card, so the
+       choice is made by looking at the document rather than by reading a name for it. */
+    .pdf-tmpl-deck {
+      position: relative; height: 258px; perspective: 1100px;
+      touch-action: pan-y; user-select: none; overflow: hidden;
+    }
+    .pdf-tmpl-card {
+      position: absolute; top: 4px; left: 50%; width: 132px; margin-left: -66px;
+      transform-origin: 50% 50%; will-change: transform, opacity;
+      transition: transform .45s cubic-bezier(.22, 1, .36, 1), opacity .45s ease, box-shadow .45s ease;
+    }
+    .reduce-motion .pdf-tmpl-card { transition: none; }
     .pdf-tmpl-thumb { height: 175px; position: relative; }
     .pdf-tmpl-scaler { transform-origin: top left; position: absolute; top: 0; left: 0; }
-    .pdf-tmpl-card[aria-checked="true"] .pdf-tmpl-thumb { box-shadow: inset 0 0 0 1px currentColor; }
+    .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(15, 23, 42, .45); }
+    .dark .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(0, 0, 0, .7); }
+    .pdf-tmpl-dots { display: flex; justify-content: center; gap: 6px; }
+    .pdf-tmpl-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(100, 116, 139, .35); transition: all .3s ease; }
+    .pdf-tmpl-dot[aria-current="true"] { width: 18px; background: #4f46e5; }
+    .dark .pdf-tmpl-dot[aria-current="true"] { background: #fbbf24; }
 
     /* ==========================================================
        TEMPLATES — .pr-doc.pr-t-<key>
@@ -769,25 +794,31 @@
           </button>
         </div>
 
-        <!-- Animations Toggle Button -->
-        <button id="anim-toggle-btn" onclick="toggleAnimations()" aria-label="Toggle animations" aria-pressed="true" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
-          <!-- Animations On (lightning) -->
-          <svg id="anim-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-          <!-- Animations Off (lightning + slash) -->
-          <svg id="anim-off" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" opacity="0.4"></polygon>
-            <line x1="3" y1="3" x2="21" y2="21"></line>
-          </svg>
-        </button>
 
         <!-- Controls: typeface, animations, theme. One group, so `order` can move all three. -->
         <div class="flex items-center gap-2 flex-shrink-0 order-first sm:order-last">
+
+        <!-- Phone: one Settings button instead of three. Three icon buttons beside a scrolling
+             tab strip is most of a 320px row spent on controls nobody presses twice. -->
+        <div class="relative sm:hidden">
+          <button id="settings-btn" onclick="toggleSettingsMenu()" aria-label="Settings"
+                  aria-haspopup="menu" aria-expanded="false" aria-controls="settings-menu"
+                  class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+          </button>
+          <div id="settings-menu" role="menu" aria-labelledby="settings-btn" hidden
+               class="absolute right-0 mt-2 z-50 w-[232px] max-h-[70vh] overflow-y-auto p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
+        </div>
+
         <!-- Typeface picker. A menu rather than a cycling toggle: four faces is too many to
              discover by pressing a button repeatedly, and each item is set in its own face so
-             the choice is made by looking. -->
-        <div class="relative flex-shrink-0">
+             the choice is made by looking. Folded into Settings on a phone. -->
+        <div class="relative flex-shrink-0 hidden sm:block">
           <button id="font-toggle-btn" onclick="toggleFontMenu()" aria-label="Choose typeface"
                   aria-haspopup="menu" aria-expanded="false" aria-controls="font-menu"
                   class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
@@ -799,8 +830,21 @@
                class="absolute right-0 mt-2 z-50 min-w-[190px] p-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
         </div>
 
+        <!-- Animations Toggle Button -->
+        <button id="anim-toggle-btn" onclick="toggleAnimations()" aria-label="Toggle animations" aria-pressed="true" class="hidden sm:block p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
+          <!-- Animations On (lightning) -->
+          <svg id="anim-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <!-- Animations Off (lightning + slash) -->
+          <svg id="anim-off" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" opacity="0.4"></polygon>
+            <line x1="3" y1="3" x2="21" y2="21"></line>
+          </svg>
+        </button>
+
         <!-- Theme Toggle Button -->
-        <button id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle visual theme" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
+        <button id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle visual theme" class="hidden sm:block p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
           <!-- Sun Icon (Light Mode) -->
           <svg id="theme-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="4"></circle>
@@ -943,17 +987,39 @@
           <aside id="pdf-preview-pane" class="flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50">
               <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live preview</span>
-              <span id="pdf-preview-meta" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+              <div class="flex items-center gap-2">
+                <span id="pdf-preview-meta" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+                <button type="button" id="pdf-edit-toggle" aria-pressed="false" onclick="setPdfEditing(!pdfUi.editing)"
+                        class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-indigo-500/60 dark:hover:border-amber-400/60 aria-pressed:bg-indigo-600 aria-pressed:text-white dark:aria-pressed:bg-amber-400 dark:aria-pressed:text-slate-950 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+                  <i data-lucide="pencil" class="w-3 h-3"></i>Edit text
+                </button>
+              </div>
+            </div>
+            <!-- Shown only while editing. The marks are the same three the résumé data uses. -->
+            <div id="pdf-edit-bar" hidden class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50 bg-indigo-500/5 dark:bg-amber-400/5">
+              <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">Highlight:</span>
+              <button type="button" data-mark="hl-sw" aria-pressed="false" onclick="pdfApplyMark('hl-sw'); pdfSyncEditToolbar();"
+                      class="pdf-mark-btn px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" title="Tool or system (Ctrl+B)">Tool</button>
+              <button type="button" data-mark="hl-skill" aria-pressed="false" onclick="pdfApplyMark('hl-skill'); pdfSyncEditToolbar();"
+                      class="pdf-mark-btn px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" title="Skill (Ctrl+E)">Skill</button>
+              <button type="button" data-mark="hl-num" aria-pressed="false" onclick="pdfApplyMark('hl-num'); pdfSyncEditToolbar();"
+                      class="pdf-mark-btn px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" title="Figure (Ctrl+H)">Figure</button>
+              <button type="button" onclick="pdfApplyMark(null); pdfSyncEditToolbar();"
+                      class="px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Clear</button>
+              <span class="ml-auto text-[11px] text-slate-500 dark:text-slate-400">Saved in this browser only</span>
             </div>
             <div id="pdf-preview-scroll" class="flex-1 overflow-y-auto p-4">
               <!-- inert + aria-hidden: a picture of the document, not a second copy to tab
                    through. pdfTrapFocus() already skips anything inside [inert]. -->
-              <div id="pdf-preview-scaler" class="relative origin-top-left" inert aria-hidden="true">
+              <div id="pdf-preview-scaler" class="relative origin-top-left">
                 <!-- Off-screen measuring copy: the whole document at content width, which is what
-                     the paginator measures block heights from. -->
-                <div id="pdf-preview-doc" class="pr-doc pdf-measure"></div>
-                <!-- Real sheets, one element per page. -->
-                <div id="pdf-preview-pages"></div>
+                     the paginator measures block heights from. Always inert — it is a second copy
+                     of everything on the sheets below and must never be reachable. -->
+                <div id="pdf-preview-doc" class="pr-doc pdf-measure" inert aria-hidden="true"></div>
+                <!-- Real sheets, one element per page. Inert too, so the preview adds no tab
+                     stops — until the reader turns editing on, when the editable runs (and only
+                     those) become reachable. -->
+                <div id="pdf-preview-pages" inert aria-hidden="true"></div>
               </div>
             </div>
           </aside>
@@ -961,14 +1027,24 @@
 
         <!-- Footer -->
         <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
-          <div class="flex items-center justify-between sm:justify-start gap-3">
+          <!-- Reset joins the secondary row on a phone, so the footer is exactly two rows:
+               the three secondary actions, then the primary one. On sm+ it stays on the left
+               where it has always been. -->
+          <div class="hidden sm:flex items-center justify-start gap-3">
             <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
             <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden lg:inline">Text stays selectable and links stay clickable.</span>
           </div>
-          <!-- Phone: the primary action gets its own full-width row and the two secondary ones
-               share the next, instead of four buttons wrapping into three ragged lines. Cancel
-               is dropped there — the X in the header is right above it and does the same. -->
-          <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+          <div class="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <!-- Phone: an icon, not a label — and it only lights up when there is something to
+                 reset. Disabled when there is not, so a press that would do nothing is not
+                 offered in the first place. -->
+            <button id="pdf-reset-m" onclick="resetPdfConfig()" aria-label="Reset to defaults" title="Reset to defaults"
+                    class="sm:hidden inline-flex items-center justify-center px-2 py-2 rounded-xl border border-slate-300/60 dark:border-slate-700/60 text-slate-400 dark:text-slate-600 disabled:opacity-60 enabled:hover:bg-rose-500/10 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" disabled>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+              </svg>
+            </button>
             <button id="pdf-cancel" onclick="closePdfModal()" class="hidden sm:inline-flex px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
             <button id="pdf-docx" onclick="saveDocx(this)" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
               <i data-lucide="file-text" class="w-4 h-4"></i>DOCX
@@ -976,7 +1052,7 @@
             <button id="pdf-print" onclick="generatePdf()" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
               <i data-lucide="printer" class="w-4 h-4"></i>Print…
             </button>
-            <button id="pdf-generate" onclick="savePdf(this)" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
+            <button id="pdf-generate" onclick="savePdf(this)" class="col-span-3 inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
               <i data-lucide="download" class="w-4 h-4"></i>Save PDF
             </button>
           </div>
@@ -1007,12 +1083,12 @@
   <div id="chat-widget" class="hidden print:hidden">
 
     <!-- Floating launcher -->
-    <!-- Icon only on a phone: with the label it is 180px wide and sits squarely on top of the
-         nav's own controls whenever the nav lands near the foot of the screen. The label is
-         still the button's accessible name. -->
+    <!-- Icon only on a phone, and a bigger one: with the label it was a 186px pill eating the
+         width of the screen and sitting on the nav's own controls. A 56px round target is
+         easier to hit than the pill was, and the label is still the accessible name. -->
     <button id="chat-launcher" type="button" aria-expanded="false" aria-controls="chat-panel"
-      class="fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center gap-2 p-3.5 sm:pl-3.5 sm:pr-4 sm:py-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
-      <i data-lucide="message-circle" id="chat-launcher-icon" class="w-5 h-5"></i>
+      class="fixed bottom-5 right-4 sm:right-5 z-[55] inline-flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:pl-3.5 sm:pr-4 sm:py-3 rounded-full sm:rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl shadow-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 dark:hover:border-amber-400/50 hover:text-indigo-600 dark:hover:text-amber-400 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
+      <i data-lucide="message-circle" id="chat-launcher-icon" class="w-7 h-7 sm:w-5 sm:h-5"></i>
       <span id="chat-launcher-label" class="hidden sm:inline">Ask about my work</span>
     </button>
 
@@ -1238,8 +1314,15 @@
           inner + '</svg>', 'image/svg+xml');
         if (doc.querySelector('parsererror')) return;
         const svg = document.importNode(doc.documentElement, true);
-        svg.setAttribute('class', el.getAttribute('class') || '');
-        svg.setAttribute('aria-hidden', 'true');
+        // EVERY attribute comes across, not just the class. The page addresses these icons by
+        // id — faq-icon-N, chevron-N, chat-launcher-icon — and dropping the id left
+        // toggleFaq() dereferencing null on every click whenever Lucide was unavailable,
+        // which is precisely the case this fallback exists for.
+        Array.prototype.forEach.call(el.attributes, a => {
+          if (a.name === 'data-lucide') return;
+          try { svg.setAttribute(a.name, a.value); } catch (e) {}
+        });
+        if (!svg.hasAttribute('aria-label')) svg.setAttribute('aria-hidden', 'true');
         el.parentNode.replaceChild(svg, el);
       });
     }
@@ -1280,31 +1363,73 @@
           : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80') +
         '">' + escapeHtml(f.label) + '</button>').join('');
     }
-    function closeFontMenu(refocus) {
-      const menu = document.getElementById('font-menu');
-      const btn = document.getElementById('font-toggle-btn');
-      if (!menu || menu.hidden) return;
-      menu.hidden = true;
+    // --- One popover, two menus -------------------------------------------
+    // Escape closes and returns focus, a press outside closes, only one is ever open.
+    let _openPopover = null;
+    function closePopover(refocus) {
+      if (!_openPopover) return;
+      const { menuId, btnId } = _openPopover;
+      const menu = document.getElementById(menuId);
+      const btn = document.getElementById(btnId);
+      _openPopover = null;
+      if (menu) menu.hidden = true;
       if (btn) { btn.setAttribute('aria-expanded', 'false'); if (refocus) btn.focus(); }
-      document.removeEventListener('keydown', fontMenuKeydown, true);
-      document.removeEventListener('pointerdown', fontMenuOutside, true);
+      document.removeEventListener('keydown', popoverKeydown, true);
+      document.removeEventListener('pointerdown', popoverOutside, true);
     }
-    function fontMenuKeydown(e) { if (e.key === 'Escape') { e.stopPropagation(); closeFontMenu(true); } }
-    function fontMenuOutside(e) {
-      if (!e.target.closest('#font-menu') && !e.target.closest('#font-toggle-btn')) closeFontMenu(false);
+    function popoverKeydown(e) { if (e.key === 'Escape') { e.stopPropagation(); closePopover(true); } }
+    function popoverOutside(e) {
+      if (!_openPopover) return;
+      if (!e.target.closest('#' + _openPopover.menuId) && !e.target.closest('#' + _openPopover.btnId)) closePopover(false);
     }
-    function toggleFontMenu() {
-      const menu = document.getElementById('font-menu');
-      const btn = document.getElementById('font-toggle-btn');
+    function togglePopover(menuId, btnId, render) {
+      const menu = document.getElementById(menuId);
+      const btn = document.getElementById(btnId);
       if (!menu) return;
-      if (!menu.hidden) { closeFontMenu(true); return; }
-      renderFontMenu();
+      const wasOpen = _openPopover && _openPopover.menuId === menuId;
+      closePopover(wasOpen);
+      if (wasOpen) return;
+      render();
       menu.hidden = false;
       if (btn) btn.setAttribute('aria-expanded', 'true');
-      document.addEventListener('keydown', fontMenuKeydown, true);
-      document.addEventListener('pointerdown', fontMenuOutside, true);
+      _openPopover = { menuId, btnId };
+      document.addEventListener('keydown', popoverKeydown, true);
+      document.addEventListener('pointerdown', popoverOutside, true);
       const first = menu.querySelector('button');
       if (first) first.focus();
+    }
+    function closeFontMenu(refocus) { if (_openPopover && _openPopover.menuId === 'font-menu') closePopover(refocus); }
+    function toggleFontMenu() { togglePopover('font-menu', 'font-toggle-btn', renderFontMenu); }
+    function toggleSettingsMenu() { togglePopover('settings-menu', 'settings-btn', renderSettingsMenu); }
+    function closeSettingsMenu(refocus) { if (_openPopover && _openPopover.menuId === 'settings-menu') closePopover(refocus); }
+
+    // Everything the three desktop buttons do, in one phone menu. It reads the same state they
+    // do — the `dark` and `reduce-motion` classes on <html> — so the two can never disagree.
+    function renderSettingsMenu() {
+      const menu = document.getElementById('settings-menu');
+      if (!menu) return;
+      const html = document.documentElement;
+      const dark = html.classList.contains('dark');
+      const reduced = html.classList.contains('reduce-motion');
+      const font = siteFont();
+      const heading = t => '<div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">' + t + '</div>';
+      const row = (label, on, onclick, style) =>
+        '<button type="button" role="menuitemradio" aria-checked="' + on + '" onclick="' + onclick + '"' +
+        (style ? ' style="' + style + '"' : '') +
+        ' class="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+        (on ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950'
+            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80') +
+        '">' + label + '</button>';
+      menu.innerHTML =
+        heading('Theme') +
+        row('Light', !dark, 'if (document.documentElement.classList.contains(\'dark\')) toggleTheme(); renderSettingsMenu();') +
+        row('Dark', dark, 'if (!document.documentElement.classList.contains(\'dark\')) toggleTheme(); renderSettingsMenu();') +
+        heading('Animations') +
+        row('On', !reduced, 'if (document.documentElement.classList.contains(\'reduce-motion\')) toggleAnimations(); renderSettingsMenu();') +
+        row('Off', reduced, 'if (!document.documentElement.classList.contains(\'reduce-motion\')) toggleAnimations(); renderSettingsMenu();') +
+        heading('Typeface') +
+        SITE_FONTS.map(f => row(escapeHtml(f.label), f.key === font,
+          'setSiteFont(\'' + f.key + '\'); renderSettingsMenu();', 'font-family: ' + f.css)).join('');
     }
 
     function toggleTheme() {
@@ -1474,6 +1599,28 @@
         .replace(/`([^`]+)`/g, '<span class="hl-sw">$1</span>')
         .replace(/\^([^^]+)\^/g, '<span class="hl-skill">$1</span>')
         .replace(/\*([^*]+)\*/g, '<span class="hl-num">$1</span>');
+    }
+
+    // Inverse of formatText that KEEPS the styling: the rendered HTML back to the marker
+    // syntax the config stores. This is the sanitizer as well as the serializer — anything that
+    // is not one of the three marker spans contributes its text and nothing else, so whatever a
+    // paste or a browser's own editing dropped into the element cannot survive a round trip.
+    // A literal marker character typed by hand is removed, because writing it back would change
+    // where the next span begins.
+    const HL_MARK = { 'hl-sw': '`', 'hl-skill': '^', 'hl-num': '*' };
+    function htmlToMarkers(node) {
+      let out = '';
+      node.childNodes.forEach(n => {
+        if (n.nodeType === Node.TEXT_NODE) { out += (n.nodeValue || '').replace(/[`^*]/g, ''); return; }
+        if (n.nodeType !== Node.ELEMENT_NODE) return;
+        if (n.nodeName === 'BR') { out += ' '; return; }
+        const inner = htmlToMarkers(n);
+        if (!inner) return;
+        const cls = typeof n.className === 'string' ? n.className : '';
+        const mark = Object.keys(HL_MARK).find(k => cls.split(/\s+/).indexOf(k) >= 0);
+        out += mark ? HL_MARK[mark] + inner + HL_MARK[mark] : inner;
+      });
+      return out.replace(/\s+/g, ' ');
     }
 
     // Inverse of formatText: drop the markers and any tags, leaving prose. Used where the
@@ -1772,7 +1919,7 @@
       const comp = compCfg.order
         .map(t => ({ c: OVERVIEW_DATA.competencies.find(x => x.title === t), item: compCfg.items[t] }))
         .filter(o => o.c && o.item && o.item.include)
-        .map(o => `<p><span class="t">${escapeHtml(o.c.title)}</span> — ${compText(o.c.title, o.c)}</p>`)
+        .map(o => `<p><span class="t">${escapeHtml(o.c.title)}</span> — <span data-edit="comp:${escapeAttr(o.c.title)}">${compText(o.c.title, o.c)}</span></p>`)
         .join('');
 
       // Projects — name · summary (+ optional bullets + primary link), in the user's chosen order.
@@ -1833,7 +1980,7 @@
           </div>
         </div>
 
-        ${sumCfg.include !== false ? `<div class="pr-section-h">Summary</div><p class="pr-summary">${summaryHtml}</p>` : ''}
+        ${sumCfg.include !== false ? `<div class="pr-section-h">Summary</div><p class="pr-summary" data-edit="sum">${summaryHtml}</p>` : ''}
 
         ${compFlow ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${compFlow}</div>` : ''}
 
@@ -4015,7 +4162,8 @@
     let _pdfSaveTimer = null;
     // openSections: which Save PDF sections are expanded on a PHONE. On a wide screen every
     // section is always open and this is not consulted.
-    const pdfUi = { expandedComps: new Set(), openSections: new Set(['Page']) };
+    const pdfUi = { expandedComps: new Set(), openSections: new Set(['Page']),
+                    editing: false, editDirty: false };
 
     // --- Small utilities ---
     function escapeHtml(s) {
@@ -4124,8 +4272,20 @@
       return !!pdfConfig && JSON.stringify(pdfConfig) !== pdfDefaultJson();
     }
     function updateResetButton() {
-      const btn = document.getElementById('pdf-reset');
-      if (btn) btn.classList.toggle('pdf-reset-modified', pdfIsModified());
+      const modified = pdfIsModified();
+      const wide = document.getElementById('pdf-reset');
+      if (wide) wide.classList.toggle('pdf-reset-modified', modified);
+      // The phone one is an icon: red and pressable when there is something to reset, grey and
+      // disabled when there is not.
+      const small = document.getElementById('pdf-reset-m');
+      if (small) {
+        small.disabled = !modified;
+        small.classList.toggle('text-rose-500', modified);
+        small.classList.toggle('dark:text-rose-400', modified);
+        small.classList.toggle('border-rose-500/50', modified);
+        small.classList.toggle('text-slate-400', !modified);
+        small.classList.toggle('dark:text-slate-600', !modified);
+      }
     }
 
     // Parsed all-defaults config, cached (live data is static at runtime). Used to flag
@@ -4478,9 +4638,15 @@
           put(blocks[i]);
         }
       }
+      // The same measurement the filling loop uses — the maximum bottom, not the last child's.
+      // They were computed differently, so a page could be PAGINATED against a float and then
+      // REPORTED as though the float were not there: "20% full" on a page running off the paper.
       return sheets.map(s => {
         const kids = s.body.children;
-        const used = kids.length ? kids[kids.length - 1].getBoundingClientRect().bottom - s.body.getBoundingClientRect().top : 0;
+        if (!kids.length) return { el: s.el, used: 0 };
+        const top = s.body.getBoundingClientRect().top;
+        let used = 0;
+        for (let i = 0; i < kids.length; i++) used = Math.max(used, kids[i].getBoundingClientRect().bottom - top);
         return { el: s.el, used: used };
       });
     }
@@ -4593,6 +4759,10 @@
       scaler.style.transform = 'scale(' + scale + ')';
       scaler.style.width = pageW + 'px';
       scaler.style.height = (pagesHost.offsetHeight * scale) + 'px';
+
+      // The sheets above are brand new elements, so whatever editing state was on has to be put
+      // back on them — contenteditable, the inert flip and the link tabindexes alike.
+      if (pdfUi.editing) setPdfEditing(true);
 
       const meta = document.getElementById('pdf-preview-meta');
       if (meta) {
@@ -4869,9 +5039,36 @@
       return lines;
     }
 
-    function pdfRgb(css) {
-      const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(css || '');
-      return m ? [ +m[1], +m[2], +m[3] ] : [ 0, 0, 0 ];
+    function pdfRgb(css, skipTransparent) {
+      const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(css || '');
+      if (!m) return skipTransparent ? null : [ 0, 0, 0 ];
+      // For a FILL, fully transparent and plain white both mean "draw nothing": the paper is
+      // already white, and painting every box white would bury what is under it.
+      if (skipTransparent) {
+        const alpha = m[4] === undefined ? 1 : parseFloat(m[4]);
+        if (!alpha) return null;
+        if (+m[1] === 255 && +m[2] === 255 && +m[3] === 255) return null;
+      }
+      return [ +m[1], +m[2], +m[3] ];
+    }
+
+    // repeating-linear-gradient is how the document draws a hatched rule. jsPDF has no
+    // gradients; what matters on paper is that the rule is THERE, at the right weight and
+    // colour, so the band is drawn as a line along the edge the gradient is anchored to.
+    function pdfDrawHatch(doc, cs, box, X, Y, PX) {
+      const image = cs.backgroundImage || '';
+      if (image.indexOf('gradient') < 0) return;
+      const colour = /rgba?\([^)]+\)/.exec(image);
+      if (!colour) return;
+      const [r, g, b] = pdfRgb(colour[0]);
+      const size = (cs.backgroundSize || '').toLowerCase();
+      const thin = /(^|\s)(1px|2px)/.test(size) || /100%\s+1px/.test(size);
+      if (!thin) return;                       // only the hairline bands, not a real gradient fill
+      const atTop = (cs.backgroundPosition || '').indexOf('top') >= 0;
+      const y = atTop ? box.top : box.bottom;
+      doc.setDrawColor(r, g, b);
+      doc.setLineWidth(1 * PX);
+      doc.line(X(box.left), Y(y), X(box.right), Y(y));
     }
 
     // Walk one rendered sheet and draw everything on it.
@@ -4916,19 +5113,33 @@
           continue;
         }
 
-        // Rules: the section underline and the separator above each role.
-        const bw = parseFloat(cs.borderBottomWidth) || 0;
-        if (bw > 0 && cs.borderBottomStyle !== 'none') {
-          const [r, g, b] = pdfRgb(cs.borderBottomColor);
-          doc.setDrawColor(r, g, b); doc.setLineWidth(bw * PX);
-          doc.line(X(box.left), Y(box.bottom), X(box.right), Y(box.bottom));
+        // Backgrounds first, so every rule and every word is drawn over them rather than under.
+        // Pattachitra's sidebar is a tinted panel and Dokra's section heads are a hatched band;
+        // without this the templates were preview-only — the exported file was the plain
+        // document with their rules missing, which is not the document the user chose.
+        const bg = pdfRgb(cs.backgroundColor, true);
+        if (bg && box.width > 0.5 && box.height > 0.5) {
+          doc.setFillColor(bg[0], bg[1], bg[2]);
+          doc.rect(X(box.left), Y(box.top), box.width * PX, box.height * PX, 'F');
         }
-        const tw = parseFloat(cs.borderTopWidth) || 0;
-        if (tw > 0 && cs.borderTopStyle !== 'none') {
-          const [r, g, b] = pdfRgb(cs.borderTopColor);
-          doc.setDrawColor(r, g, b); doc.setLineWidth(tw * PX);
-          doc.line(X(box.left), Y(box.top), X(box.right), Y(box.top));
-        }
+        // A background IMAGE is a gradient here — the hatched rules Dokra draws with
+        // repeating-linear-gradient. jsPDF has no gradients, so it is approximated by the
+        // dashes themselves: the band is one thin line the width of the box.
+        if (cs.backgroundImage && cs.backgroundImage !== 'none') pdfDrawHatch(doc, cs, box, X, Y, PX);
+
+        // Rules: the section underline, the separator above each role, the panel bands down the
+        // left of a Pattachitra section. All four edges, because a template's identity is as
+        // often a left border as a bottom one.
+        [['Top', box.left, box.top, box.right, box.top],
+         ['Bottom', box.left, box.bottom, box.right, box.bottom],
+         ['Left', box.left, box.top, box.left, box.bottom],
+         ['Right', box.right, box.top, box.right, box.bottom]].forEach(([side, x1, y1, x2, y2]) => {
+          const w = parseFloat(cs['border' + side + 'Width']) || 0;
+          if (w <= 0 || cs['border' + side + 'Style'] === 'none') return;
+          const [r, g, b] = pdfRgb(cs['border' + side + 'Color']);
+          doc.setDrawColor(r, g, b); doc.setLineWidth(w * PX);
+          doc.line(X(x1), Y(y1), X(x2), Y(y2));
+        });
 
         // List markers live in ::marker, which is not in the DOM — draw them.
         if (el.tagName === 'LI' && cs.listStyleType === 'disc') {
@@ -5197,7 +5408,18 @@
         body.push('<w:p>' + props.join('') + xml + '</w:p>');
       };
 
-      Array.prototype.forEach.call(root.children, section => {
+      // Pattachitra emits its sidebar first, because a float has to precede what wraps around
+      // it. On paper that is the left column; linearised for Word it would be a résumé that
+      // opens with a skills list and gets to the name afterwards — exactly the reading order
+      // this export exists to protect. The hero goes first here whatever the layout does.
+      const sections = Array.prototype.slice.call(root.children);
+      const heroAt = sections.findIndex(el => el.classList.contains('pr-hero'));
+      const asideAt = sections.findIndex(el => el.classList.contains('pr-aside'));
+      if (heroAt > -1 && asideAt > -1 && asideAt < heroAt) {
+        sections.splice(heroAt + 1, 0, sections.splice(asideAt, 1)[0]);
+      }
+
+      sections.forEach(section => {
         if (section.classList.contains('pr-hero')) {
           const name = section.querySelector('.pr-name');
           const title = section.querySelector('.pr-title');
@@ -5355,6 +5577,198 @@
       }
     }
 
+    /* ============================================================
+       EDIT THE TEXT, IN THE PREVIEW
+
+       The rail decides what goes in; this decides what it SAYS. Editing happens on the page
+       itself rather than in a box beside it, and the three highlight styles are applied from a
+       toolbar instead of by typing backticks.
+
+       Two things make this safe to offer on a public page. Edits never leave this browser:
+       they go to the same localStorage config every other choice goes to, never to the repo
+       and never into the URL, so one visitor's rewording cannot reach anyone else. And the
+       only thing stored is the marker text htmlToMarkers() produces — three span classes and
+       plain text, nothing else — so no markup a paste brings in can survive to be rendered.
+       ============================================================ */
+
+    // Where each editable field's text lives in the config, and what it falls back to. A key
+    // that no longer resolves (a competency renamed in the data) simply stops being editable.
+    function pdfEditField(key) {
+      if (key === 'sum') {
+        return { get: () => pdfConfig.summary.text,
+                 set: v => { pdfConfig.summary.text = v; },
+                 original: () => (typeof OVERVIEW_DATA !== 'undefined' && OVERVIEW_DATA.bio) || '' };
+      }
+      if (key.indexOf('comp:') === 0) {
+        const title = key.slice(5);
+        const item = pdfConfig.competencies.items[title];
+        const c = OVERVIEW_DATA.competencies.find(x => x.title === title);
+        if (!item || !c) return null;
+        return { get: () => item.text, set: v => { item.text = v; }, original: () => c.description || '' };
+      }
+      return null;
+    }
+
+    // Write an edited element back to the config. An edit that restores the original clears the
+    // override rather than storing a copy of it, so "modified" keeps meaning something.
+    function pdfCommitEdit(el) {
+      if (!el || !pdfConfig) return false;
+      const field = pdfEditField(el.getAttribute('data-edit') || '');
+      if (!field) return false;
+      const markers = htmlToMarkers(el).trim();
+      const before = field.get();
+      field.set(markers === field.original().trim() ? null : markers);
+      if (field.get() === before) return false;
+      savePdfConfig(pdfConfig);
+      return true;
+    }
+
+    // Wrap the selection in one of the three highlight styles, or strip the styles from it.
+    // Written against Range rather than execCommand, which is deprecated and which produces
+    // <font> and inline styles this document has no rules for.
+    function pdfApplyMark(cls) {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const host = (range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+        ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
+      const field = host && host.closest('[data-edit]');
+      if (!field) return;
+      const contents = range.extractContents();
+      // Always flatten first: re-marking a run that is already marked must replace the style,
+      // not nest it, and clearing must leave plain text behind.
+      const plain = document.createDocumentFragment();
+      (function flatten(node) {
+        node.childNodes.forEach(n => {
+          if (n.nodeType === Node.TEXT_NODE) plain.appendChild(document.createTextNode(n.nodeValue));
+          else if (n.nodeName === 'BR') plain.appendChild(document.createElement('br'));
+          else if (n.nodeType === Node.ELEMENT_NODE) flatten(n);
+        });
+      })(contents);
+      let inserted;
+      if (cls) {
+        const span = document.createElement('span');
+        span.className = cls;
+        span.appendChild(plain);
+        inserted = span;
+      } else {
+        inserted = plain;
+      }
+      range.insertNode(inserted);
+      field.normalize();
+      // Keep the run selected, so a second click can change its style again.
+      if (inserted.nodeType === Node.ELEMENT_NODE) {
+        const after = document.createRange();
+        after.selectNodeContents(inserted);
+        sel.removeAllRanges(); sel.addRange(after);
+      }
+      pdfUi.editDirty = true;
+    }
+
+    // Which style the caret is sitting in, so the toolbar can show it.
+    function pdfMarkAtCaret() {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return null;
+      let n = sel.getRangeAt(0).startContainer;
+      if (n.nodeType === Node.TEXT_NODE) n = n.parentElement;
+      const marked = n && n.closest && n.closest('.hl-sw, .hl-skill, .hl-num');
+      if (!marked) return null;
+      return ['hl-sw', 'hl-skill', 'hl-num'].find(c => marked.classList.contains(c)) || null;
+    }
+    function pdfSyncEditToolbar() {
+      const bar = document.getElementById('pdf-edit-bar');
+      if (!bar) return;
+      const at = pdfMarkAtCaret();
+      Array.prototype.forEach.call(bar.querySelectorAll('[data-mark]'), btn => {
+        btn.setAttribute('aria-pressed', String(btn.getAttribute('data-mark') === at));
+      });
+    }
+
+    // One set of delegated handlers for the whole preview, wired once.
+    function wirePdfEditing() {
+      const host = document.getElementById('pdf-preview-pages');
+      if (!host || host.dataset.editWired) return;
+      host.dataset.editWired = '1';
+      host.addEventListener('keydown', e => { if (e.target.closest('[data-edit]')) pdfEditKeydown(e); });
+      host.addEventListener('paste', e => {
+        const field = e.target.closest && e.target.closest('[data-edit]');
+        if (!field) return;
+        // Plain text only. Pasted markup would be stripped on the way to the config anyway, so
+        // letting it appear first would only promise formatting that will not survive.
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain').replace(/\s+/g, ' ');
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const node = document.createTextNode(text);
+        range.insertNode(node);
+        range.setStartAfter(node); range.collapse(true);
+        sel.removeAllRanges(); sel.addRange(range);
+        pdfUi.editDirty = true;
+      });
+      host.addEventListener('input', e => { if (e.target.closest('[data-edit]')) pdfUi.editDirty = true; });
+      // Committing on blur, not on every keystroke: writing back re-renders the document, and
+      // re-rendering under the caret would move it.
+      host.addEventListener('focusout', e => {
+        const field = e.target.closest && e.target.closest('[data-edit]');
+        if (field && pdfCommitEdit(field)) schedulePdfPreview();
+      });
+      document.addEventListener('selectionchange', () => { if (pdfUi.editing) pdfSyncEditToolbar(); });
+    }
+
+    function setPdfEditing(on) {
+      pdfUi.editing = !!on;
+      const host = document.getElementById('pdf-preview-pages');
+      const bar = document.getElementById('pdf-edit-bar');
+      const btn = document.getElementById('pdf-edit-toggle');
+      wirePdfEditing();
+      if (bar) bar.hidden = !pdfUi.editing;
+      if (btn) btn.setAttribute('aria-pressed', String(pdfUi.editing));
+      if (!host) return;
+      host.classList.toggle('pr-editing', pdfUi.editing);
+      // The sheets are a second rendering of the document, so they stay out of the tab order —
+      // except while editing, when the editable runs have to be reachable. The links inside
+      // them are pushed out of it by hand, or turning editing on would put every link in the
+      // résumé into the tab order twice.
+      if (pdfUi.editing) { host.removeAttribute('inert'); host.removeAttribute('aria-hidden'); }
+      else { host.setAttribute('inert', ''); host.setAttribute('aria-hidden', 'true'); }
+      Array.prototype.forEach.call(host.querySelectorAll('a[href]'), a => {
+        if (pdfUi.editing) a.setAttribute('tabindex', '-1'); else a.removeAttribute('tabindex');
+      });
+      // The sheets are rebuilt on every refresh, so this is re-applied there too.
+      Array.prototype.forEach.call(host.querySelectorAll('[data-edit]'), el => {
+        const editable = pdfUi.editing && !!pdfEditField(el.getAttribute('data-edit'));
+        if (editable) { el.setAttribute('contenteditable', 'true'); el.setAttribute('spellcheck', 'true'); }
+        else { el.removeAttribute('contenteditable'); el.removeAttribute('spellcheck'); }
+      });
+      if (!pdfUi.editing) pdfFlushEdits();
+    }
+
+    // Commit anything still open, then re-lay the document out — the text changed, so the
+    // pagination did too. Called when editing is switched off, and before either export.
+    function pdfFlushEdits() {
+      const host = document.getElementById('pdf-preview-pages');
+      if (!host) return false;
+      let changed = false;
+      Array.prototype.forEach.call(host.querySelectorAll('[data-edit]'), el => {
+        if (pdfCommitEdit(el)) changed = true;
+      });
+      pdfUi.editDirty = false;
+      if (changed) { renderPdfModal(); }
+      return changed;
+    }
+
+    function pdfEditKeydown(e) {
+      // Enter would split the paragraph into something the marker syntax cannot express.
+      if (e.key === 'Enter') { e.preventDefault(); return; }
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        const map = { b: 'hl-sw', e: 'hl-skill', h: 'hl-num' };
+        const cls = map[e.key.toLowerCase()];
+        if (cls) { e.preventDefault(); pdfApplyMark(cls); pdfSyncEditToolbar(); }
+      }
+    }
+
     function setPdfMobileView(view) {
       const modal = document.getElementById('pdf-modal');
       if (!modal) return;
@@ -5387,6 +5801,7 @@
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
       setPdfMobileView('options');        // always opens on the options, on any width
+      setPdfEditing(false);               // …and never mid-edit
       document.documentElement.style.overflow = 'hidden';
       const shell = document.getElementById('app-shell');
       if (shell) { shell.setAttribute('inert', ''); shell.setAttribute('aria-hidden', 'true'); }
@@ -5474,6 +5889,7 @@
       drawIcons();
       refreshPdfModifiedHighlights();
       renderTemplateThumbs();
+      wireTemplateSwipe();
       refreshPdfPreview();
     }
 
@@ -5579,9 +5995,9 @@
         const on = key === (page.template || PR_TEMPLATE_DEFAULT);
         return '<button type="button" role="radio" aria-checked="' + (on ? 'true' : 'false') + '"' +
           ' tabindex="' + (on ? '0' : '-1') + '" data-template="' + escapeAttr(key) + '"' +
-          ' class="pdf-tmpl-card snap-start flex-shrink-0 w-[132px] text-left rounded-xl border p-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
-          (on ? 'border-indigo-500 dark:border-amber-400 bg-indigo-500/5 dark:bg-amber-400/10'
-              : 'border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50') + '">' +
+          ' class="pdf-tmpl-card text-left rounded-xl border p-1.5 bg-white dark:bg-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+          (on ? 'border-indigo-500 dark:border-amber-400'
+              : 'border-slate-200/70 dark:border-slate-700/60') + '">' +
           '<div class="pdf-tmpl-thumb rounded-md overflow-hidden bg-white border border-slate-200/70 dark:border-slate-700/60">' +
             '<div class="pdf-tmpl-scaler" inert aria-hidden="true"></div>' +
           '</div>' +
@@ -5606,8 +6022,23 @@
       const right =
         '<div class="space-y-3">' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Template</div>' +
-            '<div id="pdf-tmpl-strip" class="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 -mx-0.5 px-0.5" role="radiogroup" aria-label="template">' +
-              cards + '</div></div>' +
+            '<div class="relative">' +
+            '<div id="pdf-tmpl-strip" class="pdf-tmpl-deck" role="radiogroup" aria-label="template">' +
+              cards + '</div>' +
+            // The card in front covers most of the ones behind it, so stepping through the deck
+            // needs its own controls — the cards alone would leave the far one hard to hit.
+            '<button type="button" id="pdf-tmpl-prev" onclick="stepTemplate(-1)" aria-label="Previous template"' +
+              ' class="absolute left-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>' +
+            '<button type="button" id="pdf-tmpl-next" onclick="stepTemplate(1)" aria-label="Next template"' +
+              ' class="absolute right-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>' +
+            '</div>' +
+            '<div class="pdf-tmpl-dots" aria-hidden="true">' +
+              Object.keys(PR_TEMPLATES).map(k =>
+                '<span class="pdf-tmpl-dot" data-dot="' + escapeAttr(k) + '" aria-current="' +
+                (k === (page.template || PR_TEMPLATE_DEFAULT) ? 'true' : 'false') + '"></span>').join('') +
+            '</div></div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
             '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div>' +
             '<p class="text-[11px] text-slate-500 dark:text-slate-400">Embedded in the PDF. Anything a face lacks — ₹, for one — is drawn from Noto Sans behind it, so nothing is dropped.</p></div>' +
@@ -6069,6 +6500,66 @@
         host.style.transform = 'scale(' + scale + ')';
         host.style.width = pageW + 'px';
       });
+      layoutTemplateDeck();
+    }
+
+    // Place the cards as a deck: the chosen one square on, the rest turned away behind it. All
+    // three stay legible, which is the point — the choice is made by comparing documents.
+    function layoutTemplateDeck() {
+      const strip = document.getElementById('pdf-tmpl-strip');
+      if (!strip) return;
+      const cards = Array.prototype.slice.call(strip.querySelectorAll('.pdf-tmpl-card'));
+      const at = Math.max(0, cards.findIndex(c => c.getAttribute('aria-checked') === 'true'));
+      const STEP = 74, TILT = 26, SHRINK = 0.14;
+      cards.forEach((card, i) => {
+        const d = i - at;
+        const depth = Math.min(Math.abs(d), 2);
+        const scale = Math.max(0.6, 1 - SHRINK * depth);
+        const x = d * STEP;
+        const tilt = d === 0 ? 0 : (d < 0 ? TILT : -TILT);
+        card.style.transform = 'translateX(' + x + 'px) scale(' + scale + ') rotateY(' + tilt + 'deg)';
+        card.style.opacity = depth === 0 ? '1' : depth === 1 ? '0.72' : '0.4';
+        card.style.zIndex = String(10 - depth);
+        card.setAttribute('data-depth', String(depth));
+        card.tabIndex = d === 0 ? 0 : -1;
+      });
+      const prev = document.getElementById('pdf-tmpl-prev');
+      const next = document.getElementById('pdf-tmpl-next');
+      if (prev) prev.disabled = at <= 0;
+      if (next) next.disabled = at >= cards.length - 1;
+      Array.prototype.forEach.call(document.querySelectorAll('.pdf-tmpl-dot'), dot => {
+        dot.setAttribute('aria-current', String(cards[at] &&
+          dot.getAttribute('data-dot') === cards[at].getAttribute('data-template')));
+      });
+    }
+
+    // One step through the deck, clamped at both ends — the deck does not wrap, so the arrows
+    // can say when there is nothing further that way.
+    function stepTemplate(dir) {
+      const keys = Object.keys(PR_TEMPLATES);
+      const at = keys.indexOf((pdfConfig.page || {}).template || PR_TEMPLATE_DEFAULT);
+      const next = keys[Math.min(keys.length - 1, Math.max(0, at + dir))];
+      if (next && next !== keys[at]) setPageOption('template', next);
+    }
+
+    // Swipe between templates, since the deck no longer scrolls.
+    function wireTemplateSwipe() {
+      const strip = document.getElementById('pdf-tmpl-strip');
+      if (!strip || strip.dataset.swipeWired) return;
+      strip.dataset.swipeWired = '1';
+      let x0 = null, y0 = null;
+      strip.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; });
+      strip.addEventListener('pointerup', e => {
+        if (x0 == null) return;
+        const dx = e.clientX - x0, dy = e.clientY - y0;
+        x0 = null;
+        // A horizontal drag, not a tap and not a scroll.
+        if (Math.abs(dx) < 36 || Math.abs(dx) < Math.abs(dy)) return;
+        const keys = Object.keys(PR_TEMPLATES);
+        const at = keys.indexOf((pdfConfig.page || {}).template || PR_TEMPLATE_DEFAULT);
+        const next = keys[Math.min(keys.length - 1, Math.max(0, at + (dx < 0 ? 1 : -1)))];
+        if (next) setPageOption('template', next);
+      });
     }
 
     // Arrow keys move between cards the way a radio group should, and the strip scrolls to keep
@@ -6083,7 +6574,8 @@
       const at = cards.indexOf(e.target.closest('.pdf-tmpl-card'));
       if (at < 0) return;
       e.preventDefault();
-      const next = cards[(at + step + cards.length) % cards.length];
+      const next = cards[Math.min(cards.length - 1, Math.max(0, at + step))];
+      if (!next || next === cards[at]) return;
       setPageOption('template', next.getAttribute('data-template'));
       const again = document.querySelector('#pdf-tmpl-strip .pdf-tmpl-card[data-template="' +
         next.getAttribute('data-template') + '"]');
