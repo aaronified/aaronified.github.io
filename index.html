@@ -474,6 +474,27 @@
     #pdf-modal.pdf-lean #pdf-reset,
     #pdf-modal.pdf-lean #pdf-reset-m,
     #pdf-modal.pdf-lean #pdf-edit-toggle { display: none !important; }
+
+    /* THE EDIT STAGE. Out of edit mode the preview is a preview and nothing else. Press Edit and
+       it takes the whole dialog: the options column steps aside and the document comes to the
+       middle at a size you can actually read, because editing a résumé through a 38% column at
+       a third of its real size is not editing, it is squinting. */
+    #pdf-preview-pane { transition: width .3s cubic-bezier(.4, 0, .2, 1); }
+    .reduce-motion #pdf-preview-pane { transition: none; }
+    #pdf-modal.pdf-editing #pdf-modal-body { display: none; }
+    #pdf-modal.pdf-editing #pdf-preview-pane {
+      width: 100%; min-width: 0; border-left: 0;
+    }
+    #pdf-modal.pdf-editing #pdf-preview-scroll { padding-left: 2rem; padding-right: 2rem; }
+    /* The scaler carries an explicit width, so auto margins are what centre the document in a
+       pane much wider than it. Only while editing: in the narrow pane it already fills it. */
+    #pdf-modal.pdf-editing #pdf-preview-scaler { margin-left: auto; margin-right: auto; }
+    /* What is being edited should look like it: a ring on the run under the caret, and a hint
+       of one on every run that could be. */
+    .pr-editing [contenteditable="true"] { outline: 1px dashed rgba(79, 70, 229, .35); outline-offset: 2px; border-radius: 2px; }
+    .dark .pr-editing [contenteditable="true"] { outline-color: rgba(251, 191, 36, .35); }
+    .pr-editing [contenteditable="true"]:focus { outline: 2px solid #4f46e5; background: rgba(79, 70, 229, .06); }
+    .dark .pr-editing [contenteditable="true"]:focus { outline-color: #fbbf24; background: rgba(251, 191, 36, .08); }
     #pdf-modal.pdf-lean #pdf-preview-pane {
       position: static; width: 100%; min-width: 0; height: auto; flex: 1 1 auto; border-left: 0;
     }
@@ -1430,12 +1451,12 @@
           <div id="pdf-modal-body" class="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 py-4"></div>
           <aside id="pdf-preview-pane" class="flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live preview</span>
+              <span id="pdf-preview-title" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live preview</span>
               <div class="flex items-center gap-2">
                 <span id="pdf-preview-meta" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
                 <button type="button" id="pdf-edit-toggle" aria-pressed="false" onclick="setPdfEditing(!pdfUi.editing)"
                         class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-indigo-500/60 dark:hover:border-amber-400/60 aria-pressed:bg-indigo-600 aria-pressed:text-white dark:aria-pressed:bg-amber-400 dark:aria-pressed:text-slate-950 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
-                  <i data-lucide="pencil" class="w-3 h-3"></i>Edit text
+                  <i data-lucide="pencil" class="w-3 h-3"></i><span id="pdf-edit-label">Edit text</span>
                 </button>
               </div>
             </div>
@@ -1450,7 +1471,19 @@
                       class="pdf-mark-btn px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" title="Figure (Ctrl+H)">Figure</button>
               <button type="button" onclick="pdfApplyMark(null); pdfSyncEditToolbar();"
                       class="px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Clear</button>
-              <span class="ml-auto text-[11px] text-slate-500 dark:text-slate-400">Saved in this browser only</span>
+              <!-- Edits last for this visit only. Keeping them is what these two are for: one
+                   file with every choice and every rewrite in it, and asset paths left exactly
+                   as the data files write them, so it means the same thing on any copy. -->
+              <span class="ml-auto text-[11px] text-slate-500 dark:text-slate-400">This visit only</span>
+              <button type="button" onclick="prDownloadState()"
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-indigo-500/60 dark:hover:border-amber-400/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+                <i data-lucide="download" class="w-3 h-3"></i>Save session</button>
+              <button type="button" onclick="document.getElementById('pdf-restore-file').click()"
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-indigo-500/60 dark:hover:border-amber-400/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+                <i data-lucide="plus" class="w-3 h-3"></i>Restore</button>
+              <input id="pdf-restore-file" type="file" accept="application/json,.json" class="sr-only"
+                     onchange="prRestoreFromFile(this)">
+              <span id="pdf-restore-msg" role="status" aria-live="polite" class="text-[11px] font-semibold"></span>
             </div>
             <div id="pdf-preview-scroll" class="flex-1 overflow-y-auto p-4">
               <!-- inert + aria-hidden: a picture of the document, not a second copy to tab
@@ -2734,7 +2767,7 @@
         .map(e => {
           const eCfg = entCfg[e.id] || {};
           const score = (eCfg.showScore !== false && e.score) ? ` (${escapeHtml(e.score)})` : '';
-          return `<li><span class="t">${escapeHtml(e.company)}</span>` +
+          return `<li>${logoImg(showLogo(eCfg, e.logo))}<span class="t">${escapeHtml(e.company)}</span>` +
                  `<div class="pr-aside-sk">${escapeHtml(e.role)}${score} &middot; ${escapeHtml(e.period)}</div></li>`;
         }).join('');
       const internHTML = interns.map(intn => {
@@ -2854,7 +2887,7 @@
             const score = (eCfg.showScore !== false && e.score) ? ` (${escapeHtml(e.score)})` : '';
             const desc = (eCfg.showDescription !== false && e.description)
               ? `<div class="pr-aside-sk">${formatText(e.description)}</div>` : '';
-            return `<li><span class="t">${escapeHtml(e.company)}</span>` +
+            return `<li>${logoImg(showLogo(eCfg, e.logo))}<span class="t">${escapeHtml(e.company)}</span>` +
                    `<div class="pr-aside-sk">${escapeHtml(e.role)}${score} &middot; ${escapeHtml(e.period)}</div>${desc}</li>`;
           }).join('');
         const eduBlock = edu ? `<h4>Education</h4><ul>${edu}</ul>` : '';
@@ -5226,12 +5259,99 @@
       try { const raw = localStorage.getItem(PDF_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
       catch (e) { return null; }
     }
+    // The fields the WYSIWYG editor writes. They are the visitor's own words, and they are kept
+    // for the SESSION only: rewriting someone else's résumé and then finding your rewrite still
+    // there a week later is not what a visitor expects from a page they were reading. Keeping
+    // them is what the JSON file is for.
+    function prStripEdits(cfg) {
+      if (!cfg) return cfg;
+      const out = JSON.parse(JSON.stringify(cfg));
+      if (out.summary) delete out.summary.text;
+      if (out.competencies && out.competencies.items) {
+        Object.keys(out.competencies.items).forEach(k => { delete out.competencies.items[k].text; });
+      }
+      return out;
+    }
+
     function savePdfConfig(cfg) {
       // The lean screen shows the OWNER's settings, not this visitor's. Writing them to storage
       // would quietly replace whatever the visitor had set up for themselves — they pressed
       // Ctrl-S, they did not ask to have their own choices overwritten.
       if (pdfUi.lean) return;
-      try { localStorage.setItem(PDF_STORAGE_KEY, JSON.stringify(cfg || pdfConfig)); } catch (e) {}
+      try { localStorage.setItem(PDF_STORAGE_KEY, JSON.stringify(prStripEdits(cfg || pdfConfig))); } catch (e) {}
+    }
+
+    // ---- Saving a session, and restoring one ------------------------------------------------
+    //
+    // Everything a visitor changed, in one file: the layout choices AND the text they rewrote.
+    // Asset paths stay exactly as the data files write them — relative, in-repo — so the file
+    // means the same thing on any copy of this site and carries no baked-in absolute URLs.
+    function prResumeStateJSON() {
+      return JSON.stringify({
+        kind: 'resume-session',
+        v: PDF_CONFIG_VERSION,
+        site: (PERSONAL_DATA.seo && PERSONAL_DATA.seo.siteUrl) || '',
+        owner: PERSONAL_DATA.name || '',
+        assets: { profileImage: PERSONAL_DATA.profileImage || '' },
+        config: pdfConfig
+      }, null, 2);
+    }
+
+    function prDownloadState() {
+      pdfFlushEdits();
+      const blob = new Blob([prResumeStateJSON()], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (PERSONAL_DATA.name || 'resume').replace(/[^\w]+/g, '-').toLowerCase() + '-session.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // A file the visitor chose, so it is data and not to be trusted: it goes through the same
+    // reconcile every stored config goes through, which drops anything unknown and repairs
+    // anything that no longer matches the résumé.
+    function prRestoreFromFile(input) {
+      const file = input && input.files && input.files[0];
+      const msg = document.getElementById('pdf-restore-msg');
+      input.value = '';                                  // so the same file can be picked twice
+      if (!file) return;
+      const show = (text, bad) => {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.className = 'text-[11px] font-semibold ' + (bad ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400');
+        clearTimeout(prRestoreFromFile._t);
+        prRestoreFromFile._t = setTimeout(() => { msg.textContent = ''; }, 4000);
+      };
+      const reader = new FileReader();
+      reader.onerror = () => show('That file could not be read.', true);
+      reader.onload = () => {
+        const res = prRestoreState(String(reader.result || ''));
+        if (!res.ok) { show(res.why, true); return; }
+        show(res.changes.length ? 'Restored, with ' + res.changes.length + ' adjustment' +
+             (res.changes.length === 1 ? '' : 's') : 'Restored');
+      };
+      reader.readAsText(file);
+    }
+
+    function prRestoreState(text) {
+      let parsed;
+      try { parsed = JSON.parse(text); } catch (e) { return { ok: false, why: 'That file is not JSON.' }; }
+      const obj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+      // Either one of ours, or a bare config that at least has the shape of one. Anything else
+      // is refused rather than reconciled: reconcile fills in every gap from the defaults, so a
+      // stray JSON file would be accepted quietly and would wipe the visitor's whole setup.
+      const cfg = obj(parsed) && parsed.kind === 'resume-session' ? parsed.config
+                : (obj(parsed) && obj(parsed.page) ? parsed : null);
+      if (!obj(cfg) || !obj(cfg.page)) return { ok: false, why: 'That file is not a saved session.' };
+      const res = reconcilePdfConfig(cfg);
+      if (!res || !res.config) return { ok: false, why: 'That session could not be read.' };
+      pdfConfig = res.config;
+      savePdfConfig(pdfConfig);
+      renderPdfModal();
+      return { ok: true, changes: res.changes || [] };
     }
     function savePdfConfigDebounced() {
       clearTimeout(_pdfSaveTimer);
@@ -5743,6 +5863,7 @@
     // still waits, because re-laying the document out on every keystroke is the one case a
     // debounce is for.
     let _pdfPreviewRaf = null;
+    let _pdfStageTimer = null;
     function schedulePdfPreview(quiet) {
       if (quiet) {
         if (_pdfPreviewRaf) { cancelAnimationFrame(_pdfPreviewRaf); _pdfPreviewRaf = null; }
@@ -6907,6 +7028,20 @@
       const host = document.getElementById('pdf-preview-pages');
       const bar = document.getElementById('pdf-edit-bar');
       const btn = document.getElementById('pdf-edit-toggle');
+      const modal = document.getElementById('pdf-modal');
+      if (modal) {
+        modal.classList.toggle('pdf-editing', pdfUi.editing);
+        // The pane's width is what the preview scales itself to, and it is animating, so the
+        // fit is redone at the end of the move as well as at the start of it.
+        schedulePdfPreview();
+        clearTimeout(_pdfStageTimer);
+        _pdfStageTimer = setTimeout(() => { _pdfStageTimer = null; refreshPdfPreview(); },
+                                    prefersReducedMotion() ? 0 : 340);
+      }
+      const label = document.getElementById('pdf-edit-label');
+      if (label) label.textContent = pdfUi.editing ? 'Done' : 'Edit text';
+      const ttl = document.getElementById('pdf-preview-title');
+      if (ttl) ttl.textContent = pdfUi.editing ? 'Editing' : 'Live preview';
       wirePdfEditing();
       wirePdfSkillDrag();
       if (bar) bar.hidden = !pdfUi.editing;
