@@ -128,7 +128,7 @@ const PROJECTS_DATA = [
     ],
     tech: ["Go", "SQLite", "FTS5", "React", "Docker", "Full-text search"],
     links: [
-      { label: "GitHub", href: "https://github.com/aaronified/tippani", icon: "folder-git-2" },
+      { label: "GitHub", href: "https://github.com/aaronified/tippani", icon: "brand-github" },
       { label: "Interactive demo", href: "https://aaronified.github.io/tippani/", icon: "external-link" }
     ],
     gallery: "wide",
@@ -157,7 +157,7 @@ const PROJECTS_DATA = [
     ],
     tech: ["Python", "DuckDB", "PCA", "Textual", "pandas", "PyPI"],
     links: [
-      { label: "GitHub", href: "https://github.com/aaronified/data-sampler", icon: "folder-git-2" },
+      { label: "GitHub", href: "https://github.com/aaronified/data-sampler", icon: "brand-github" },
       { label: "PyPI", href: "https://pypi.org/project/data-sampler/", icon: "package" }
     ],
     gallery: "wide",
@@ -185,7 +185,7 @@ const PROJECTS_DATA = [
     ],
     tech: ["HTML", "Tailwind CSS", "JavaScript", "Lucide", "GitHub Pages"],
     links: [
-      { label: "GitHub", href: "https://github.com/aaronified/aaronified.github.io", icon: "folder-git-2" },
+      { label: "GitHub", href: "https://github.com/aaronified/aaronified.github.io", icon: "brand-github" },
       { label: "Live site", href: "https://aaronified.github.io", icon: "external-link" }
     ],
     gallery: "wide",
@@ -213,7 +213,7 @@ const PROJECTS_DATA = [
     ],
     tech: ["C#", ".NET 9", "Jellyfin", "Plugin API", "Metadata"],
     links: [
-      { label: "GitHub", href: "https://github.com/aaronified/jellyfin-tagsmith", icon: "folder-git-2" }
+      { label: "GitHub", href: "https://github.com/aaronified/jellyfin-tagsmith", icon: "brand-github" }
     ],
     // No screenshots yet — the repo has no docs/img shots to hot-link. Drop three
     // paths in here (or point at the repo's own docs/img) and the gallery appears.

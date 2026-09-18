@@ -34,8 +34,8 @@ const PERSONAL_DATA = {
   },
   contacts: [
     { type: "phone", label: "+91 8017014853", href: "tel:+918017014853", icon: "phone" },
-    { type: "github", label: "github.com/aaronified", href: "https://github.com/aaronified", icon: "folder-git-2" },
+    { type: "github", label: "github.com/aaronified", href: "https://github.com/aaronified", icon: "brand-github" },
     { type: "email", label: "das.arani@gmail.com", href: "mailto:das.arani@gmail.com", icon: "mail" },
-    { type: "linkedin", label: "linkedin.com/in/arani-das", href: "https://www.linkedin.com/in/arani-das", icon: "handshake" }
+    { type: "linkedin", label: "linkedin.com/in/arani-das", href: "https://www.linkedin.com/in/arani-das", icon: "brand-linkedin" }
   ]
 };

@@ -64,6 +64,14 @@
           document.documentElement.classList.add('reduce-motion');
         }
       } catch (e) {}
+      // Typeface, resolved here for the same reason: applied after first paint it would reflow
+      // the whole page in front of the reader.
+      try {
+        var font = localStorage.getItem('siteFont');
+        if (font && /^[a-z]+$/.test(font) && font !== 'default') {
+          document.documentElement.classList.add('site-f-' + font);
+        }
+      } catch (e) {}
     })();
   </script>
 
@@ -77,6 +85,17 @@
     }
 
     /* Antialiasing / Scaling fixes for crisp rendering */
+    /* Site typeface. `Default` is the pairing the page was designed in (Inter + Plus Jakarta
+       Sans); the rest are the same vendored faces the résumé export offers, so choosing one
+       costs no extra download beyond the file itself and works with the CDN unreachable.
+       Both Tailwind families are overridden, or headings would keep the display face. */
+    html.site-f-atkinson body, html.site-f-atkinson .font-display,
+    html.site-f-atkinson :where(h1, h2, h3, h4) { font-family: 'Atkinson Resume', 'Inter', sans-serif; }
+    html.site-f-noto body, html.site-f-noto .font-display,
+    html.site-f-noto :where(h1, h2, h3, h4) { font-family: 'Noto Sans Resume', 'Inter', sans-serif; }
+    html.site-f-serif body, html.site-f-serif .font-display,
+    html.site-f-serif :where(h1, h2, h3, h4) { font-family: 'Source Serif Resume', Georgia, serif; }
+
     body {
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -388,8 +407,16 @@
     /* The document's own typeface, vendored and subset (assets/fonts/). The exported PDF embeds
        these very files, so the preview and the file cannot disagree about metrics — and it works
        with no network at all. One family, two weights: headings differ by weight and size. */
+    /* The document's typefaces. All three are vendored whole and embedded in the PDF, so a
+       glyph cannot change shape between the screen, the printer and the file. Every family
+       falls back to Noto Sans, which has by far the widest coverage: Atkinson Hyperlegible,
+       for one, has no ₹ — and this résumé's headline figure is quoted in rupees. */
     @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
     @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Atkinson Resume'; src: url('assets/fonts/atkinson-hyperlegible-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Atkinson Resume'; src: url('assets/fonts/atkinson-hyperlegible-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Source Serif Resume'; src: url('assets/fonts/source-serif-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Source Serif Resume'; src: url('assets/fonts/source-serif-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
     /* Below lg the live preview is not SHOWN, but it must still be LAID OUT. The sheets it
        holds are what both exports are transcribed from, so a display:none pane means "nothing
@@ -418,8 +445,13 @@
     .pr-doc { --pr-font: 9.5pt; --pr-lead: 1.32; --pr-gap: 1; }
     .pr-doc.pr-d-compact { --pr-font: 9pt;  --pr-lead: 1.24; --pr-gap: 0.7; }
     .pr-doc.pr-d-roomy   { --pr-font: 10pt; --pr-lead: 1.44; --pr-gap: 1.45; }
+    /* The chosen face first, Noto Sans behind it for whatever that face lacks. The PDF export
+       walks the same chain, character by character, so the file matches what is on screen. */
+    .pr-doc,
+    .pr-doc.pr-f-noto     { font-family: 'Noto Sans Resume', Arial, sans-serif; }
+    .pr-doc.pr-f-atkinson { font-family: 'Atkinson Resume', 'Noto Sans Resume', Arial, sans-serif; }
+    .pr-doc.pr-f-serif    { font-family: 'Source Serif Resume', 'Noto Sans Resume', Georgia, serif; }
     .pr-doc {
-      font-family: 'Noto Sans Resume', 'Inter', Arial, sans-serif;
       color: #2d2d2d;
       background: #fff;
       font-size: var(--pr-font);
@@ -497,6 +529,86 @@
     .pr-doc .pr-traj li { margin: 0.5px 0; }
     .pr-doc .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
 
+    /* Template carousel thumbnails: a whole page at true width, scaled into the card and
+       clipped to A4 proportions. Rendered from the user's own data, so the choice is made by
+       looking at the document rather than by reading a name for it. */
+    .pdf-tmpl-thumb { height: 175px; position: relative; }
+    .pdf-tmpl-scaler { transform-origin: top left; position: absolute; top: 0; left: 0; }
+    .pdf-tmpl-card[aria-checked="true"] .pdf-tmpl-thumb { box-shadow: inset 0 0 0 1px currentColor; }
+
+    /* ==========================================================
+       TEMPLATES — .pr-doc.pr-t-<key>
+
+       `bhagirathi` is the document above, unchanged: one flowing column, the default, so a
+       résumé nobody restyles looks exactly as it always did. The other two are overrides only.
+       Each is named for the Bengali craft whose logic it borrows, not its motifs — this is a
+       résumé, not a pastiche.
+       ========================================================== */
+
+    /* --- Pattachitra: the scroll painting, read panel by panel. Each section is a bordered
+       panel with room to breathe; the skills sit in their own column beside the opening. --- */
+    .pr-doc.pr-t-pattachitra .pr-section-h {
+      border-bottom: 0; padding: 0; text-transform: uppercase; letter-spacing: .08em;
+      font-size: 0.92em; color: #7c2d12;
+      margin: calc(11px * var(--pr-gap)) 0 calc(4px * var(--pr-gap));
+    }
+    /* Panels: each section's body sits behind its own left band. Applied to the CONTAINERS that
+       are already separate blocks, never to a wrapper around a whole section — a section wrapped
+       as one block could not be split across pages, and Career Trajectory is longer than a page. */
+    .pr-doc.pr-t-pattachitra .pr-projects,
+    .pr-doc.pr-t-pattachitra .pr-edu,
+    .pr-doc.pr-t-pattachitra .pr-reco,
+    .pr-doc.pr-t-pattachitra .pr-summary,
+    .pr-doc.pr-t-pattachitra table.pr-traj {
+      border-left: 2px solid #e7d7c3; padding-left: 8px;
+    }
+    .pr-doc.pr-t-pattachitra .pr-summary { padding-top: 1px; padding-bottom: 1px; }
+    .pr-doc.pr-t-pattachitra .pr-hero { margin-bottom: calc(7px * var(--pr-gap)); }
+    .pr-doc.pr-t-pattachitra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top-color: #e7d7c3; }
+    .pr-doc.pr-t-pattachitra .pr-name { letter-spacing: -.01em; }
+
+    /* The sidebar: a real column down the left of the FIRST page. It is a floated block, so the
+       panels that follow wrap beside it and then resume full width once it ends — which keeps
+       the one-flow pagination model intact. Page two onwards has no sidebar, by design: a
+       résumé that repeats its own skills on every page is padding. */
+    .pr-doc.pr-t-pattachitra .pr-aside {
+      float: left; width: 31%; margin: 0 11px calc(6px * var(--pr-gap)) 0;
+      padding: calc(6px * var(--pr-gap)) 9px calc(4px * var(--pr-gap));
+      background: #fdf8f2; border: 1px solid #e7d7c3; break-inside: avoid;
+    }
+    .pr-doc.pr-t-pattachitra .pr-aside h4 {
+      font-size: 0.86em; text-transform: uppercase; letter-spacing: .09em;
+      color: #7c2d12; font-weight: 700; margin: 0 0 3px;
+    }
+    .pr-doc.pr-t-pattachitra .pr-aside h4 + * { margin-top: 0; }
+    .pr-doc.pr-t-pattachitra .pr-aside ul { list-style: none; margin: 0 0 calc(6px * var(--pr-gap)); padding: 0; }
+    .pr-doc.pr-t-pattachitra .pr-aside li { margin: 1.5px 0; font-size: 0.94em; }
+    .pr-doc.pr-t-pattachitra .pr-aside li:last-child { margin-bottom: 0; }
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-aside-sk { font-size: 0.9em; color: #4b4b4b; }
+
+    /* --- Dokra: lost-wax casting — fine hatched lines, everything drawn tight. The one-pager.
+       The leading is restated per density rather than derived: a custom property cannot be
+       defined in terms of itself. --- */
+    .pr-doc.pr-t-dokra             { --pr-lead: 1.26; --pr-gap: 0.82; }
+    .pr-doc.pr-t-dokra.pr-d-compact { --pr-lead: 1.18; --pr-gap: 0.6; }
+    .pr-doc.pr-t-dokra.pr-d-roomy   { --pr-lead: 1.36; --pr-gap: 1.2; }
+    .pr-doc.pr-t-dokra .pr-section-h {
+      font-size: 0.88em; font-weight: 700; text-transform: uppercase; letter-spacing: .14em;
+      border-bottom: 0; padding: 0 0 1px; color: #3f3f46;
+      margin: calc(8px * var(--pr-gap)) 0 calc(2px * var(--pr-gap));
+      background: repeating-linear-gradient(90deg, #d4d4d8 0 1px, transparent 1px 4px) bottom left / 100% 1px no-repeat;
+    }
+    .pr-doc.pr-t-dokra .pr-hero { gap: 10px; margin-bottom: calc(6px * var(--pr-gap)); }
+    .pr-doc.pr-t-dokra .pr-hero img { width: 58px; height: 58px; border-radius: 3px; }
+    .pr-doc.pr-t-dokra .pr-name { font-size: 1.6em; letter-spacing: -.015em; }
+    .pr-doc.pr-t-dokra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td {
+      border-top: 0; padding-top: calc(4px * var(--pr-gap));
+      background: repeating-linear-gradient(90deg, #e4e4e7 0 1px, transparent 1px 3px) top left / 100% 1px no-repeat;
+    }
+    .pr-doc.pr-t-dokra .pr-comp p,
+    .pr-doc.pr-t-dokra .pr-edu p { margin: 1.5px 0; }
+    .pr-doc.pr-t-dokra li { margin: 0 !important; }
+
     /* References / recommenders as professional contacts (quote text omitted) */
     .pr-doc .pr-reco .pr-reco-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
     .pr-doc .pr-reco .pr-reco-item p { margin: 0; }
@@ -525,6 +637,7 @@
   </style>
   
   <!-- Load Sectioned Config Data -->
+  <script src="assets/icons.js"></script>
   <script src="data/personal.js"></script>
   <script src="data/overview.js"></script>
   <script src="data/trajectory.js"></script>
@@ -637,6 +750,21 @@
             <line x1="3" y1="3" x2="21" y2="21"></line>
           </svg>
         </button>
+
+        <!-- Typeface picker. A menu rather than a cycling toggle: four faces is too many to
+             discover by pressing a button repeatedly, and each item is set in its own face so
+             the choice is made by looking. -->
+        <div class="relative flex-shrink-0">
+          <button id="font-toggle-btn" onclick="toggleFontMenu()" aria-label="Choose typeface"
+                  aria-haspopup="menu" aria-expanded="false" aria-controls="font-menu"
+                  class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>
+            </svg>
+          </button>
+          <div id="font-menu" role="menu" aria-labelledby="font-toggle-btn" hidden
+               class="absolute right-0 mt-2 z-50 min-w-[190px] p-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
+        </div>
 
         <!-- Theme Toggle Button -->
         <button id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle visual theme" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all duration-300 flex-shrink-0">
@@ -881,6 +1009,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
       initAnimationsPref();    // sync the animations toggle with the reduce-motion state
+      renderFontMenu();        // …and the typeface menu with the face applied before first paint
       initAppContent();
       initReveals();          // register scroll-reveals before the first pane is shown
       attachPdfModalHandlers();
@@ -1041,6 +1170,93 @@
     // allowed), the incoming theme is revealed with a clip-path circle expanding from
     // the toggle button — a smooth ~450ms wipe. Otherwise it falls back to the body's
     // 300ms colour transition. Either way the end state is identical.
+    // Draw every icon on the page. Lucide first when it is there, then anything it left behind
+    // from the vendored set in assets/icons.js — a name Lucide dropped (the brand marks) or the
+    // whole library being unreachable both land here, and the page keeps its icons either way.
+    function drawIcons(root) {
+      root = root || document;
+      if (window.lucide && lucide.createIcons) { try { lucide.createIcons(); } catch (e) {} }
+      if (typeof ICON_FALLBACK === 'undefined') return;
+      Array.prototype.forEach.call(root.querySelectorAll('i[data-lucide]'), el => {
+        const inner = ICON_FALLBACK[el.getAttribute('data-lucide')];
+        if (!inner) return;
+        // Parsed as SVG, not assigned as innerHTML: an <i> is an HTML element, and HTML parsing
+        // would put the children in the wrong namespace and draw nothing.
+        const doc = new DOMParser().parseFromString(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
+          'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          inner + '</svg>', 'image/svg+xml');
+        if (doc.querySelector('parsererror')) return;
+        const svg = document.importNode(doc.documentElement, true);
+        svg.setAttribute('class', el.getAttribute('class') || '');
+        svg.setAttribute('aria-hidden', 'true');
+        el.parentNode.replaceChild(svg, el);
+      });
+    }
+
+    // --- Site typeface -----------------------------------------------------
+    // The reading face for the whole page. `default` is the pairing the site was designed in;
+    // the other three are the faces vendored for the résumé export, so they are already local.
+    const SITE_FONTS = [
+      { key: 'default',  label: 'Default',               css: "'Inter', sans-serif" },
+      { key: 'atkinson', label: 'Atkinson Hyperlegible', css: "'Atkinson Resume', sans-serif" },
+      { key: 'noto',     label: 'Noto Sans',             css: "'Noto Sans Resume', sans-serif" },
+      { key: 'serif',    label: 'Source Serif',          css: "'Source Serif Resume', serif" }
+    ];
+    function siteFont() {
+      let v = null;
+      try { v = localStorage.getItem('siteFont'); } catch (e) {}
+      return SITE_FONTS.some(f => f.key === v) ? v : 'default';
+    }
+    function setSiteFont(key) {
+      if (!SITE_FONTS.some(f => f.key === key)) return;
+      const html = document.documentElement;
+      SITE_FONTS.forEach(f => html.classList.remove('site-f-' + f.key));
+      if (key !== 'default') html.classList.add('site-f-' + key);
+      try { localStorage.setItem('siteFont', key); } catch (e) {}
+      renderFontMenu();
+    }
+    function renderFontMenu() {
+      const menu = document.getElementById('font-menu');
+      if (!menu) return;
+      const current = siteFont();
+      menu.innerHTML = SITE_FONTS.map(f =>
+        '<button type="button" role="menuitemradio" aria-checked="' + (f.key === current) + '"' +
+        ' onclick="setSiteFont(\'' + f.key + '\'); closeFontMenu(true);"' +
+        ' style="font-family: ' + f.css + '"' +
+        ' class="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+        (f.key === current
+          ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950'
+          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80') +
+        '">' + escapeHtml(f.label) + '</button>').join('');
+    }
+    function closeFontMenu(refocus) {
+      const menu = document.getElementById('font-menu');
+      const btn = document.getElementById('font-toggle-btn');
+      if (!menu || menu.hidden) return;
+      menu.hidden = true;
+      if (btn) { btn.setAttribute('aria-expanded', 'false'); if (refocus) btn.focus(); }
+      document.removeEventListener('keydown', fontMenuKeydown, true);
+      document.removeEventListener('pointerdown', fontMenuOutside, true);
+    }
+    function fontMenuKeydown(e) { if (e.key === 'Escape') { e.stopPropagation(); closeFontMenu(true); } }
+    function fontMenuOutside(e) {
+      if (!e.target.closest('#font-menu') && !e.target.closest('#font-toggle-btn')) closeFontMenu(false);
+    }
+    function toggleFontMenu() {
+      const menu = document.getElementById('font-menu');
+      const btn = document.getElementById('font-toggle-btn');
+      if (!menu) return;
+      if (!menu.hidden) { closeFontMenu(true); return; }
+      renderFontMenu();
+      menu.hidden = false;
+      if (btn) btn.setAttribute('aria-expanded', 'true');
+      document.addEventListener('keydown', fontMenuKeydown, true);
+      document.addEventListener('pointerdown', fontMenuOutside, true);
+      const first = menu.querySelector('button');
+      if (first) first.focus();
+    }
+
     function toggleTheme() {
       const goingDark = !document.documentElement.classList.contains('dark');
       const swap = () => applyTheme(goingDark);
@@ -1190,7 +1406,7 @@
       });
 
       // Rerun Lucide icon rendering
-      lucide.createIcons();
+      drawIcons();
 
       // README badges cost a request per repo, so they're fetched the first time the
       // Projects tab is actually opened. Cached ones are already on screen by now.
@@ -1315,6 +1531,32 @@
     // Paper size and margin can only be set through an @page rule, and @page ignores CSS
     // custom properties — so the rule is rewritten as text whenever the settings change.
     const PR_MARGIN_MM = { compact: 10, normal: 12, roomy: 16 };
+
+    // The faces on offer, and the one file per weight each is drawn from. Keep in step with the
+    // @font-face block and the .pr-f-* rules above: `css` is what the browser resolves, `pdf` is
+    // the name jsPDF registers, and every face is embedded from the very file the preview used.
+    const PR_FONTS = {
+      noto:     { label: 'Noto Sans', note: 'Widest coverage', css: 'Noto Sans Resume', pdf: 'NotoResume',
+                  files: { normal: 'assets/fonts/noto-sans-regular.ttf', bold: 'assets/fonts/noto-sans-bold.ttf' } },
+      atkinson: { label: 'Atkinson Hyperlegible', note: 'Built for low vision', css: 'Atkinson Resume', pdf: 'AtkinsonResume',
+                  files: { normal: 'assets/fonts/atkinson-hyperlegible-regular.ttf', bold: 'assets/fonts/atkinson-hyperlegible-bold.ttf' } },
+      serif:    { label: 'Source Serif', note: 'A traditional serif', css: 'Source Serif Resume', pdf: 'SourceSerifResume',
+                  files: { normal: 'assets/fonts/source-serif-regular.ttf', bold: 'assets/fonts/source-serif-bold.ttf' } }
+    };
+    // The three layouts, each named for a Bengali craft it takes its logic from. `bhagirathi` is
+    // the document as it has always been — a single flowing column — so it is the default and
+    // nothing changes for anyone who never opens the picker.
+    const PR_TEMPLATES = {
+      bhagirathi:  { label: 'Bhagirathi', tagline: 'One flowing column, like the river' },
+      pattachitra: { label: 'Pattachitra', tagline: 'Panel by panel, with a skills sidebar' },
+      dokra:       { label: 'Dokra', tagline: 'Fine hatched lines, cast compact' }
+    };
+    const PR_TEMPLATE_DEFAULT = 'bhagirathi';
+    const PR_FONT_DEFAULT = 'noto';
+    const PR_FONT_FALLBACK = 'noto';         // whatever the chosen face lacks is drawn from this
+    function prFont(key) { return PR_FONTS[key] || PR_FONTS[PR_FONT_DEFAULT]; }
+    const PDF_FONT = PR_FONTS.noto.pdf;
+
     function applyPrintPageStyle(config) {
       const cfg = (config && config.page) || (pdfConfig && pdfConfig.page) ||
         ((reconcilePdfConfig(loadPdfConfig()).config || {}).page) || { size: 'a4', density: 'normal' };
@@ -1328,10 +1570,19 @@
       const margin = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
       tag.textContent = '@media print { @page { size: ' + size + '; margin: ' + margin + 'mm; } }';
       const el = document.getElementById('print-resume');
-      if (el) {
-        el.classList.remove('pr-d-compact', 'pr-d-normal', 'pr-d-roomy');
-        el.classList.add('pr-d-' + (cfg.density || 'normal'));
-      }
+      if (el) prApplyDocClasses(el, cfg);
+    }
+
+    // The three classes that decide how a .pr-doc looks: density, typeface, template. One place,
+    // so the printed page, the live preview and every carousel thumbnail cannot drift apart.
+    function prApplyDocClasses(el, cfg) {
+      cfg = cfg || {};
+      const drop = [];
+      el.classList.forEach(c => { if (/^pr-(d|f|t)-/.test(c)) drop.push(c); });
+      drop.forEach(c => el.classList.remove(c));
+      el.classList.add('pr-d-' + (cfg.density || 'normal'));
+      el.classList.add('pr-f-' + (PR_FONTS[cfg.font] ? cfg.font : PR_FONT_DEFAULT));
+      el.classList.add('pr-t-' + (PR_TEMPLATES[cfg.template] ? cfg.template : PR_TEMPLATE_DEFAULT));
     }
 
     function buildPrintResume(config) {
@@ -1498,20 +1749,43 @@
         return `<div class="pr-proj-item">${body}</div>`;
       }).join('');
 
+      // Pattachitra puts the competencies and the contact lines in a sidebar beside the opening
+      // panels instead of in the flow. It is a floated block, so what follows wraps beside it
+      // and then resumes full width — the one-flow pagination model is untouched, and page two
+      // onwards simply has no sidebar.
+      const template = (config.page && PR_TEMPLATES[config.page.template]) ? config.page.template : PR_TEMPLATE_DEFAULT;
+      const asideHTML = (template !== 'pattachitra') ? '' : (() => {
+        const skills = compCfg.order
+          .map(t => ({ c: OVERVIEW_DATA.competencies.find(x => x.title === t), item: compCfg.items[t] }))
+          .filter(o => o.c && o.item && o.item.include)
+          .map(o => {
+            const sk = o.c.skills || [];
+            return `<li><span class="t">${escapeHtml(o.c.title)}</span>${sk.length ? `<div class="pr-aside-sk">${sk.map(escapeHtml).join(' &middot; ')}</div>` : ''}</li>`;
+          }).join('');
+        const lines = contacts ? `<h4>Contact</h4><div class="pr-meta">${contacts}</div>` : '';
+        return (skills || lines)
+          ? `<aside class="pr-aside">${lines}${skills ? `<h4>Competencies</h4><ul>${skills}</ul>` : ''}</aside>`
+          : '';
+      })();
+      // When the sidebar carries them, they are not repeated in the flow.
+      const compFlow = asideHTML ? '' : comp;
+      const contactFlow = asideHTML ? '' : contacts;
+
       return `
+        ${asideHTML}
         <div class="pr-hero">
           ${heroShowImage ? `<img src="${PERSONAL_DATA.profileImage}" alt="">` : ''}
           <div>
             <div class="pr-name">${PERSONAL_DATA.name}</div>
             <div class="pr-title">${PERSONAL_DATA.title}</div>
-            ${contacts ? `<div class="pr-meta">${contacts}</div>` : ''}
+            ${contactFlow ? `<div class="pr-meta">${contactFlow}</div>` : ''}
             <div class="pr-meta"><strong>Experience:</strong> ${computeExperience()}${base ? '  &middot;  <strong>Base:</strong> ' + base.value : ''}</div>
           </div>
         </div>
 
         ${sumCfg.include !== false ? `<div class="pr-section-h">Summary</div><p class="pr-summary">${summaryHtml}</p>` : ''}
 
-        ${comp ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${comp}</div>` : ''}
+        ${compFlow ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${compFlow}</div>` : ''}
 
         ${workRows ? `<div class="pr-section-h">Career Trajectory</div><table class="pr-traj">${workRows}</table>` : ''}
 
@@ -1742,7 +2016,7 @@
         contactGrid.appendChild(card);
       });
 
-      lucide.createIcons();
+      drawIcons();
 
       // Overview Summary
       document.getElementById('overview-bio').innerHTML = formatText(OVERVIEW_DATA.bio);
@@ -1857,7 +2131,7 @@
               <div class="min-w-0">
                 <a href="${rec.linkedin}" target="_blank" rel="noopener" class="group/name inline-flex items-center gap-1 max-w-full text-sm font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-amber-400 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 rounded outline-none">
                   <span class="truncate">${rec.author}</span>
-                  <i data-lucide="linkedin" class="w-3 h-3 flex-shrink-0 opacity-40 group-hover/name:opacity-100 transition-opacity duration-200"></i>
+                  <i data-lucide="brand-linkedin" class="w-3 h-3 flex-shrink-0 opacity-40 group-hover/name:opacity-100 transition-opacity duration-200"></i>
                 </a>
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium line-clamp-1">${rec.title}</p>
                 <p class="text-[10px] text-indigo-600 dark:text-amber-400 font-semibold tracking-wider uppercase mt-0.5">${rec.relationship}</p>
@@ -2366,7 +2640,7 @@
       box.innerHTML = icon
         ? `<i data-lucide="${escapeAttr(icon)}" class="w-5 h-5"></i>`
         : `<span class="text-sm font-extrabold font-display">${escapeHtml(initialsFrom(name))}</span>`;
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
     }
 
     // A screenshot that fails to load drops its tile instead of leaving a broken
@@ -2385,7 +2659,7 @@
       if (!group || !group.heading) return '';
       return `
         <h3 data-reveal class="text-xl font-bold font-display tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-          <i data-lucide="${escapeAttr(icon || 'folder-git-2')}" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> ${escapeHtml(group.heading)}
+          <i data-lucide="${escapeAttr(icon || 'package')}" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> ${escapeHtml(group.heading)}
         </h3>
         ${group.sub ? `<p data-reveal class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-5">${escapeHtml(group.sub)}</p>` : '<div class="mb-5"></div>'}`;
     }
@@ -2554,7 +2828,7 @@
       };
 
       addGroup(split ? featured : featured.concat(rest), groups.featured, featCfg.icon || 'star');
-      if (split) addGroup(rest, groups.rest, 'folder-git-2');
+      if (split) addGroup(rest, groups.rest, 'package');
 
       // Delegated lightbox trigger for every screenshot (wired once).
       if (!list.dataset.lightboxWired) {
@@ -2565,7 +2839,7 @@
         });
       }
 
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
     }
 
     // --- Screenshot lightbox (opened from the Projects gallery) ---
@@ -3533,7 +3807,7 @@
         : 'max-w-[93%] px-3 py-2.5 rounded-2xl rounded-bl-md bg-slate-100/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 space-y-2') +
         '">' + html + (who === 'user' ? '' : (chips || '')) + '</div>';
       log.appendChild(turn);
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
       log.scrollTop = log.scrollHeight;
     }
 
@@ -3668,7 +3942,7 @@
       });
 
       widget.classList.remove('hidden');
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
     }
 
     /* ============================================================
@@ -3952,7 +4226,10 @@
       const sPage = saved.page || {};
       const page = {
         size: (sPage.size === 'letter') ? 'letter' : 'a4',
-        density: (sPage.density === 'compact' || sPage.density === 'roomy') ? sPage.density : 'normal'
+        density: (sPage.density === 'compact' || sPage.density === 'roomy') ? sPage.density : 'normal',
+        // A face or a template that no longer exists falls back rather than rendering nothing.
+        font: PR_FONTS[sPage.font] ? sPage.font : PR_FONT_DEFAULT,
+        template: PR_TEMPLATES[sPage.template] ? sPage.template : PR_TEMPLATE_DEFAULT
       };
 
       // Hero profile photo toggle.
@@ -4083,7 +4360,8 @@
 
       const newSheet = () => {
         sheet = document.createElement('div');
-        sheet.className = 'pdf-page pr-doc pr-d-' + opts.density;
+        sheet.className = 'pdf-page pr-doc';
+        prApplyDocClasses(sheet, opts);
         sheet.style.width = opts.pageW + 'px';
         sheet.style.minHeight = opts.pageH + 'px';
         sheet.style.padding = opts.pad + 'px';
@@ -4119,10 +4397,16 @@
 
       // offsetHeight stops at the box; a child's bottom margin escapes it. The visible extent is
       // what has to fit on the paper, so measure to the last child's bottom edge.
+      // The MAXIMUM bottom, not the last child's: a floated block (Pattachitra's sidebar) can
+      // outlive the blocks that wrap beside it, and measuring only the last one would page the
+      // document as though the float were not there.
       const extent = () => {
         const kids = body.children;
         if (!kids.length) return 0;
-        return kids[kids.length - 1].getBoundingClientRect().bottom - body.getBoundingClientRect().top;
+        const top = body.getBoundingClientRect().top;
+        let max = 0;
+        for (let i = 0; i < kids.length; i++) max = Math.max(max, kids[i].getBoundingClientRect().bottom - top);
+        return max;
       };
 
       newSheet();
@@ -4156,7 +4440,7 @@
     // final pagination.
     let _pdfPreviewTimer = null;
     let _pdfFontWait = null;
-    let _pdfFontWaited = false;
+    const _pdfFontTried = new Set();     // families we have already asked for, once each
 
     function schedulePdfPreview() {
       if (_pdfPreviewTimer) clearTimeout(_pdfPreviewTimer);
@@ -4181,16 +4465,29 @@
       // The document's own webfont loads asynchronously, and font-display: swap means the first
       // layout happens in the fallback face. Measuring then pages the document against the wrong
       // metrics — pages overflowed by ~50px — so wait for the real face and lay out once.
-      // Waited for once. If the face never arrives (a 404, a blocked request) check() stays
-      // false forever, so a second wait would re-enter this function without end: lay out in
-      // the fallback instead and let the preview be approximate rather than absent.
-      if (document.fonts && !_pdfFontWaited && !document.fonts.check('400 10pt "Noto Sans Resume"')) {
+      // Per FAMILY, and once each. The document is measured in whatever face it is actually set
+      // in, so switching typeface has to wait for the new one — measuring against the fallback
+      // pages the document by the wrong metrics. If a face never arrives (a 404, a blocked
+      // request) check() stays false forever, so a second wait would re-enter this function
+      // without end: it is tried once, then laid out in the fallback, approximate but present.
+      // Both the chosen face and Noto Sans behind it: the fallback draws whatever the chosen one
+      // lacks (₹, in Atkinson's case), so its metrics are part of this document's measurement.
+      const wantFamilies = [prFont((pdfConfig.page || {}).font).css, prFont(PR_FONT_FALLBACK).css]
+        .filter((f, i, a) => a.indexOf(f) === i);
+      const pending = document.fonts
+        ? wantFamilies.filter(f => !_pdfFontTried.has(f) && !document.fonts.check('400 10pt "' + f + '"'))
+        : [];
+      if (pending.length) {
         if (!_pdfFontWait) {
-          _pdfFontWait = Promise.all([
-            document.fonts.load('400 10pt "Noto Sans Resume"'),
-            document.fonts.load('700 10pt "Noto Sans Resume"')
-          ]).catch(() => {});
-          _pdfFontWait.then(() => { _pdfFontWait = null; _pdfFontWaited = true; refreshPdfPreview(); });
+          _pdfFontWait = Promise.all(pending.flatMap(f => [
+            document.fonts.load('400 10pt "' + f + '"'),
+            document.fonts.load('700 10pt "' + f + '"')
+          ])).catch(() => {});
+          _pdfFontWait.then(() => {
+            _pdfFontWait = null;
+            pending.forEach(f => _pdfFontTried.add(f));
+            refreshPdfPreview();
+          });
         }
         return;
       }
@@ -4205,7 +4502,8 @@
 
       // 1. Render the whole document off-screen at content width; this is what the blocks and
       //    the Word export are taken from.
-      doc.className = 'pr-doc pdf-measure pr-d-' + density;
+      doc.className = 'pr-doc pdf-measure';
+      prApplyDocClasses(doc, cfg);
       doc.style.width = (pageW - 2 * pad) + 'px';
       doc.innerHTML = buildPrintResumeHTML(pdfConfig);
 
@@ -4214,7 +4512,8 @@
       //    page counts wrong.
       scaler.style.transform = 'none';
       const laid = pdfLayoutSheets(pagesHost, pdfBreakBlocks(doc), {
-        density: density, pageW: pageW, pageH: dims[1] * MM_PX, pad: pad, usableH: usableH
+        density: density, font: cfg.font, template: cfg.template,
+        pageW: pageW, pageH: dims[1] * MM_PX, pad: pad, usableH: usableH
       });
       laid.forEach((pg, i) => {
         const cap = document.createElement('div');
@@ -4260,7 +4559,6 @@
 
        Text stays text: selectable, searchable, and readable by an ATS. Nothing is rasterised.
        ============================================================ */
-    const PDF_FONT = 'NotoResume';
     let _pdfLibPromise = null;
 
     function pdfEnsureLib() {
@@ -4348,32 +4646,72 @@
     }
 
     // Set by pdfRegisterFonts, read by the coverage check below.
-    let _pdfCoverage = null;
+    // The chain the PDF draws with, primary face first: [{ key, pdf, coverage }]. Set by
+    // pdfRegisterFonts, read when text is drawn and when the coverage is reported.
+    let _pdfChain = [];
 
-    // The very files the preview renders with, embedded in the file.
-    async function pdfRegisterFonts(doc) {
-      const faces = [['assets/fonts/noto-sans-regular.ttf', 'normal'],
-                     ['assets/fonts/noto-sans-bold.ttf', 'bold']];
-      for (const [url, style] of faces) {
-        const name = url.split('/').pop();
-        const bytes = await pdfFetchBytes(url);
-        if (style === 'normal') _pdfCoverage = ttfCoverage(bytes);
-        doc.addFileToVFS(name, pdfBase64(bytes));
-        doc.addFont(name, PDF_FONT, style);
+    // The very files the preview renders with, embedded in the file — the chosen face, and
+    // Noto Sans behind it for whatever that face lacks, exactly as the CSS chain does it.
+    async function pdfRegisterFonts(doc, fontKey) {
+      const keys = [fontKey && PR_FONTS[fontKey] ? fontKey : PR_FONT_DEFAULT];
+      if (keys[0] !== PR_FONT_FALLBACK) keys.push(PR_FONT_FALLBACK);
+      _pdfChain = [];
+      for (const key of keys) {
+        const face = PR_FONTS[key];
+        let coverage = null;
+        for (const style of ['normal', 'bold']) {
+          const url = face.files[style];
+          const name = url.split('/').pop();
+          const bytes = await pdfFetchBytes(url);
+          if (style === 'normal') coverage = ttfCoverage(bytes);
+          doc.addFileToVFS(name, pdfBase64(bytes));
+          doc.addFont(name, face.pdf, style);
+        }
+        _pdfChain.push({ key: key, pdf: face.pdf, coverage: coverage });
       }
     }
 
-    // Characters in the document that the embedded font cannot draw, deduplicated and in the
+    // Which face in the chain draws this character — the first that has a glyph for it, and the
+    // primary face when none does (so the gap is reported rather than moved around silently).
+    function pdfFaceFor(ch) {
+      const cp = ch.codePointAt(0);
+      for (const face of _pdfChain) if (face.coverage && face.coverage.has(cp)) return face;
+      return _pdfChain[0] || null;
+    }
+
+    // Draw one line, switching face wherever the primary one has no glyph. A line entirely in
+    // the primary face — which is every line of a résumé written in Latin — is drawn in exactly
+    // one call, as it was before any of this existed.
+    function pdfDrawText(doc, text, x, y, opts, style) {
+      if (!_pdfChain.length) { doc.text(text, x, y, opts); return; }
+      const runs = [];
+      for (const ch of text) {
+        const face = pdfFaceFor(ch);
+        const last = runs[runs.length - 1];
+        if (last && last.face === face) last.text += ch;
+        else runs.push({ face: face, text: ch });
+      }
+      if (runs.length === 1) { doc.setFont(runs[0].face.pdf, style); doc.text(text, x, y, opts); return; }
+      let at = x;
+      for (const run of runs) {
+        doc.setFont(run.face.pdf, style);
+        doc.text(run.text, at, y, opts);
+        at += doc.getTextWidth(run.text);
+      }
+    }
+
+    // Characters in the document that NO face in the chain can draw, deduplicated and in the
     // order they appear. Empty when the coverage could not be read — a guard that cannot be
     // sure stays quiet rather than crying wolf on every export.
     function pdfMissingGlyphs(roots) {
-      if (!_pdfCoverage || !_pdfCoverage.size) return [];
+      if (!_pdfChain.length || !_pdfChain.some(f => f.coverage && f.coverage.size)) return [];
       const missing = [];
       const seen = new Set();
       for (const root of roots) {
         for (const ch of (root.textContent || '')) {
           const cp = ch.codePointAt(0);
-          if (cp < 0x20 || seen.has(ch) || _pdfCoverage.has(cp)) continue;
+          if (cp < 0x20 || seen.has(ch)) continue;
+          if (_pdfChain.some(f => f.coverage && f.coverage.has(cp))) continue;
           seen.add(ch);
           missing.push(ch);
         }
@@ -4500,14 +4838,15 @@
           const size = parseFloat(cs.fontSize);
           const lineH = parseFloat(cs.lineHeight) || size * 1.3;
           const bold = (parseInt(cs.fontWeight, 10) || 400) >= 600;
-          doc.setFont(PDF_FONT, bold ? 'bold' : 'normal');
+          const style = bold ? 'bold' : 'normal';
+          doc.setFont((_pdfChain[0] || { pdf: PDF_FONT }).pdf, style);
           doc.setFontSize(size * PX);
           const [r, g, b] = pdfRgb(cs.color);
           doc.setTextColor(r, g, b);
           pdfTextLines(n, lineH).forEach(line => {
             // Half-leading puts the em box in the middle of the line box.
             const top = line.top + (line.height - size) / 2;
-            doc.text(line.text, X(line.x), Y(top), { baseline: 'top' });
+            pdfDrawText(doc, line.text, X(line.x), Y(top), { baseline: 'top' }, style);
           });
           continue;
         }
@@ -4580,7 +4919,7 @@
         // a straight CSS-pixel → point conversion with no unit juggling.
         const pagePt = [dims[0] * 72 / 25.4, dims[1] * 72 / 25.4];
         const doc = new jsPDFCtor({ unit: 'pt', format: pagePt, compress: true });
-        await pdfRegisterFonts(doc);
+        await pdfRegisterFonts(doc, (pdfConfig && pdfConfig.page && pdfConfig.page.font) || PR_FONT_DEFAULT);
         for (let i = 0; i < sheets.length; i++) {
           if (i) doc.addPage(pagePt);
           const box = sheets[i].getBoundingClientRect();
@@ -4617,7 +4956,7 @@
       } catch (e) {
         alert('Could not build the PDF: ' + e.message + '\nYou can still use Print.');
       } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = label; if (window.lucide) lucide.createIcons(); }
+        if (btn) { btn.disabled = false; btn.innerHTML = label; drawIcons(); }
       }
     }
 
@@ -4936,7 +5275,7 @@
       } catch (e) {
         alert('Could not build the Word file: ' + e.message);
       } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = label; if (window.lucide) lucide.createIcons(); }
+        if (btn) { btn.disabled = false; btn.innerHTML = label; drawIcons(); }
       }
     }
 
@@ -5044,8 +5383,9 @@
       html += renderEntrySectionsHTML();
       html += renderRecommendationsSectionHTML();
       body.innerHTML = html;
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
       refreshPdfModifiedHighlights();
+      renderTemplateThumbs();
       refreshPdfPreview();
     }
 
@@ -5115,7 +5455,7 @@
       if (!ul) return;
       ul.innerHTML = pdfContactListHTML();
       updateContactsBadge();
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
       refreshPdfModifiedHighlights();
     }
 
@@ -5133,8 +5473,46 @@
           '" data-page-key="' + escapeAttr(name) + '" data-page-value="' + escapeAttr(o.v) + '">' +
           escapeHtml(o.label) + '</button>').join('') + '</div>';
 
+      // Templates: a carousel of real thumbnails, not a dropdown. Each card renders THIS résumé
+      // in that template, so the choice is made by looking at the document rather than reading
+      // a name for it. Filled in by renderTemplateThumbs() once the markup is in the DOM.
+      const cards = Object.keys(PR_TEMPLATES).map((key, i) => {
+        const t = PR_TEMPLATES[key];
+        const on = key === (page.template || PR_TEMPLATE_DEFAULT);
+        return '<button type="button" role="radio" aria-checked="' + (on ? 'true' : 'false') + '"' +
+          ' tabindex="' + (on ? '0' : '-1') + '" data-template="' + escapeAttr(key) + '"' +
+          ' class="pdf-tmpl-card snap-start flex-shrink-0 w-[132px] text-left rounded-xl border p-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+          (on ? 'border-indigo-500 dark:border-amber-400 bg-indigo-500/5 dark:bg-amber-400/10'
+              : 'border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50') + '">' +
+          '<div class="pdf-tmpl-thumb rounded-md overflow-hidden bg-white border border-slate-200/70 dark:border-slate-700/60">' +
+            '<div class="pdf-tmpl-scaler" inert aria-hidden="true"></div>' +
+          '</div>' +
+          '<div class="mt-1.5 px-0.5">' +
+            '<div class="text-xs font-bold text-slate-800 dark:text-slate-100">' + escapeHtml(t.label) + '</div>' +
+            '<div class="text-[10px] leading-tight text-slate-500 dark:text-slate-400">' + escapeHtml(t.tagline) + '</div>' +
+          '</div></button>';
+      }).join('');
+
+      const fontChips = Object.keys(PR_FONTS).map(key => {
+        const f = PR_FONTS[key];
+        const on = key === (page.font || PR_FONT_DEFAULT);
+        return '<button type="button" role="radio" aria-checked="' + (on ? 'true' : 'false') + '"' +
+          ' data-page-key="font" data-page-value="' + escapeAttr(key) + '"' +
+          ' style="font-family: \'' + f.css + '\', sans-serif"' +
+          ' class="pdf-page-opt px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+          (on ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 border-transparent'
+              : 'text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50') +
+          '">' + escapeHtml(f.label) + '</button>';
+      }).join('');
+
       const right =
         '<div class="space-y-3">' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Template</div>' +
+            '<div id="pdf-tmpl-strip" class="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 -mx-0.5 px-0.5" role="radiogroup" aria-label="template">' +
+              cards + '</div></div>' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
+            '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div>' +
+            '<p class="text-[11px] text-slate-500 dark:text-slate-400">Embedded in the PDF. Anything a face lacks — ₹, for one — is drawn from Noto Sans behind it, so nothing is dropped.</p></div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Paper</div>' +
             group('size', page.size, [{ v: 'a4', label: 'A4' }, { v: 'letter', label: 'US Letter' }]) + '</div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Density</div>' +
@@ -5232,7 +5610,7 @@
       if (!ul) return;
       ul.innerHTML = pdfRecoListHTML();
       updateRecoBadge();
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
       refreshPdfModifiedHighlights();
     }
 
@@ -5285,7 +5663,7 @@
       const order = pdfConfig.competencies.order;
       ul.innerHTML = order.map((t, i) => pdfCompRowHTML(t, i, order.length)).join('');
       updateCompBadge();
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
       refreshPdfModifiedHighlights();
     }
 
@@ -5390,7 +5768,7 @@
       const list = document.getElementById('pdf-proj-list');
       if (!list) return;
       list.innerHTML = pdfProjectRowsHTML();
-      if (window.lucide) lucide.createIcons();
+      drawIcons();
       refreshPdfModifiedHighlights();
     }
 
@@ -5465,10 +5843,15 @@
       if (!body || body.dataset.wired) return;
       body.dataset.wired = '1';
 
+      body.addEventListener('keydown', function (e) {
+        if (e.target.closest && e.target.closest('#pdf-tmpl-strip')) pdfTemplateKeydown(e);
+      });
+
       body.addEventListener('click', function (e) {
         const t = e.target;
         let el;
         if ((el = t.closest('.pdf-page-opt'))) { setPageOption(el.getAttribute('data-page-key'), el.getAttribute('data-page-value')); return; }
+        if ((el = t.closest('.pdf-tmpl-card'))) { setPageOption('template', el.getAttribute('data-template')); return; }
         if ((el = t.closest('.pdf-bulk-flag'))) { toggleBulk(el); return; }
         if ((el = t.closest('.pdf-entry-logo'))) { toggleEntrySwitch(el.closest('.pdf-entry').dataset.entryKey, el, 'showLogo'); return; }
         if ((el = t.closest('.pdf-sort-up')) || (el = t.closest('.pdf-sort-down'))) {
@@ -5563,8 +5946,53 @@
         '</div>';
     }
 
+    // Each card shows THIS résumé in that template — the user's own content, at true page width,
+    // scaled into the card. Anything else would be a picture of someone else's CV.
+    const PR_THUMB_W = 124;
+    function renderTemplateThumbs() {
+      const strip = document.getElementById('pdf-tmpl-strip');
+      if (!strip || !pdfConfig) return;
+      const pageW = (PR_PAGE_MM[(pdfConfig.page || {}).size] || PR_PAGE_MM.a4)[0] * MM_PX;
+      const scale = PR_THUMB_W / pageW;
+      Array.prototype.forEach.call(strip.querySelectorAll('.pdf-tmpl-card'), card => {
+        const key = card.getAttribute('data-template');
+        const host = card.querySelector('.pdf-tmpl-scaler');
+        if (!host) return;
+        const cfg = Object.assign({}, pdfConfig, { page: Object.assign({}, pdfConfig.page, { template: key }) });
+        const doc = document.createElement('div');
+        doc.className = 'pr-doc';
+        prApplyDocClasses(doc, cfg.page);
+        doc.style.width = pageW + 'px';
+        doc.style.padding = (PR_MARGIN_MM[cfg.page.density] || PR_MARGIN_MM.normal) * MM_PX + 'px';
+        doc.innerHTML = buildPrintResumeHTML(cfg);
+        host.innerHTML = '';
+        host.appendChild(doc);
+        host.style.transform = 'scale(' + scale + ')';
+        host.style.width = pageW + 'px';
+      });
+    }
+
+    // Arrow keys move between cards the way a radio group should, and the strip scrolls to keep
+    // the focused card in view.
+    function pdfTemplateKeydown(e) {
+      const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1
+                 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+      if (!step) return;
+      const strip = document.getElementById('pdf-tmpl-strip');
+      if (!strip) return;
+      const cards = Array.prototype.slice.call(strip.querySelectorAll('.pdf-tmpl-card'));
+      const at = cards.indexOf(e.target.closest('.pdf-tmpl-card'));
+      if (at < 0) return;
+      e.preventDefault();
+      const next = cards[(at + step + cards.length) % cards.length];
+      setPageOption('template', next.getAttribute('data-template'));
+      const again = document.querySelector('#pdf-tmpl-strip .pdf-tmpl-card[data-template="' +
+        next.getAttribute('data-template') + '"]');
+      if (again) { again.focus(); if (again.scrollIntoView) again.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+    }
+
     function setPageOption(key, value) {
-      if (!pdfConfig.page || (key !== 'size' && key !== 'density')) return;
+      if (!pdfConfig.page || ['size', 'density', 'font', 'template'].indexOf(key) < 0) return;
       if (pdfConfig.page[key] === value) return;
       pdfConfig.page[key] = value;
       savePdfConfigDebounced();
@@ -5573,9 +6001,12 @@
       const section = body && body.querySelector('.pdf-section');
       if (section) {
         section.outerHTML = renderPageSectionHTML();
-        if (window.lucide) lucide.createIcons();
+        drawIcons();
+        // Paper size changes the thumbnails' aspect; template and font change what is in them.
+        renderTemplateThumbs();
       }
       updateResetButton();
+      schedulePdfPreview();
     }
 
     function toggleCompInclude(title, btn) {
