@@ -9,6 +9,37 @@ const OVERVIEW_DATA = {
     { label: "Core Expertise", value: "Ground Up Analytics" },
     { label: "Base Location", value: "Hyderabad, India" }
   ],
+  // Skill bars — a short, rated list, drawn as four-step bars by the résumé templates that use
+  // them. Deliberately NOT all 47 skills below: a page of bars reads as noise, a handful reads
+  // as a considered claim.
+  //
+  // Which templates show them:
+  //   Bhagirathi  — never. It is a single flowing column of prose.
+  //   Dokra       — always. The bars are part of that layout.
+  //   Pattachitra — either these bars OR the competency text in its sidebar, your choice in the
+  //                 Save PDF screen. Not both: the sidebar has room for one of them.
+  //
+  // `level` is one of "Expert", "Advanced", "Proficient", "Working" — four named steps rather
+  // than a percentage, because nobody can defend the difference between 85% and 90% of SQL in
+  // an interview. Order is the order they are drawn in; strongest first reads best.
+  //
+  // Levels can also be dragged in the Save PDF editor. That only ever changes YOUR export, in
+  // your own browser — this file stays the source of truth for what the site shows everyone.
+  skillBars: [
+    { name: "SQL",                  level: "Expert" },
+    { name: "Advanced Excel",       level: "Expert" },
+    { name: "Python",               level: "Advanced" },
+    { name: "Statistical analysis", level: "Advanced" },
+    { name: "NLP",                  level: "Advanced" },
+    { name: "Tableau",              level: "Advanced" },
+    { name: "Gen AI",               level: "Advanced" },
+    { name: "Agentic workflows",    level: "Advanced" },
+    { name: "R",                    level: "Proficient" },
+    { name: "TIBCO Spotfire",       level: "Proficient" },
+    { name: "Power BI",             level: "Proficient" },
+    { name: "AWS",                  level: "Proficient" }
+  ],
+
   // Global Footprint (countries + city count) is derived from the locations in TRAJECTORY_DATA.
   competencies: [
     {
@@ -39,7 +70,7 @@ const OVERVIEW_DATA = {
       title: "Technical Tools",
       icon: "wrench",
       description: "`Python`, `SQL`, `R`, `AWS`, `Advanced Excel`. `Linux CLI`. `BigQuery`. `Power Query`. Geofencing and mapping APIs. ^Gen AI integration^.",
-      skills: ["Python", "SQL", "R", "AWS", "Advanced Excel", "Linux CLI", "BigQuery", "Power Query", "Geofencing APIs", "Gen AI"]
+      skills: ["Python", "SQL", "R", "AWS", "Advanced Excel", "Linux CLI", "BigQuery", "Power Query", "Geofencing APIs", "Gen AI", "Agentic workflows"]
     },
     {
       title: "Cross-Functional Impact",

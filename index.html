@@ -89,8 +89,11 @@
        Sans); the rest are the same vendored faces the résumé export offers, so choosing one
        costs no extra download beyond the file itself and works with the CDN unreachable.
        Both Tailwind families are overridden, or headings would keep the display face. */
-    html.site-f-atkinson body, html.site-f-atkinson .font-display,
-    html.site-f-atkinson :where(h1, h2, h3, h4) { font-family: 'Atkinson Resume', 'Inter', sans-serif; }
+    html.site-f-atkinson body { font-family: 'Atkinson Resume', 'Inter', sans-serif; }
+    /* Headings are display type, not reading type: they stay in Noto rather than being set in
+       a face chosen for long-form legibility and then emboldened. */
+    html.site-f-atkinson .font-display,
+    html.site-f-atkinson :where(h1, h2, h3, h4) { font-family: 'Noto Sans Resume', 'Inter', sans-serif; }
     html.site-f-noto body, html.site-f-noto .font-display,
     html.site-f-noto :where(h1, h2, h3, h4) { font-family: 'Noto Sans Resume', 'Inter', sans-serif; }
     html.site-f-serif body, html.site-f-serif .font-display,
@@ -421,8 +424,12 @@
        for one, has no ₹ — and this résumé's headline figure is quoted in rupees. */
     @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
     @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    /* Atkinson Hyperlegible is built for low vision at TEXT weight; its bold is dense enough to
+       undo the point of it. So the family is a composite: Atkinson at 400, Noto Sans at 700.
+       Every bold run — and every heading, which is bold — is then set in Noto without a single
+       selector having to know about it, on the page and in the PDF alike. */
     @font-face { font-family: 'Atkinson Resume'; src: url('assets/fonts/atkinson-hyperlegible-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-    @font-face { font-family: 'Atkinson Resume'; src: url('assets/fonts/atkinson-hyperlegible-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Atkinson Resume'; src: url('assets/fonts/noto-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
     @font-face { font-family: 'Source Serif Resume'; src: url('assets/fonts/source-serif-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
     @font-face { font-family: 'Source Serif Resume'; src: url('assets/fonts/source-serif-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
@@ -487,6 +494,7 @@
     .pr-doc,
     .pr-doc.pr-f-noto     { font-family: 'Noto Sans Resume', Arial, sans-serif; }
     .pr-doc.pr-f-atkinson { font-family: 'Atkinson Resume', 'Noto Sans Resume', Arial, sans-serif; }
+    .pr-doc.pr-f-atkinson :where(.pr-name, .pr-title, .pr-section-h) { font-family: 'Noto Sans Resume', Arial, sans-serif; }
     .pr-doc.pr-f-serif    { font-family: 'Source Serif Resume', 'Noto Sans Resume', Georgia, serif; }
     .pr-doc {
       color: #2d2d2d;
@@ -627,46 +635,123 @@
        résumé, not a pastiche.
        ========================================================== */
 
-    /* --- Pattachitra: the scroll painting, read panel by panel. Each section is a bordered
-       panel with room to breathe; the skills sit in their own column beside the opening. --- */
-    .pr-doc.pr-t-pattachitra .pr-section-h {
-      border-bottom: 0; padding: 0; text-transform: uppercase; letter-spacing: .08em;
-      font-size: 0.92em; color: #7c2d12;
-      margin: calc(11px * var(--pr-gap)) 0 calc(4px * var(--pr-gap));
+    /* Rated skill bars. Track and fill are real elements with real backgrounds, so the PDF
+       export — which transcribes the DOM — draws them as rectangles without knowing what they
+       are. Four steps, named, because a percentage on a résumé invites a question nobody can
+       answer. */
+    /* Scoped to the templates that use them — Bhagirathi never shows bars, so an unscoped rule
+       here would be dead CSS in the default document. */
+    .pr-doc.pr-t-dokra .pr-skillbars,
+    .pr-doc.pr-t-pattachitra .pr-skillbars { margin: 2px 0 0; }
+    .pr-doc.pr-t-dokra .pr-sb,
+    .pr-doc.pr-t-pattachitra .pr-sb {
+      display: grid; grid-template-columns: 1fr auto; align-items: baseline;
+      column-gap: 6px; margin: 0 0 calc(3px * var(--pr-gap)); break-inside: avoid;
     }
-    /* Panels: each section's body sits behind its own left band. Applied to the CONTAINERS that
-       are already separate blocks, never to a wrapper around a whole section — a section wrapped
-       as one block could not be split across pages, and Career Trajectory is longer than a page. */
+    .pr-doc.pr-t-dokra .pr-sb-n,
+    .pr-doc.pr-t-pattachitra .pr-sb-n { font-weight: 700; font-size: 0.95em; }
+    .pr-doc.pr-t-dokra .pr-sb-l,
+    .pr-doc.pr-t-pattachitra .pr-sb-l { font-size: 0.82em; color: #64748b; letter-spacing: .04em; }
+    .pr-doc.pr-t-dokra .pr-sb-t,
+    .pr-doc.pr-t-pattachitra .pr-sb-t {
+      grid-column: 1 / -1; display: block; height: 3.5px; margin-top: 1.5px;
+      background: #e2e8f0; border-radius: 2px; overflow: hidden;
+    }
+    .pr-doc.pr-t-dokra .pr-sb-f,
+    .pr-doc.pr-t-pattachitra .pr-sb-f { display: block; height: 100%; background: #4f46e5; border-radius: 2px; }
+    .pr-doc.pr-t-dokra .pr-sb-f { background: #3f3f46; }
+    .pr-doc.pr-t-dokra .pr-sb-t { height: 3px; }
+    /* In Pattachitra the bars live on the painted column, so they take its palette. */
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-n { color: var(--pr-cream); font-size: 0.9em; }
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-l { color: #b9a897; font-size: 0.78em; }
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-t { background: rgba(246, 239, 230, .22); }
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-sb-f { background: var(--pr-ochre); }
+
+    /* --- Bhagirathi: the river. One flowing column — and now an opening band behind the name,
+       so the page starts somewhere rather than just beginning. Kept to a tint and a hairline:
+       the whole point of this template is that nothing interrupts the flow. --- */
+    .pr-doc.pr-t-bhagirathi .pr-hero {
+      background: #eef2ff;
+      border-bottom: 2px solid #4f46e5;
+      padding: calc(6px * var(--pr-gap)) 10px calc(6px * var(--pr-gap));
+      margin-bottom: calc(9px * var(--pr-gap));
+    }
+    .dark .pr-doc.pr-t-bhagirathi .pr-hero { background: #eef2ff; }   /* the document is always on white paper */
+
+    /* --- Pattachitra: the scroll painting. A full-height painted column down the left, the
+       way a pata is bordered, carrying contact and competencies; the narrative runs beside it.
+       The palette is the craft's own — lamp-black ground, ochre and terracotta — rather than
+       the corporate blue these layouts usually come in. --- */
+    .pr-doc.pr-t-pattachitra {
+      --pr-band: 56mm;
+      --pr-ink: #2a1a14;          /* lamp black, warmed */
+      --pr-ochre: #b45309;
+      --pr-cream: #f6efe6;
+    }
+    /* The band is a real element, one per sheet — not a ::before. The PDF export transcribes
+       the DOM, and a pseudo-element is not in the DOM: as a ::before it would be on screen and
+       missing from the file. */
+    .pr-doc.pr-t-pattachitra .pr-band {
+      position: absolute; left: 0; top: 0; bottom: 0; width: var(--pr-band);
+      background: var(--pr-ink);
+      z-index: 0;                 /* …and the sidebar sits ON it, not under it. A positioned
+                                     element paints above static content by default, so without
+                                     this pair the band covered the very thing it exists for. */
+    }
+    .pr-doc.pr-t-pattachitra .pr-aside { position: relative; z-index: 1; }
+    .pr-doc.pr-t-pattachitra { position: relative; }
+    /* The flow clears the band by PADDING THE DOCUMENT, once — not by shifting each block, and
+       not by a percentage. A percentage resolves against whichever box happens to be the
+       parent, and that box is the sheet in the preview, the sheet body inside it, and
+       #print-resume in print: the same rule then produced three different offsets, and applied
+       twice it squeezed the column until the résumé ran to five pages. An absolute width, set
+       in one place, is the same everywhere. */
+    .pr-doc.pr-t-pattachitra { padding-left: calc(var(--pr-band) + 6mm) !important; }
+    .pdf-page.pr-t-pattachitra > .pdf-sheet-body { margin-left: 0; }
+    /* The sidebar's CONTENT is only on page one — a résumé that repeats its own skills on every
+       page is padding. So from page two the band narrows to a stripe and gives the width back
+       to the writing. The paginator fills real sheets and measures each as it goes, so a wider
+       page two simply takes more per page; nothing has to be told about it. */
+    .pdf-page.pr-t-pattachitra:not(:first-of-type) { --pr-band: 13mm; }
+
+    /* The sidebar sits IN the band, and is floated rather than absolute so the paginator still
+       measures it — a sidebar taller than the page has to be able to say so. */
+    /* Pulled back out of the padded column, into the band it belongs to. */
+    .pr-doc.pr-t-pattachitra .pr-aside {
+      float: left; width: calc(var(--pr-band) - 12mm);
+      margin: 0 0 calc(6px * var(--pr-gap)) calc(-1 * var(--pr-band));
+      padding: 0 0 calc(4px * var(--pr-gap));
+      background: transparent; border: 0; color: var(--pr-cream); break-inside: avoid;
+    }
+    .pr-doc.pr-t-pattachitra .pr-aside h4 {
+      font-size: 0.82em; text-transform: uppercase; letter-spacing: .12em;
+      color: #0f0a08; background: var(--pr-ochre); font-weight: 700;
+      margin: 0 0 4px; padding: 2px 6px;
+    }
+    .pr-doc.pr-t-pattachitra .pr-aside h4 + * { margin-top: 0; }
+    .pr-doc.pr-t-pattachitra .pr-aside ul { list-style: none; margin: 0 0 calc(7px * var(--pr-gap)); padding: 0; }
+    .pr-doc.pr-t-pattachitra .pr-aside li { margin: 2px 0; font-size: 0.92em; }
+    .pr-doc.pr-t-pattachitra .pr-aside li:last-child { margin-bottom: 0; }
+    .pr-doc.pr-t-pattachitra .pr-aside .t { color: var(--pr-cream); font-weight: 700; }
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-aside-sk { font-size: 0.88em; color: #cbbfb2; }
+    .pr-doc.pr-t-pattachitra .pr-aside .pr-meta,
+    .pr-doc.pr-t-pattachitra .pr-aside a { color: #e3d8ca; }
+
+    /* Section heads are painted bars, the way each panel of a pata is titled. */
+    .pr-doc.pr-t-pattachitra .pr-section-h {
+      border-bottom: 0; text-transform: uppercase; letter-spacing: .1em;
+      font-size: 0.86em; color: var(--pr-cream); background: var(--pr-ochre);
+      padding: 2px 8px; margin: calc(9px * var(--pr-gap)) 0 calc(4px * var(--pr-gap));
+    }
+    .pr-doc.pr-t-pattachitra .pr-hero { margin-bottom: calc(7px * var(--pr-gap)); }
+    .pr-doc.pr-t-pattachitra .pr-name { letter-spacing: -.01em; color: var(--pr-ink); }
+    .pr-doc.pr-t-pattachitra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top-color: #e7d7c3; }
     .pr-doc.pr-t-pattachitra .pr-projects,
     .pr-doc.pr-t-pattachitra .pr-edu,
     .pr-doc.pr-t-pattachitra .pr-reco,
     .pr-doc.pr-t-pattachitra .pr-summary,
-    .pr-doc.pr-t-pattachitra table.pr-traj {
-      border-left: 2px solid #e7d7c3; padding-left: 8px;
-    }
+    .pr-doc.pr-t-pattachitra table.pr-traj { border-left: 2px solid #e7d7c3; padding-left: 8px; }
     .pr-doc.pr-t-pattachitra .pr-summary { padding-top: 1px; padding-bottom: 1px; }
-    .pr-doc.pr-t-pattachitra .pr-hero { margin-bottom: calc(7px * var(--pr-gap)); }
-    .pr-doc.pr-t-pattachitra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top-color: #e7d7c3; }
-    .pr-doc.pr-t-pattachitra .pr-name { letter-spacing: -.01em; }
-
-    /* The sidebar: a real column down the left of the FIRST page. It is a floated block, so the
-       panels that follow wrap beside it and then resume full width once it ends — which keeps
-       the one-flow pagination model intact. Page two onwards has no sidebar, by design: a
-       résumé that repeats its own skills on every page is padding. */
-    .pr-doc.pr-t-pattachitra .pr-aside {
-      float: left; width: 31%; margin: 0 11px calc(6px * var(--pr-gap)) 0;
-      padding: calc(6px * var(--pr-gap)) 9px calc(4px * var(--pr-gap));
-      background: #fdf8f2; border: 1px solid #e7d7c3; break-inside: avoid;
-    }
-    .pr-doc.pr-t-pattachitra .pr-aside h4 {
-      font-size: 0.86em; text-transform: uppercase; letter-spacing: .09em;
-      color: #7c2d12; font-weight: 700; margin: 0 0 3px;
-    }
-    .pr-doc.pr-t-pattachitra .pr-aside h4 + * { margin-top: 0; }
-    .pr-doc.pr-t-pattachitra .pr-aside ul { list-style: none; margin: 0 0 calc(6px * var(--pr-gap)); padding: 0; }
-    .pr-doc.pr-t-pattachitra .pr-aside li { margin: 1.5px 0; font-size: 0.94em; }
-    .pr-doc.pr-t-pattachitra .pr-aside li:last-child { margin-bottom: 0; }
-    .pr-doc.pr-t-pattachitra .pr-aside .pr-aside-sk { font-size: 0.9em; color: #4b4b4b; }
 
     /* --- Dokra: lost-wax casting — fine hatched lines, everything drawn tight. The one-pager.
        The leading is restated per density rather than derived: a custom property cannot be
@@ -687,7 +772,6 @@
       border-top: 0; padding-top: calc(4px * var(--pr-gap));
       background: repeating-linear-gradient(90deg, #e4e4e7 0 1px, transparent 1px 3px) top left / 100% 1px no-repeat;
     }
-    .pr-doc.pr-t-dokra .pr-comp p,
     .pr-doc.pr-t-dokra .pr-edu p { margin: 1.5px 0; }
     .pr-doc.pr-t-dokra li { margin: 0 !important; }
 
@@ -1109,9 +1193,9 @@
        absolutely positioned child: a menu opened inside the nav showed one item of four. These
        live at body level instead and are positioned against their button when they open. -->
   <div id="font-menu" role="menu" aria-labelledby="font-toggle-btn" hidden
-       class="pr-glass fixed z-[58] min-w-[190px] p-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
+       class="pr-glass fixed z-[58] w-max min-w-[128px] max-w-[min(15rem,calc(100vw-1rem))] p-1 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
   <div id="settings-menu" role="menu" aria-labelledby="settings-btn" hidden
-       class="pr-glass fixed z-[58] w-[232px] max-h-[70vh] overflow-y-auto p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
+       class="pr-glass fixed z-[58] w-max min-w-[150px] max-w-[min(16rem,calc(100vw-1rem))] max-h-[70vh] overflow-y-auto p-1 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl shadow-2xl print:hidden"></div>
 
   <div id="chat-widget" class="hidden print:hidden">
 
@@ -1364,7 +1448,7 @@
     // The reading face for the whole page. `default` is the pairing the site was designed in;
     // the other three are the faces vendored for the résumé export, so they are already local.
     const SITE_FONTS = [
-      { key: 'default',  label: 'Default',               css: "'Inter', sans-serif" },
+      { key: 'default',  label: 'Inter',                 css: "'Inter', sans-serif" },
       { key: 'atkinson', label: 'Atkinson Hyperlegible', css: "'Atkinson Resume', sans-serif" },
       { key: 'noto',     label: 'Noto Sans',             css: "'Noto Sans Resume', sans-serif" },
       { key: 'serif',    label: 'Source Serif',          css: "'Source Serif Resume', serif" }
@@ -1390,7 +1474,7 @@
         '<button type="button" role="menuitemradio" aria-checked="' + (f.key === current) + '"' +
         ' onclick="setSiteFont(\'' + f.key + '\'); closeFontMenu(true);"' +
         ' style="font-family: ' + f.css + '"' +
-        ' class="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+        ' class="w-full text-left whitespace-nowrap px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
         (f.key === current
           ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950'
           : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80') +
@@ -1475,11 +1559,11 @@
       const dark = html.classList.contains('dark');
       const reduced = html.classList.contains('reduce-motion');
       const font = siteFont();
-      const heading = t => '<div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">' + t + '</div>';
+      const heading = t => '<div class="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">' + t + '</div>';
       const row = (label, on, onclick, style) =>
         '<button type="button" role="menuitemradio" aria-checked="' + on + '" onclick="' + onclick + '"' +
         (style ? ' style="' + style + '"' : '') +
-        ' class="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+        ' class="w-full text-left whitespace-nowrap px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
         (on ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950'
             : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80') +
         '">' + label + '</button>';
@@ -1798,8 +1882,10 @@
     const PR_FONTS = {
       noto:     { label: 'Noto Sans', note: 'Widest coverage', css: 'Noto Sans Resume', pdf: 'NotoResume',
                   files: { normal: 'assets/fonts/noto-sans-regular.ttf', bold: 'assets/fonts/noto-sans-bold.ttf' } },
-      atkinson: { label: 'Atkinson Hyperlegible', note: 'Built for low vision', css: 'Atkinson Resume', pdf: 'AtkinsonResume',
-                  files: { normal: 'assets/fonts/atkinson-hyperlegible-regular.ttf', bold: 'assets/fonts/atkinson-hyperlegible-bold.ttf' } },
+      // Bold is Noto on purpose — see the @font-face note above.
+      atkinson: { label: 'Atkinson Hyperlegible', note: 'Built for low vision, text weight only',
+                  css: 'Atkinson Resume', pdf: 'AtkinsonResume',
+                  files: { normal: 'assets/fonts/atkinson-hyperlegible-regular.ttf', bold: 'assets/fonts/noto-sans-bold.ttf' } },
       serif:    { label: 'Source Serif', note: 'A traditional serif', css: 'Source Serif Resume', pdf: 'SourceSerifResume',
                   files: { normal: 'assets/fonts/source-serif-regular.ttf', bold: 'assets/fonts/source-serif-bold.ttf' } }
     };
@@ -1830,11 +1916,23 @@
       const margin = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
       tag.textContent = '@media print { @page { size: ' + size + '; margin: ' + margin + 'mm; } }';
       const el = document.getElementById('print-resume');
-      if (el) prApplyDocClasses(el, cfg);
+      if (el) { prApplyDocClasses(el, cfg); prEnsureBand(el, cfg); }
     }
 
     // The three classes that decide how a .pr-doc looks: density, typeface, template. One place,
     // so the printed page, the live preview and every carousel thumbnail cannot drift apart.
+    // Templates that paint a full-height column need that column as an element. Added and
+    // removed here so switching template cannot leave one behind.
+    function prEnsureBand(el, cfg) {
+      const wants = (cfg || {}).template === 'pattachitra';
+      const band = el.querySelector(':scope > .pr-band');
+      if (wants && !band) {
+        const d = document.createElement('div');
+        d.className = 'pr-band';
+        el.insertBefore(d, el.firstChild);
+      } else if (!wants && band) band.remove();
+    }
+
     function prApplyDocClasses(el, cfg) {
       cfg = cfg || {};
       const drop = [];
@@ -2009,11 +2107,34 @@
         return `<div class="pr-proj-item">${body}</div>`;
       }).join('');
 
+      const template = (config.page && PR_TEMPLATES[config.page.template]) ? config.page.template : PR_TEMPLATE_DEFAULT;
+
+      // Rated skill bars. Which templates use them is a property of the template, not a taste:
+      // Bhagirathi is a column of prose and never shows them; Dokra's layout is built around
+      // them; Pattachitra's sidebar has room for these OR the competency text, so that one is
+      // the user's choice.
+      const PR_LEVELS = { Working: 1, Proficient: 2, Advanced: 3, Expert: 4 };
+      const skillBarsHTML = (() => {
+        const bars = (OVERVIEW_DATA.skillBars || []).filter(x => x && x.name && PR_LEVELS[x.level]);
+        if (!bars.length) return '';
+        const over = (config.page && config.page.skillLevels) || {};
+        return '<div class="pr-skillbars">' + bars.map(x => {
+          const level = PR_LEVELS[over[x.name]] ? over[x.name] : x.level;
+          const pct = (PR_LEVELS[level] / 4) * 100;
+          return '<div class="pr-sb" data-skill="' + escapeAttr(x.name) + '" data-level="' + escapeAttr(level) + '">' +
+            '<span class="pr-sb-n">' + escapeHtml(x.name) + '</span>' +
+            '<span class="pr-sb-l">' + escapeHtml(level) + '</span>' +
+            '<span class="pr-sb-t"><span class="pr-sb-f" style="width:' + pct + '%"></span></span>' +
+          '</div>';
+        }).join('') + '</div>';
+      })();
+      const wantsBars = skillBarsHTML && (template === 'dokra' ||
+        (template === 'pattachitra' && (config.page || {}).skillBars === true));
+
       // Pattachitra puts the competencies and the contact lines in a sidebar beside the opening
       // panels instead of in the flow. It is a floated block, so what follows wraps beside it
       // and then resumes full width — the one-flow pagination model is untouched, and page two
       // onwards simply has no sidebar.
-      const template = (config.page && PR_TEMPLATES[config.page.template]) ? config.page.template : PR_TEMPLATE_DEFAULT;
       const asideHTML = (template !== 'pattachitra') ? '' : (() => {
         const skills = compCfg.order
           .map(t => ({ c: OVERVIEW_DATA.competencies.find(x => x.title === t), item: compCfg.items[t] }))
@@ -2023,9 +2144,9 @@
             return `<li><span class="t">${escapeHtml(o.c.title)}</span>${sk.length ? `<div class="pr-aside-sk">${sk.map(escapeHtml).join(' &middot; ')}</div>` : ''}</li>`;
           }).join('');
         const lines = contacts ? `<h4>Contact</h4><div class="pr-meta">${contacts}</div>` : '';
-        return (skills || lines)
-          ? `<aside class="pr-aside">${lines}${skills ? `<h4>Competencies</h4><ul>${skills}</ul>` : ''}</aside>`
-          : '';
+        const block = wantsBars ? `<h4>Skills</h4>${skillBarsHTML}`
+                                : (skills ? `<h4>Competencies</h4><ul>${skills}</ul>` : '');
+        return (block || lines) ? `<aside class="pr-aside">${lines}${block}</aside>` : '';
       })();
       // When the sidebar carries them, they are not repeated in the flow.
       const compFlow = asideHTML ? '' : comp;
@@ -2045,7 +2166,9 @@
 
         ${sumCfg.include !== false ? `<div class="pr-section-h">Summary</div><p class="pr-summary" data-edit="sum">${summaryHtml}</p>` : ''}
 
-        ${compFlow ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${compFlow}</div>` : ''}
+        ${wantsBars && template === 'dokra'
+            ? `<div class="pr-section-h">Skills</div>${skillBarsHTML}`
+            : (compFlow ? `<div class="pr-section-h">Core Competencies</div><div class="pr-comp">${compFlow}</div>` : '')}
 
         ${workRows ? `<div class="pr-section-h">Career Trajectory</div><table class="pr-traj">${workRows}</table>` : ''}
 
@@ -4504,7 +4627,13 @@
         density: (sPage.density === 'compact' || sPage.density === 'roomy') ? sPage.density : 'normal',
         // A face or a template that no longer exists falls back rather than rendering nothing.
         font: PR_FONTS[sPage.font] ? sPage.font : PR_FONT_DEFAULT,
-        template: PR_TEMPLATES[sPage.template] ? sPage.template : PR_TEMPLATE_DEFAULT
+        template: PR_TEMPLATES[sPage.template] ? sPage.template : PR_TEMPLATE_DEFAULT,
+        // Pattachitra's sidebar holds either rated bars or the competency text; Dokra always
+        // shows bars and Bhagirathi never does, so this only means anything for Pattachitra.
+        skillBars: sPage.skillBars === true,
+        // Per-skill level overrides, set by dragging. Export-only, like every other edit: the
+        // authored levels in data/overview.js stay the source of truth for what the site shows.
+        skillLevels: (sPage.skillLevels && typeof sPage.skillLevels === 'object') ? sPage.skillLevels : {}
       };
 
       // Hero profile photo toggle.
@@ -4642,6 +4771,14 @@
         sheet.style.padding = opts.pad + 'px';
         body = document.createElement('div');
         body.className = 'pdf-sheet-body';
+        // Pattachitra's painted column runs the full height of EVERY sheet, so it belongs to
+        // the sheet rather than to the content. A real element, not a ::before: the PDF export
+        // transcribes the DOM, and a pseudo-element would be on screen and absent from the file.
+        if (opts.template === 'pattachitra') {
+          const band = document.createElement('div');
+          band.className = 'pr-band';
+          sheet.appendChild(band);
+        }
         sheet.appendChild(body);
         host.appendChild(sheet);
         sheets.push({ el: sheet, body: body, blocks: [] });
@@ -5796,12 +5933,76 @@
       document.addEventListener('selectionchange', () => { if (pdfUi.editing) pdfSyncEditToolbar(); });
     }
 
+    // Dragging a bar sets that skill's level. Export-only, like every other edit: it writes to
+    // the stored config, never to data/overview.js, so what the site shows everyone is
+    // untouched. Keyboard works too — a control that can only be dragged is not a control.
+    const PR_LEVEL_NAMES = ['Working', 'Proficient', 'Advanced', 'Expert'];
+    function pdfSetSkillLevel(name, level) {
+      if (!name || PR_LEVEL_NAMES.indexOf(level) < 0 || !pdfConfig || !pdfConfig.page) return;
+      const authored = (OVERVIEW_DATA.skillBars || []).find(x => x.name === name);
+      const levels = pdfConfig.page.skillLevels || (pdfConfig.page.skillLevels = {});
+      // Dragging back to the authored level clears the override rather than storing a copy.
+      if (authored && authored.level === level) delete levels[name];
+      else levels[name] = level;
+      savePdfConfig(pdfConfig);
+      updateResetButton();
+      schedulePdfPreview();
+    }
+    function pdfLevelFromPointer(track, clientX) {
+      const r = track.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, (clientX - r.left) / Math.max(1, r.width)));
+      return PR_LEVEL_NAMES[Math.min(3, Math.max(0, Math.ceil(frac * 4) - 1))];
+    }
+    function wirePdfSkillDrag() {
+      const host = document.getElementById('pdf-preview-pages');
+      if (!host || host.dataset.sbWired) return;
+      host.dataset.sbWired = '1';
+      let dragging = null;
+      const apply = (row, x) => {
+        const level = pdfLevelFromPointer(row.querySelector('.pr-sb-t'), x);
+        if (level && level !== row.getAttribute('data-level')) {
+          row.setAttribute('data-level', level);
+          row.querySelector('.pr-sb-l').textContent = level;
+          row.querySelector('.pr-sb-f').style.width = ((PR_LEVEL_NAMES.indexOf(level) + 1) / 4 * 100) + '%';
+        }
+      };
+      host.addEventListener('pointerdown', e => {
+        const row = e.target.closest && e.target.closest('.pr-sb');
+        if (!row || !pdfUi.editing) return;
+        e.preventDefault();
+        dragging = row;
+        try { row.setPointerCapture && row.setPointerCapture(e.pointerId); } catch (err) { /* no live pointer */ }
+        apply(row, e.clientX);
+      });
+      host.addEventListener('pointermove', e => { if (dragging) apply(dragging, e.clientX); });
+      const end = () => {
+        if (!dragging) return;
+        pdfSetSkillLevel(dragging.getAttribute('data-skill'), dragging.getAttribute('data-level'));
+        dragging = null;
+      };
+      host.addEventListener('pointerup', end);
+      host.addEventListener('pointercancel', end);
+      host.addEventListener('keydown', e => {
+        const row = e.target.closest && e.target.closest('.pr-sb');
+        if (!row || !pdfUi.editing) return;
+        const step = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1
+                   : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const at = PR_LEVEL_NAMES.indexOf(row.getAttribute('data-level'));
+        const next = PR_LEVEL_NAMES[Math.min(3, Math.max(0, at + step))];
+        row.setAttribute('data-level', next);
+        pdfSetSkillLevel(row.getAttribute('data-skill'), next);
+      });
+    }
+
     function setPdfEditing(on) {
       pdfUi.editing = !!on;
       const host = document.getElementById('pdf-preview-pages');
       const bar = document.getElementById('pdf-edit-bar');
       const btn = document.getElementById('pdf-edit-toggle');
       wirePdfEditing();
+      wirePdfSkillDrag();
       if (bar) bar.hidden = !pdfUi.editing;
       if (btn) btn.setAttribute('aria-pressed', String(pdfUi.editing));
       if (!host) return;
@@ -5816,6 +6017,18 @@
         if (pdfUi.editing) a.setAttribute('tabindex', '-1'); else a.removeAttribute('tabindex');
       });
       // The sheets are rebuilt on every refresh, so this is re-applied there too.
+      Array.prototype.forEach.call(host.querySelectorAll('.pr-sb'), row => {
+        if (pdfUi.editing) {
+          row.setAttribute('tabindex', '0');
+          row.setAttribute('role', 'slider');
+          row.setAttribute('aria-label', (row.getAttribute('data-skill') || '') + ' level');
+          row.setAttribute('aria-valuetext', row.getAttribute('data-level') || '');
+          row.style.cursor = 'ew-resize';
+        } else {
+          ['tabindex', 'role', 'aria-label', 'aria-valuetext'].forEach(a => row.removeAttribute(a));
+          row.style.cursor = '';
+        }
+      });
       Array.prototype.forEach.call(host.querySelectorAll('[data-edit]'), el => {
         const editable = pdfUi.editing && !!pdfEditField(el.getAttribute('data-edit'));
         if (editable) { el.setAttribute('contenteditable', 'true'); el.setAttribute('spellcheck', 'true'); }
@@ -6118,6 +6331,14 @@
                 '<span class="pdf-tmpl-dot" data-dot="' + escapeAttr(k) + '" aria-current="' +
                 (k === (page.template || PR_TEMPLATE_DEFAULT) ? 'true' : 'false') + '"></span>').join('') +
             '</div></div>' +
+          // Rendered always, hidden where it means nothing: choosing a template deliberately does
+          // NOT re-render this section (that would replace the cards mid-animation), so the
+          // control has to already exist for the fast path to reveal it.
+          '<div id="pdf-skillbars-opt" class="space-y-1.5' + (page.template === 'pattachitra' ? '' : ' hidden') + '">' +
+            '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Skills in the sidebar</div>' +
+            group('skillBars', page.skillBars ? 'bars' : 'text',
+              [{ v: 'text', label: 'Competency text' }, { v: 'bars', label: 'Rated bars' }]) +
+            '<p class="text-[11px] text-slate-500 dark:text-slate-400">The column has room for one of the two. Dokra always shows bars; Bhagirathi never does.</p></div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
             '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div>' +
             '<p class="text-[11px] text-slate-500 dark:text-slate-400">Embedded in the PDF. Anything a face lacks — ₹, for one — is drawn from Noto Sans behind it, so nothing is dropped.</p></div>' +
@@ -6555,30 +6776,149 @@
         '</div>';
     }
 
-    // Each card shows THIS résumé in that template — the user's own content, at true page width,
-    // scaled into the card. Anything else would be a picture of someone else's CV.
+    // Each card shows THIS résumé in that template — the user's own content, not a stock
+    // picture of a CV. But it is shown as a SCHEMATIC, not as a rendering: a page of real text
+    // at 16% is unreadable anyway, it was a thousand DOM nodes per card, and scrolling a stack
+    // of scaled, tilted text left artifacts all over the deck.
+    //
+    // So each template is laid out once, off screen, at true page width; every line of text is
+    // measured and reduced to a bar — grey for prose, darker for headings, blue where the
+    // résumé highlights something — and the bars are drawn into a canvas. What the deck then
+    // scrolls is three bitmaps: no text rendering, no layout, nothing to go wrong.
     const PR_THUMB_W = 124;
+    const PR_THUMB_INK = {
+      body:    'rgba(71, 85, 105, .62)',
+      heading: 'rgba(15, 23, 42, .92)',
+      accent:  'rgba(37, 99, 235, .85)',      // the blue the résumé uses for its highlights
+      rule:    'rgba(148, 163, 184, .7)',
+      image:   'rgba(100, 116, 139, .5)'
+    };
+
+    // One line of text becomes one bar. Range rects give the lines the BROWSER broke, so a
+    // wrapped paragraph becomes the right number of bars at the right widths.
+    function prThumbTextBars(node, out, origin, ink) {
+      const text = node.nodeValue || '';
+      if (!text.trim()) return;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rects = range.getClientRects();
+      for (let i = 0; i < rects.length; i++) {
+        const r = rects[i];
+        if (r.width < 1 || r.height < 1) continue;
+        // A bar a little thinner than the line, sitting on the text's own baseline band.
+        const h = Math.max(1, r.height * 0.42);
+        out.push({ x: r.left - origin.left, y: r.top - origin.top + (r.height - h) / 2,
+                   w: r.width, h: h, ink: ink });
+      }
+    }
+
+    function prThumbBlobs(root) {
+      const origin = root.getBoundingClientRect();
+      const out = [];
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (n.nodeType === Node.TEXT_NODE) {
+          const parent = n.parentElement;
+          if (!parent) continue;
+          const cs = getComputedStyle(parent);
+          if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+          const cls = parent.className && parent.className.toString ? parent.className.toString() : '';
+          const ink = /hl-sw|hl-skill|hl-num|pr-proj-link/.test(cls) ? PR_THUMB_INK.accent
+                    : (parent.closest('.pr-section-h, .pr-name, .pr-title') ||
+                       (parseInt(cs.fontWeight, 10) || 400) >= 600) ? PR_THUMB_INK.heading
+                    : PR_THUMB_INK.body;
+          prThumbTextBars(n, out, origin, ink);
+          continue;
+        }
+        const cs = getComputedStyle(n);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        const box = n.getBoundingClientRect();
+        if (n.tagName === 'IMG' && box.width > 1) {
+          out.push({ x: box.left - origin.left, y: box.top - origin.top,
+                     w: box.width, h: box.height, ink: PR_THUMB_INK.image, solid: true,
+                     round: parseFloat(cs.borderRadius) || 0 });
+          continue;
+        }
+        // Rules and panel bands: the thing that tells the three templates apart at a glance.
+        [['Top', 0, 0, 1, 0], ['Bottom', 0, 1, 1, 1], ['Left', 0, 0, 0, 1], ['Right', 1, 0, 1, 1]]
+          .forEach(([side, ax, ay, bx, by]) => {
+            const w = parseFloat(cs['border' + side + 'Width']) || 0;
+            if (w <= 0 || cs['border' + side + 'Style'] === 'none') return;
+            const x1 = box.left + box.width * ax, y1 = box.top + box.height * ay;
+            const x2 = box.left + box.width * bx, y2 = box.top + box.height * by;
+            out.push({ x: Math.min(x1, x2) - origin.left, y: Math.min(y1, y2) - origin.top,
+                       w: Math.max(Math.abs(x2 - x1), w), h: Math.max(Math.abs(y2 - y1), w),
+                       ink: PR_THUMB_INK.rule, solid: true });
+          });
+        const bg = pdfRgb(cs.backgroundColor, true);
+        if (bg && box.width > 4 && box.height > 4) {
+          out.push({ x: box.left - origin.left, y: box.top - origin.top, w: box.width, h: box.height,
+                     ink: 'rgba(' + bg.join(',') + ',.5)', solid: true, behind: true });
+        }
+      }
+      return out;
+    }
+
+    function prDrawThumb(canvas, blobs, pageW, pageH, scale) {
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      canvas.width = Math.round(pageW * scale * dpr);
+      canvas.height = Math.round(pageH * scale * dpr);
+      canvas.style.width = Math.round(pageW * scale) + 'px';
+      canvas.style.height = Math.round(pageH * scale) + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr * scale, dpr * scale);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageW, pageH);
+      // Backgrounds first, then everything drawn over them, exactly as the page stacks them.
+      blobs.slice().sort((a, b) => (a.behind ? 0 : 1) - (b.behind ? 0 : 1)).forEach(bl => {
+        ctx.fillStyle = bl.ink;
+        const r = Math.min(bl.round || (bl.solid ? 0 : bl.h / 2), bl.h / 2, bl.w / 2);
+        if (r > 0.4 && ctx.roundRect) { ctx.beginPath(); ctx.roundRect(bl.x, bl.y, bl.w, bl.h, r); ctx.fill(); }
+        else ctx.fillRect(bl.x, bl.y, bl.w, bl.h);
+      });
+    }
+
     function renderTemplateThumbs() {
       const strip = document.getElementById('pdf-tmpl-strip');
       if (!strip || !pdfConfig) return;
-      const pageW = (PR_PAGE_MM[(pdfConfig.page || {}).size] || PR_PAGE_MM.a4)[0] * MM_PX;
+      const dims = PR_PAGE_MM[(pdfConfig.page || {}).size] || PR_PAGE_MM.a4;
+      const pageW = dims[0] * MM_PX, pageH = dims[1] * MM_PX;
       const scale = PR_THUMB_W / pageW;
-      Array.prototype.forEach.call(strip.querySelectorAll('.pdf-tmpl-card'), card => {
-        const key = card.getAttribute('data-template');
-        const host = card.querySelector('.pdf-tmpl-scaler');
-        if (!host) return;
-        const cfg = Object.assign({}, pdfConfig, { page: Object.assign({}, pdfConfig.page, { template: key }) });
-        const doc = document.createElement('div');
-        doc.className = 'pr-doc';
-        prApplyDocClasses(doc, cfg.page);
-        doc.style.width = pageW + 'px';
-        doc.style.padding = (PR_MARGIN_MM[cfg.page.density] || PR_MARGIN_MM.normal) * MM_PX + 'px';
-        doc.innerHTML = buildPrintResumeHTML(cfg);
-        host.innerHTML = '';
-        host.appendChild(doc);
-        host.style.transform = 'scale(' + scale + ')';
-        host.style.width = pageW + 'px';
-      });
+      const pad = (PR_MARGIN_MM[(pdfConfig.page || {}).density] || PR_MARGIN_MM.normal) * MM_PX;
+
+      // One scratch element for all three, removed before anything paints.
+      const scratch = document.createElement('div');
+      scratch.style.cssText = 'position:fixed;left:-30000px;top:0;width:' + pageW + 'px';
+      document.body.appendChild(scratch);
+      try {
+        Array.prototype.forEach.call(strip.querySelectorAll('.pdf-tmpl-card'), card => {
+          const key = card.getAttribute('data-template');
+          const host = card.querySelector('.pdf-tmpl-scaler');
+          if (!host) return;
+          const cfg = Object.assign({}, pdfConfig, { page: Object.assign({}, pdfConfig.page, { template: key }) });
+          const doc = document.createElement('div');
+          doc.className = 'pr-doc';
+          prApplyDocClasses(doc, cfg.page);
+          doc.style.width = pageW + 'px';
+          doc.style.padding = pad + 'px';
+          doc.style.height = pageH + 'px';
+          doc.style.overflow = 'hidden';
+          scratch.appendChild(doc);
+          doc.innerHTML = buildPrintResumeHTML(cfg);
+          const blobs = prThumbBlobs(doc);
+          scratch.removeChild(doc);
+
+          let canvas = host.querySelector('canvas');
+          if (!canvas) { canvas = document.createElement('canvas'); host.innerHTML = ''; host.appendChild(canvas); }
+          canvas.setAttribute('role', 'img');
+          canvas.setAttribute('aria-hidden', 'true');
+          prDrawThumb(canvas, blobs, pageW, pageH, scale);
+          host.style.transform = '';
+          host.style.width = '';
+        });
+      } finally {
+        scratch.remove();
+      }
       layoutTemplateDeck();
     }
 
@@ -6679,7 +7019,8 @@
     }
 
     function setPageOption(key, value) {
-      if (!pdfConfig.page || ['size', 'density', 'font', 'template'].indexOf(key) < 0) return;
+      if (!pdfConfig.page || ['size', 'density', 'font', 'template', 'skillBars'].indexOf(key) < 0) return;
+      if (key === 'skillBars') value = (value === 'bars' || value === true);
       if (pdfConfig.page[key] === value) return;
       pdfConfig.page[key] = value;
       savePdfConfigDebounced();
@@ -6700,6 +7041,8 @@
           card.classList.toggle('dark:border-slate-700/60', !on);
         });
         layoutTemplateDeck();
+        const skillOpt = document.getElementById('pdf-skillbars-opt');
+        if (skillOpt) skillOpt.classList.toggle('hidden', value !== 'pattachitra');
         updateResetButton();
         schedulePdfPreview();
         return;
