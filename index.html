@@ -572,6 +572,13 @@
     .pr-doc .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
 
     /* Projects: each project is a break-avoid block — name · summary, optional tech line + bullets. */
+    /* A project's own mark, or a letter on a colour made from its name. Every template: a list
+       where some rows carry a logo and the rest carry nothing reads as a list with holes in it. */
+    .pr-doc .pr-chip {
+      display: inline-block; width: 11px; height: 11px; line-height: 11px; border-radius: 2px;
+      color: #fff; font-size: 7px; font-weight: 700; text-align: center; vertical-align: -1px;
+      margin-right: 5px;
+    }
     .pr-doc .pr-projects .pr-proj-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
     .pr-doc .pr-projects .pr-proj-item > p { margin: 0; }
     .pr-doc .pr-projects .t { font-weight: 700; }
@@ -810,12 +817,6 @@
     .pr-doc.pr-t-pattachitra .pr-aside li:last-child { margin-bottom: 0; }
     .pr-doc.pr-t-pattachitra .pr-aside .t { color: var(--pr-cream); font-weight: 700; }
     .pr-doc.pr-t-pattachitra .pr-aside .pr-aside-sk { font-size: 0.88em; color: #cbbfb2; }
-    /* A project's own mark, or a letter on a colour made from its name. */
-    .pr-doc.pr-t-pattachitra .pr-chip {
-      display: inline-block; width: 11px; height: 11px; line-height: 11px; border-radius: 2px;
-      color: #fff; font-size: 7px; font-weight: 700; text-align: center; vertical-align: -1px;
-      margin-right: 5px;
-    }
     .pr-doc.pr-t-pattachitra .pr-proj-row { display: flex; align-items: baseline; gap: 0; }
     .pr-doc.pr-t-pattachitra .pr-aside .pr-meta,
     .pr-doc.pr-t-pattachitra .pr-aside a { color: #e3d8ca; }
@@ -833,11 +834,6 @@
     .pr-doc.pr-t-pattachitra .pr-hero { margin-bottom: calc(7px * var(--pr-gap)); }
     .pr-doc.pr-t-pattachitra .pr-name { letter-spacing: -.01em; color: var(--pr-ink); }
     .pr-doc.pr-t-pattachitra .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top-color: #e7d7c3; }
-    .pr-doc.pr-t-pattachitra .pr-projects,
-    .pr-doc.pr-t-pattachitra .pr-edu,
-    .pr-doc.pr-t-pattachitra .pr-reco,
-    .pr-doc.pr-t-pattachitra .pr-summary,
-    .pr-doc.pr-t-pattachitra table.pr-traj { border-left: 2px solid #e7d7c3; padding-left: 8px; }
     .pr-doc.pr-t-pattachitra .pr-summary { padding-top: 1px; padding-bottom: 1px; }
 
     /* --- Dokra: lost-wax casting — bronze poured into a mould. A banner across the head of
@@ -2517,6 +2513,22 @@
 
       // Projects — name · summary (+ optional bullets + primary link), in the user's chosen order.
       const projCfg = (config.projects && config.projects.items) || {};
+
+      // A project with no mark of its own still gets one: a letter on a colour derived from its
+      // name, so the same project is the same colour every time and two projects are not.
+      const prNameHue = name => {
+        let h = 0;
+        for (let i = 0; i < String(name).length; i++) h = (h * 31 + String(name).charCodeAt(i)) % 360;
+        return h;
+      };
+      const projChip = pr => {
+        const cfg = projCfg[pr.id] || {};
+        if (cfg.showLogo !== false && pr.logo) return logoImg(pr.logo);
+        const hue = prNameHue(pr.name || '');
+        const letter = escapeHtml((pr.name || '?').trim().charAt(0).toUpperCase());
+        return `<span class="pr-chip" style="background:hsl(${hue} 52% 38%)">${letter}</span>`;
+      };
+
       const allProjects = (typeof PROJECTS_DATA !== 'undefined') ? PROJECTS_DATA : [];
       const projById = {};
       allProjects.forEach(p => { projById[p.id] = p; });
@@ -2533,28 +2545,13 @@
           ? ` <a class="pr-proj-link" href="${escapeAttr(primaryLink)}">${escapeHtml(primaryLink.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>`
           : '';
         const descHtml = (showDesc && p.summary) ? ' — ' + formatText(p.summary) : '';
-        let body = `<p>${logoImg(showLogo(cfg, p.logo))}<span class="t">${escapeHtml(p.name)}</span>${descHtml}${linkHtml}</p>`;
+        let body = `<p>${projChip(p)}<span class="t">${escapeHtml(p.name)}</span>${descHtml}${linkHtml}</p>`;
         const hls = pickHighlights(p.highlights, cfg);
         if (hls.length) body += `<ul>${hls.map(x => `<li>${formatText(x)}</li>`).join('')}</ul>`;
         return `<div class="pr-proj-item">${body}</div>`;
       }).join('');
 
       const template = (config.page && PR_TEMPLATES[config.page.template]) ? config.page.template : PR_TEMPLATE_DEFAULT;
-
-      // A project with no mark of its own still gets one: a letter on a colour derived from its
-      // name, so the same project is the same colour every time and two projects are not.
-      const prNameHue = name => {
-        let h = 0;
-        for (let i = 0; i < String(name).length; i++) h = (h * 31 + String(name).charCodeAt(i)) % 360;
-        return h;
-      };
-      const projChip = pr => {
-        const cfg = projCfg[pr.id] || {};
-        if (cfg.showLogo !== false && pr.logo) return logoImg(pr.logo);
-        const hue = prNameHue(pr.name || '');
-        const letter = escapeHtml((pr.name || '?').trim().charAt(0).toUpperCase());
-        return `<span class="pr-chip" style="background:hsl(${hue} 52% 38%)">${letter}</span>`;
-      };
 
       // Rated skill bars. Which templates use them is a property of the template, not a taste:
       // Bhagirathi is a column of prose and never shows them; Dokra's layout is built around
