@@ -385,6 +385,115 @@
        ========================================================== */
     #print-resume { display: none; }
 
+    /* ==========================================================
+       RESUME DOCUMENT STYLES (.pr-doc)
+       Deliberately OUTSIDE @media print: one set of rules styles both
+       the printed page (#print-resume) and the on-screen live preview
+       in the Save PDF screen, so the preview cannot drift from print.
+       Everything is scoped to .pr-doc, so none of it touches the site.
+
+       Colour system: body = very dark grey, headings = black, inline
+       highlights = bold blue. Density: one control drives text size,
+       leading and block gaps, so "compact" really buys a page rather
+       than just shrinking the type.
+       ========================================================== */
+    .pr-doc { --pr-font: 9.5pt; --pr-lead: 1.32; --pr-gap: 1; }
+    .pr-doc.pr-d-compact { --pr-font: 9pt;  --pr-lead: 1.24; --pr-gap: 0.7; }
+    .pr-doc.pr-d-roomy   { --pr-font: 10pt; --pr-lead: 1.44; --pr-gap: 1.45; }
+    .pr-doc {
+      font-family: 'Inter', Arial, sans-serif;
+      color: #2d2d2d;
+      background: #fff;
+      font-size: var(--pr-font);
+      line-height: var(--pr-lead);
+    }
+    /* Links keep the surrounding colour — they exist to be clickable in the PDF, not to
+       decorate the page. The project URL is the one that reads as a link. */
+    .pr-doc a { color: inherit; text-decoration: none; }
+    .pr-doc * { box-shadow: none !important; }
+    .pr-doc img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pr-doc .pr-logo { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
+
+    .pr-doc .pr-name,
+    .pr-doc .pr-section-h,
+    .pr-doc .pr-traj .co,
+    .pr-doc .pr-traj .role,
+    .pr-doc .pr-comp .t,
+    .pr-doc .pr-projects .t,
+    .pr-doc .pr-edu .t { color: #000; }
+
+    /* All inline highlights render as bold blue (no pills/backgrounds) on paper */
+    .pr-doc .hl-num,
+    .pr-doc .hl-skill,
+    .pr-doc .hl-sw {
+      color: #1d4ed8 !important; font-weight: 700;
+      background: none !important; border: none !important; padding: 0 !important;
+      border-radius: 0 !important; font-size: inherit; white-space: normal;
+    }
+
+    /* Hero: photo left, details right */
+    .pr-doc .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: calc(9px * var(--pr-gap)); }
+    .pr-doc .pr-hero img { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; object-position: top; flex: 0 0 auto; }
+    .pr-doc .pr-name { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.9em; font-weight: 800; line-height: 1.08; }
+    .pr-doc .pr-title { font-weight: 600; font-size: 1.05em; margin-top: 1px; }
+    .pr-doc .pr-meta { font-size: 0.9em; margin-top: 3px; }
+
+    .pr-doc .pr-section-h {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.16em; font-weight: 700;
+      margin: calc(10px * var(--pr-gap)) 0 calc(4px * var(--pr-gap)); border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
+    }
+    .pr-doc .pr-summary { margin: 0; }
+    .pr-doc .pr-comp p { margin: 2.5px 0; }
+    .pr-doc .pr-comp .t,
+    .pr-doc .pr-edu .t { font-weight: 700; }
+    .pr-doc .pr-edu p { margin: 2px 0; }
+    /* optional education description (toggled in the export screen) */
+    .pr-doc .pr-edu .pr-edu-desc { margin: 0 0 3px 18px; font-size: 0.92em; }
+    /* internship header nested under its college, then its description/bullets */
+    .pr-doc .pr-edu .pr-sub { margin: 1px 0 1px 14px; font-size: 0.95em; }
+    .pr-doc .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 0.92em; }
+    .pr-doc .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
+
+    /* Projects: each project is a break-avoid block — name · summary, optional tech line + bullets. */
+    .pr-doc .pr-projects .pr-proj-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
+    .pr-doc .pr-projects .pr-proj-item > p { margin: 0; }
+    .pr-doc .pr-projects .t { font-weight: 700; }
+    .pr-doc .pr-projects .pr-proj-link { color: #1d4ed8 !important; white-space: nowrap; }
+    .pr-doc .pr-projects .pr-proj-tech { margin: 1px 0 0 14px; font-size: 0.9em; color: #555; }
+    /* real bullets (override the CDN reset) */
+    .pr-doc .pr-projects ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }
+    .pr-doc .pr-projects li { margin: 0.5px 0; }
+
+    /* Career trajectory: invisible-border table; each ROLE is a block with a separator between */
+    .pr-doc table.pr-traj { width: 100%; border-collapse: collapse; }
+    .pr-doc table.pr-traj td { vertical-align: top; padding: 1px 0; }
+    .pr-doc .pr-traj tbody.pr-entry { break-inside: avoid; }
+    /* Company + role share one flexible cell; each stays whole (nowrap) so the line only breaks
+       between them, and only when it can't fit — company on line 1, role on line 2. */
+    .pr-doc .pr-traj .who { padding-right: 8px; }
+    .pr-doc .pr-traj .co { font-weight: 700; white-space: nowrap; }
+    .pr-doc .pr-traj .role { white-space: nowrap; }
+    .pr-doc .pr-traj .period { text-align: right; white-space: nowrap; padding-left: 10px; }
+    .pr-doc .pr-traj .detail td { padding: 0 0 calc(5px * var(--pr-gap)); }
+    .pr-doc .pr-traj .lead { margin-bottom: 1px; }
+    .pr-doc .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }
+    .pr-doc .pr-traj li { margin: 0.5px 0; }
+    .pr-doc .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
+
+    /* References / recommenders as professional contacts (quote text omitted) */
+    .pr-doc .pr-reco .pr-reco-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
+    .pr-doc .pr-reco .pr-reco-item p { margin: 0; }
+    .pr-doc .pr-reco .pr-reco-img { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
+    .pr-doc .pr-reco .name { font-weight: 700; color: #000; }
+    .pr-doc .pr-reco .pr-reco-meta { margin: 1px 0 0 18px; font-size: 0.92em; }
+
+    /* Live preview in the Save PDF screen: a paper-coloured card at true page width,
+       scaled down to the pane. Page-break guides are drawn where a page would end. */
+    .pdf-page { background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.18), 0 8px 24px rgba(15,23,42,.10); position: relative; }
+    .pdf-page-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #94a3b8; pointer-events: none; }
+    .pdf-page-guide span { position: absolute; right: 4px; top: 3px; font: 600 10px/1 'Inter', sans-serif; color: #94a3b8; letter-spacing: .04em; }
+    .pdf-rail-item { display: block; width: 100%; text-align: left; border-radius: 0.6rem; padding: 0.35rem 0.6rem; font-size: 12px; font-weight: 600; }
+
     @media print {
       /* Paper size and margin are rewritten at runtime by applyPrintPageStyle() from the
          Page settings; this is the fallback if that has not run yet. */
@@ -393,95 +502,6 @@
       /* Hide the on-screen app entirely; show only the compact resume */
       body > *:not(#print-resume) { display: none !important; }
       #print-resume { display: block !important; }
-
-      /* Colour system: body = very dark grey, headers = black, highlights = bold blue */
-      /* Density: one control drives text size, leading and the gaps between blocks, so
-         "compact" really does buy a page rather than just shrinking the type. */
-      #print-resume { --pr-font: 9.5pt; --pr-lead: 1.32; --pr-gap: 1; }
-      #print-resume.pr-d-compact { --pr-font: 9pt;  --pr-lead: 1.24; --pr-gap: 0.7; }
-      #print-resume.pr-d-roomy   { --pr-font: 10pt; --pr-lead: 1.44; --pr-gap: 1.45; }
-      #print-resume {
-        font-family: 'Inter', Arial, sans-serif;
-        color: #2d2d2d;
-        font-size: var(--pr-font);
-        line-height: var(--pr-lead);
-      }
-      /* Links keep the surrounding colour — they exist to be clickable in the PDF, not to
-         decorate the page. The project URL is the one that reads as a link. */
-      #print-resume a { color: inherit; text-decoration: none; }
-      #print-resume * { box-shadow: none !important; }
-      #print-resume img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      #print-resume .pr-logo { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
-
-      #print-resume .pr-name,
-      #print-resume .pr-section-h,
-      #print-resume .pr-traj .co,
-      #print-resume .pr-traj .role,
-      #print-resume .pr-comp .t,
-      #print-resume .pr-projects .t,
-      #print-resume .pr-edu .t { color: #000; }
-
-      /* All inline highlights render as bold blue (no pills/backgrounds) on paper */
-      #print-resume .hl-num,
-      #print-resume .hl-skill,
-      #print-resume .hl-sw {
-        color: #1d4ed8 !important; font-weight: 700;
-        background: none !important; border: none !important; padding: 0 !important;
-        border-radius: 0 !important; font-size: inherit; white-space: normal;
-      }
-
-      /* Hero: photo left, details right */
-      .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: calc(9px * var(--pr-gap)); }
-      .pr-hero img { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; object-position: top; flex: 0 0 auto; }
-      .pr-name { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.9em; font-weight: 800; line-height: 1.08; }
-      .pr-title { font-weight: 600; font-size: 1.05em; margin-top: 1px; }
-      .pr-meta { font-size: 0.9em; margin-top: 3px; }
-      .pr-meta a { color: inherit; text-decoration: none; }
-
-      .pr-section-h {
-        font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.16em; font-weight: 700;
-        margin: calc(10px * var(--pr-gap)) 0 calc(4px * var(--pr-gap)); border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
-      }
-      .pr-summary { margin: 0; }
-      .pr-comp p { margin: 2.5px 0; }
-      .pr-comp .t, .pr-edu .t { font-weight: 700; }
-      .pr-edu p { margin: 2px 0; }
-      .pr-edu .pr-edu-desc { margin: 0 0 3px 18px; font-size: 0.92em; }   /* optional education description (toggled in the selection screen) */
-      .pr-edu .pr-sub { margin: 1px 0 1px 14px; font-size: 0.95em; }   /* internship header nested under its college */
-      .pr-edu .pr-sub-desc { margin: 0 0 3px 26px; font-size: 0.92em; }   /* internship description/bullets */
-      .pr-edu ul.pr-sub-desc { list-style: disc; padding-left: 15px; }
-
-      /* Projects: each project is a break-avoid block — name · summary, optional tech line + bullets. */
-      .pr-projects .pr-proj-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
-      .pr-projects .pr-proj-item > p { margin: 0; }
-      .pr-projects .t { font-weight: 700; }
-      .pr-projects .pr-proj-link { color: #1d4ed8 !important; white-space: nowrap; }
-      .pr-projects .pr-proj-tech { margin: 1px 0 0 14px; font-size: 0.9em; color: #555; }
-      .pr-projects ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }   /* real bullets (override CDN reset) */
-      .pr-projects li { margin: 0.5px 0; }
-
-      /* Career trajectory: invisible-border table; each ROLE is a block with a separator between */
-      table.pr-traj { width: 100%; border-collapse: collapse; }
-      table.pr-traj td { vertical-align: top; padding: 1px 0; }
-      .pr-traj tbody.pr-entry { break-inside: avoid; }
-      /* Company + role share one flexible cell; each stays whole (nowrap) so the line only breaks
-         between them, and only when it can't fit — company on line 1, role on line 2. */
-      .pr-traj .who { padding-right: 8px; }
-      .pr-traj .co { font-weight: 700; white-space: nowrap; }
-      .pr-traj .role { white-space: nowrap; }
-      .pr-traj .period { text-align: right; white-space: nowrap; padding-left: 10px; }
-      .pr-traj .detail td { padding: 0 0 calc(5px * var(--pr-gap)); }
-      .pr-traj .lead { margin-bottom: 1px; }
-      .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }  /* real bullets (override CDN reset) */
-      .pr-traj li { margin: 0.5px 0; }
-      .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
-
-      /* References / recommenders as professional contacts (quote text omitted) */
-      .pr-reco .pr-reco-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
-      .pr-reco .pr-reco-item p { margin: 0; }
-      .pr-reco .pr-reco-img { width: 13px; height: 13px; object-fit: cover; border-radius: 2px; vertical-align: -2px; margin-right: 5px; display: inline-block; }
-      .pr-reco .name { font-weight: 700; color: #000; }
-      .pr-reco .pr-reco-meta { margin: 1px 0 0 18px; font-size: 0.92em; }
     }
   </style>
   
@@ -529,10 +549,10 @@
             </div>
           </div>
 
-          <!-- Print PDF — opens the export selection screen -->
-          <button onclick="openPdfModal()" aria-label="Customise and print resume as PDF" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
+          <!-- Save PDF — opens the export screen (selection + live preview) -->
+          <button onclick="openPdfModal()" aria-label="Open the Save PDF screen" class="print:hidden w-40 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-300/60 dark:border-slate-700/60 bg-white/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap hover:text-indigo-600 dark:hover:text-amber-400 hover:border-indigo-500/40 dark:hover:border-amber-400/40 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors duration-300">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span>Print PDF</span>
+            <span>Save PDF</span>
           </button>
         </div>
 
@@ -704,36 +724,52 @@
   </div>
 
   <!-- COMPACT PRINT / PDF RÉSUMÉ (hidden on screen; populated by buildPrintResume()) -->
-  <div id="print-resume" aria-hidden="true"></div>
+  <div id="print-resume" class="pr-doc" aria-hidden="true"></div>
 
   <!-- PDF EXPORT SELECTION SCREEN (screen-only; body-level sibling so the print rule
        `body > *:not(#print-resume){display:none}` hides it — plus print:hidden + hidden). -->
   <div id="pdf-modal" class="hidden fixed inset-0 z-[60] print:hidden" role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title" aria-hidden="true">
     <div class="absolute inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm"></div>
     <div class="relative min-h-full flex items-start sm:items-center justify-center p-4 sm:p-6" onclick="if(event.target===this)closePdfModal()">
-      <div id="pdf-modal-panel" class="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+      <div id="pdf-modal-panel" class="w-full max-w-7xl max-h-[92vh] flex flex-col rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-2xl overflow-hidden">
 
         <!-- Header -->
         <div class="flex items-start justify-between gap-3 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
           <div>
-            <h2 id="pdf-modal-title" class="text-lg font-bold font-display text-slate-900 dark:text-white">Customise your PDF</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Choose what appears in the exported PDF. Your on-screen page is unchanged, and your choices are saved for next time.</p>
+            <h2 id="pdf-modal-title" class="text-lg font-bold font-display text-slate-900 dark:text-white">Save PDF</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Choose what goes in, watch it in the preview. Your on-screen page is unchanged, and your choices are saved for next time.</p>
           </div>
           <button id="pdf-modal-close" onclick="closePdfModal()" aria-label="Close" class="flex-shrink-0 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>
 
-        <!-- Body (sections injected by renderPdfModal()) -->
-        <div id="pdf-modal-body" class="flex-1 overflow-y-auto px-6 py-4"></div>
+        <!-- Body: section rail | settings | live preview.
+             The preview renders the very same .pr-doc markup the printer gets, so it cannot
+             drift from the output. -->
+        <div class="flex-1 min-h-0 flex">
+          <nav id="pdf-rail" class="hidden md:block w-44 flex-shrink-0 overflow-y-auto border-r border-slate-200/50 dark:border-slate-800/50 py-4 px-3 space-y-0.5" aria-label="Sections"></nav>
+          <div id="pdf-modal-body" class="flex-1 min-w-0 overflow-y-auto px-6 py-4"></div>
+          <aside id="pdf-preview-pane" class="hidden lg:flex w-[38%] min-w-[330px] flex-col border-l border-slate-200/50 dark:border-slate-800/50 bg-slate-100/70 dark:bg-slate-950/40">
+            <div class="flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live preview</span>
+              <span id="pdf-preview-meta" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+            </div>
+            <div id="pdf-preview-scroll" class="flex-1 overflow-y-auto p-4">
+              <div id="pdf-preview-scaler" class="relative origin-top-left">
+                <div id="pdf-preview-page" class="pdf-page"><div id="pdf-preview-doc" class="pr-doc"></div></div>
+              </div>
+            </div>
+          </aside>
+        </div>
 
         <!-- Footer -->
         <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
-          <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
+          <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
           <div class="flex items-center gap-2">
-            <button id="pdf-cancel" onclick="closePdfModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
-            <button id="pdf-generate" onclick="generatePdf()" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
-              <i data-lucide="download" class="w-4 h-4"></i>Generate PDF
+            <button id="pdf-cancel" onclick="closePdfModal()" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
+            <button id="pdf-generate" onclick="generatePdf()" class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
+              <i data-lucide="download" class="w-4 h-4"></i>Print / Save as PDF
             </button>
           </div>
         </div>
@@ -1644,8 +1680,8 @@
       });
       const miniPdf = document.createElement('button');
       miniPdf.setAttribute('onclick', 'openPdfModal()');
-      miniPdf.setAttribute('aria-label', 'Customise and print resume as PDF');
-      miniPdf.title = 'Print PDF';
+      miniPdf.setAttribute('aria-label', 'Open the Save PDF screen');
+      miniPdf.title = 'Save PDF';
       miniPdf.className = miniItemClass + ' ml-0.5 border-l border-slate-200/60 dark:border-slate-700/60 pl-2 rounded-l-none';
       miniPdf.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i>`;
       miniContacts.appendChild(miniPdf);
@@ -3689,6 +3725,7 @@
     function savePdfConfigDebounced() {
       clearTimeout(_pdfSaveTimer);
       _pdfSaveTimer = setTimeout(() => { _pdfSaveTimer = null; savePdfConfig(pdfConfig); }, 150);
+      schedulePdfPreview();   // the preview follows every setting, without its own wiring
       updateResetButton();
       refreshPdfModifiedHighlights();   // keep per-item highlights in step with in-place edits
     }
@@ -3945,6 +3982,94 @@
       return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
     }
 
+    // --- Live preview + section rail ---------------------------------------
+    // The preview renders buildPrintResumeHTML() into a .pr-doc card at true page width and
+    // scales it to the pane, so it is the print output rather than an impression of it. Page
+    // guides are drawn where a page would end; they are indicative, since the browser does the
+    // final pagination.
+    let _pdfPreviewTimer = null;
+
+    function schedulePdfPreview() {
+      if (_pdfPreviewTimer) clearTimeout(_pdfPreviewTimer);
+      _pdfPreviewTimer = setTimeout(() => { _pdfPreviewTimer = null; refreshPdfPreview(); }, 120);
+    }
+
+    const PR_PAGE_MM = { a4: [210, 297], letter: [215.9, 279.4] };
+    const MM_PX = 96 / 25.4;
+
+    function refreshPdfPreview() {
+      const pane = document.getElementById('pdf-preview-pane');
+      const page = document.getElementById('pdf-preview-page');
+      const doc = document.getElementById('pdf-preview-doc');
+      const scaler = document.getElementById('pdf-preview-scaler');
+      const scroll = document.getElementById('pdf-preview-scroll');
+      if (!pane || !page || !doc || !scaler || !scroll || !pdfConfig) return;
+      // A hidden pane has no width, so every measurement would be nonsense — page count
+      // included. openPdfModal() calls back once the dialog is actually on screen.
+      if (pane.offsetParent === null) return;
+
+      const cfg = pdfConfig.page || { size: 'a4', density: 'normal' };
+      const dims = PR_PAGE_MM[cfg.size] || PR_PAGE_MM.a4;
+      const marginMm = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
+      const pageW = dims[0] * MM_PX;
+      const usableH = (dims[1] - 2 * marginMm) * MM_PX;
+
+      page.style.width = pageW + 'px';
+      page.style.padding = (marginMm * MM_PX) + 'px';
+      doc.className = 'pr-doc pr-d-' + (cfg.density || 'normal');
+      doc.innerHTML = buildPrintResumeHTML(pdfConfig);
+
+      // Guides every usable page height, measured from the top of the content box.
+      page.querySelectorAll('.pdf-page-guide').forEach(g => g.remove());
+      const contentH = doc.scrollHeight;
+      const pages = Math.max(1, Math.ceil(contentH / usableH));
+      for (let i = 1; i < pages; i++) {
+        const g = document.createElement('div');
+        g.className = 'pdf-page-guide';
+        g.style.top = (marginMm * MM_PX + i * usableH) + 'px';
+        g.innerHTML = '<span>PAGE ' + (i + 1) + '</span>';
+        page.appendChild(g);
+      }
+
+      const avail = Math.max(120, scroll.clientWidth - 32);
+      const scale = Math.min(1, avail / pageW);
+      scaler.style.transform = 'scale(' + scale + ')';
+      scaler.style.width = pageW + 'px';
+      scaler.style.height = (page.offsetHeight * scale) + 'px';
+
+      const meta = document.getElementById('pdf-preview-meta');
+      if (meta) {
+        meta.textContent = pages + (pages === 1 ? ' page' : ' pages') + ' · ' +
+          (cfg.size === 'letter' ? 'Letter' : 'A4') + ' · ' + (cfg.density || 'normal');
+      }
+    }
+
+    // Rail: one entry per section in the settings column, built from what renderPdfModal wrote.
+    function renderPdfRail() {
+      const rail = document.getElementById('pdf-rail');
+      const body = document.getElementById('pdf-modal-body');
+      if (!rail || !body) return;
+      const sections = Array.prototype.slice.call(body.querySelectorAll('.pdf-section'));
+      rail.innerHTML = sections.map((sec, i) => {
+        const h = sec.querySelector('h3');
+        const badge = sec.querySelector('[id$="-badge"]');
+        sec.setAttribute('data-pdf-section-index', i);
+        return '<button type="button" class="pdf-rail-item text-slate-600 dark:text-slate-300 hover:bg-indigo-500/10 dark:hover:bg-amber-400/10 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" data-pdf-goto="' + i + '">' +
+          escapeHtml(h ? h.textContent : 'Section') +
+          (badge ? '<span class="block text-[10px] font-medium text-slate-400 dark:text-slate-500">' + escapeHtml(badge.textContent) + '</span>' : '') +
+          '</button>';
+      }).join('');
+      if (!rail.dataset.wired) {
+        rail.dataset.wired = '1';
+        rail.addEventListener('click', e => {
+          const btn = e.target.closest('[data-pdf-goto]');
+          if (!btn) return;
+          const target = body.querySelector('[data-pdf-section-index="' + btn.getAttribute('data-pdf-goto') + '"]');
+          if (target) target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+        });
+      }
+    }
+
     // --- Modal open / close / generate / reset ---
     function openPdfModal() {
       const rec = reconcilePdfConfig(loadPdfConfig());
@@ -3977,6 +4102,8 @@
       modal.addEventListener('keydown', pdfKeydownHandler);
       const closeBtn = document.getElementById('pdf-modal-close');
       if (closeBtn) closeBtn.focus();
+      // Now that the dialog has a size, the preview can measure itself properly.
+      requestAnimationFrame(refreshPdfPreview);
       syncHash();     // give the open dialog its own URL (…/pdf) so it survives reloads
     }
 
@@ -4049,6 +4176,8 @@
       body.innerHTML = html;
       if (window.lucide) lucide.createIcons();
       refreshPdfModifiedHighlights();
+      renderPdfRail();
+      refreshPdfPreview();
     }
 
     // Two-column section row (scrolls with the modal — no sticky sidebar). Left = title + count +
@@ -4524,6 +4653,7 @@
 
       // Flush a pending save if the tab is hidden/closed mid-edit (pagehide fires on bfcache too).
       window.addEventListener('pagehide', flushPdfSave);
+      window.addEventListener('resize', () => { if (isPdfModalOpen()) schedulePdfPreview(); });
     }
 
     // Generic reorder shared by competencies / contacts / references / projects (data-sort-kind on each row).
