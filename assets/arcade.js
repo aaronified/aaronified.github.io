@@ -1,18 +1,24 @@
-// The strip above the copyright — a small pixel figure who works for a living.
+// The strip above the copyright — a small pixel figure who works for a living, and eventually
+// runs the place.
 //
 // WHY THIS IS ITS OWN FILE. Everything else here is either data (data/*.js) or page behaviour
 // (index.html). This is neither: a self-contained toy with its own render loop, its own
-// coordinate space, and no coupling to the résumé except its owner's name and face. Four
-// hundred lines of game loop inside index.html would make that file harder to read for nothing.
+// coordinate space, and no coupling to the résumé except its owner's name and face.
 //
 // WHAT IT COSTS WHEN NOBODY IS PLAYING. Nothing. It is hidden outright on every tab except FAQ
 // and Recommendations, the loop runs only while the strip is actually on screen and the tab is
 // visible, and a system asking for reduced motion gets no strip at all.
 //
-// WHY IT IS QUIET. It sits under a résumé. The whole palette is slate and stone — legible, but
-// with nothing saturated to compete with the page — and anything falling from higher up is
-// drawn on a low-resolution canvas BEHIND the content, so it reads as soft movement behind the
-// cards rather than as something demanding to be looked at.
+// WHY IT IS QUIET. It sits under a résumé. The landscape is slate and stone with nothing
+// saturated in it; only the two things a player has to tell apart — money and bombs — carry any
+// colour, and even those are held well back. Anything falling from higher up is drawn on a
+// 40%-scale canvas BEHIND the cards, so it reads as soft movement back there rather than as
+// something demanding to be looked at.
+//
+// THE ECONOMY. A package is worth ₹1,000–3,000, doubled by every promotion and compounded by
+// 1.05 at every increment. Nirvana is ₹100 crore. The ladder below was not chosen by feel: the
+// thresholds come out of a simulation of a casual clicker — about one press every 1.5 seconds —
+// which reaches nirvana in roughly 26 minutes; 37 at a slow pace, 17 at a brisk one.
 
 (function () {
   'use strict';
@@ -26,46 +32,69 @@
   var PX = 2;                   // one sprite pixel, in CSS px
   var ITEM = 10;                // package / bomb, in CSS px
   var FALL = 190;               // px per second, constant — the dodge maths stays exact
-  var CATCH = 13;               // how close his centre must be when it lands
+  var CATCH = 13;               // how close a worker's centre must be when it lands
   var SKY_SCALE = 0.4;          // backing-store scale of the canvas behind the cards
   var DROP_MAX = 820;           // furthest above the stage anything is allowed to start
   var ACTIVE_SECTIONS = { faq: 1, recommendations: 1 };
 
-  var BASE_SPEED = 112;         // CSS px per second — what a promotion actually buys
+  var BASE_SPEED = 112;         // CSS px per second — what a promotion buys
   var SPEED_CAP = 268;
   var PIP_PENALTY = 0.78;
 
-  // The ladder. `raise` is more money and a little more pace; `promotion` also renames him.
-  // Real rungs of an analytics career, because that is where the joke is.
+  var VALUE_LO = 1000, VALUE_HI = 3000;
+  var INCREMENT = 1.05;         // what a pay rise is worth
+  var BONUS_MULT = 5;           // the occasional windfall
+  var BONUS_CHANCE = 0.10;      // …and the chance of one, from Manager onward
+  var INSTAFIRE_CHANCE = 0.10;  // …and of a bomb that ends it outright
+  var NIRVANA = 1e9;            // ₹100 crore
+  var HIRE_COST = 2500;
+  var INTERN_LOSS = 5000;
+  var INTERN_SAVED = 0.80;      // how often the boss pulls an intern clear
+  var AUTO_DROP = 4.5;          // seconds between unprompted drops, from Manager onward
+
+  // The ladder. Each rung doubles what a package is worth, and the gaps grow faster than that,
+  // so the later ones still take longer even as the money gets bigger.
   var LADDER = [
-    { at: 0,     kind: 'promotion', title: 'Intern',             speed: 0 },
-    { at: 240,   kind: 'raise',     title: null,                 speed: 14 },
-    { at: 600,   kind: 'promotion', title: 'Analyst',            speed: 22 },
-    { at: 1200,  kind: 'raise',     title: null,                 speed: 14 },
-    { at: 2000,  kind: 'promotion', title: 'Senior Analyst',     speed: 22 },
-    { at: 3200,  kind: 'raise',     title: null,                 speed: 14 },
-    { at: 4800,  kind: 'promotion', title: 'Manager',            speed: 22 },
-    { at: 7000,  kind: 'raise',     title: null,                 speed: 12 },
-    { at: 10000, kind: 'promotion', title: 'Senior Manager',     speed: 20 },
-    { at: 14000, kind: 'promotion', title: 'Associate Director', speed: 20 },
-    { at: 20000, kind: 'promotion', title: 'Director',           speed: 18 }
+    { at: 0,      title: 'Intern',             interns: 0, managers: 0, directors: 0 },
+    { at: 6e4,    title: 'Analyst',            interns: 0, managers: 0, directors: 0 },
+    { at: 2.8e5,  title: 'Senior Analyst',     interns: 0, managers: 0, directors: 0 },
+    { at: 1.3e6,  title: 'Manager',            interns: 4, managers: 0, directors: 0 },
+    { at: 6.5e6,  title: 'Senior Manager',     interns: 4, managers: 0, directors: 0 },
+    { at: 3.4e7,  title: 'Associate Director', interns: 4, managers: 2, directors: 0 },
+    { at: 1.5e8,  title: 'Director',           interns: 4, managers: 4, directors: 0 },
+    { at: 4.0e8,  title: 'CIO',                interns: 4, managers: 8, directors: 2 }
   ];
-  var PACKAGE_VALUE = 120;
+  var MANAGER_RUNG = 3;         // where the unprompted drops, the windfalls and the crew start
+
+  // Interns are named, because "an intern" is a headcount and a name is a person.
+  var INTERN_NAMES = ['Ishani', 'Rohit', 'Meera', 'Arjun', 'Tara', 'Dev', 'Nandini', 'Kabir',
+                      'Priya', 'Aditya', 'Sneha', 'Vikram'];
+
+  var NIRVANA_LINES = [
+    'Nirvana. The company needs nothing further.',
+    'Nirvana. Everything after this is a hobby.',
+    'Nirvana. There is nothing left to optimise.',
+    'Nirvana. The quarterly review is cancelled forever.',
+    'Nirvana. Someone else can hold the roadmap.'
+  ];
 
   // ---------------------------------------------------------------- the sprite
   //
-  // Ten pixels wide, fourteen tall, as two strings. The legs swap between frames and that is
-  // the entire walk cycle — at this size anything more is invisible.
-  //   K cap/hair · S skin · E eye · M moustache · B shirt · T trousers · O shoe
+  // Ten pixels wide, fourteen tall, as strings. The legs swap between the two walking frames
+  // and that is the entire cycle — at this size anything more is invisible.
+  //   K cap/hair · S skin · E eye · M moustache · B shirt · T trousers · O shoe · N stool
   var FRAMES = [
     ['...KKKK...', '..KKKKKK..', '.KKKKKKKK.', '.KSSSSSSK.', '.SSESSESS.', '.SSSSSSSS.', '..SMMMMS..',
      '..SSSSSS..', '.SBBBBBBS.', 'SSBBBBBBSS', '.SBBBBBBS.', '..TTTTTT..', '..TT..TT..', '.OO....OO.'],
     ['...KKKK...', '..KKKKKK..', '.KKKKKKKK.', '.KSSSSSSK.', '.SSESSESS.', '.SSSSSSSS.', '..SMMMMS..',
      '..SSSSSS..', '.SBBBBBBS.', 'SSBBBBBBSS', '.SBBBBBBS.', '..TTTTTT..', '.TT....TT.', 'OO......OO']
   ];
-  // Let go, he walks to the end of the strip, sits on a stool and fishes. Same ten-by-fourteen
-  // grid, facing right: thighs forward, shins down, stool underneath, one arm out for the rod.
-  //   N stool
+  // One arm up with a fist on the end of it, for the top of a promotion jump.
+  var CHEER = [
+    '...KKKK.S.', '..KKKKKKS.', '.KKKKKKKS.', '.KSSSSSSS.', '.SSESSESS.', '.SSSSSSSS.', '..SMMMMS..',
+    '..SSSSSS..', '.SBBBBBBS.', 'SSBBBBBBS.', '.SBBBBBBS.', '..TTTTTT..', '..TT..TT..', '.OO....OO.'
+  ];
+  // Sat on a stool facing right: thighs forward, shins down, stool underneath, arm out.
   var SEATED = [
     '...KKKK...', '..KKKKKK..', '.KKKKKKKK.', '.KSSSSSSK.', '.SSESSESS.', '.SSSSSSSS.', '..SMMMMS..',
     '..SSSSSS..', '..BBBBBB..', '..BBBBBBSS', '..BBBBBB..', '..TTTTTTTT', '..NNNN..TT', '..N..N..OO'
@@ -75,23 +104,26 @@
 
   // ---------------------------------------------------------------- palettes
   //
-  // Slate and stone in both themes. Everything is legible; nothing is saturated. The figure is
-  // deliberately a step or two more contrasted than the landscape, so the eye knows what the
-  // subject is without the strip shouting for attention.
+  // Slate and stone. The only colour in the whole strip is on the two things a player has to
+  // tell apart in a glance, and even those are held well back from a pure red and green.
   var SKINS = {
     light: {
       far: '#e2e8f0', near: '#cbd5e1', ground: '#94a3b8', grass: '#cbd5e1',
-      N: '#94a3b8', K: '#475569', S: '#c4b5a5', E: '#1e293b', M: '#475569', B: '#7c8ba1', T: '#475569', O: '#334155',
-      pkg: '#a89680', pkgTape: '#d6cec2', bomb: '#57534e', fuse: '#a8a29e', spark: '#c2b4a3',
+      N: '#94a3b8', K: '#475569', S: '#c4b5a5', E: '#1e293b', M: '#475569',
+      B: '#7c8ba1', T: '#475569', O: '#334155',
+      crewB: '#a9b4c2', crewK: '#7c8ba1',
+      cash: '#3f7d55', cashTape: '#a9d3b7', bomb: '#a24b46', fuse: '#c98a86', spark: '#c2b4a3',
       meter: '#e2e8f0', meterFill: '#94a3b8', notch: '#cbd5e1',
-      text: '#64748b', good: '#5f8168', pip: '#9a7b46', bad: '#9c5f5f'
+      text: '#64748b', good: '#4d7a5c', pip: '#9a7b46', bad: '#9c5f5f', screen: '#cbd5e1'
     },
     dark: {
       far: '#1e293b', near: '#334155', ground: '#64748b', grass: '#334155',
-      N: '#475569', K: '#94a3b8', S: '#8d7b68', E: '#e2e8f0', M: '#94a3b8', B: '#64748b', T: '#475569', O: '#334155',
-      pkg: '#8a7a66', pkgTape: '#b3a795', bomb: '#292524', fuse: '#78716c', spark: '#a8a29e',
+      N: '#475569', K: '#94a3b8', S: '#8d7b68', E: '#e2e8f0', M: '#94a3b8',
+      B: '#64748b', T: '#475569', O: '#334155',
+      crewB: '#475569', crewK: '#64748b',
+      cash: '#5d8f6e', cashTape: '#24402f', bomb: '#a35b57', fuse: '#8a5f5c', spark: '#a8a29e',
       meter: '#1e293b', meterFill: '#64748b', notch: '#475569',
-      text: '#94a3b8', good: '#7fa387', pip: '#bb9a5f', bad: '#c08181'
+      text: '#94a3b8', good: '#7fa387', pip: '#bb9a5f', bad: '#c08181', screen: '#334155'
     }
   };
 
@@ -103,51 +135,66 @@
   var skyH = 0, skyTop = 0, skyBand = 0, stageLeft = 0;
   var running = false, rafId = 0, lastT = 0;
   var onScreen = false, active = false, reduced = false, touch = false;
-  var spawnTimer = 0;
-  var toastTimer = 0;
+  var spawnTimer = 0, toastTimer = 0;
+  var owner = { name: 'the owner', image: '' };
 
   var g = null;
   var head = null, headTried = false;
 
+  function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  function makeWorker(kind, x) {
+    return { kind: kind, x: x, facing: 1, walk: 0, walkT: 0, boss: null, slot: 0, jump: 0, cheer: 0 };
+  }
+
   function freshGame() {
     return {
-      x: 0.5, facing: 1, walk: 0, walkT: 0,
-      items: [],                // { x: fraction of the playfield, y: px below #app-shell's top, bomb }
-      puffs: [],
-      profit: 0, rung: 0, strikes: 0,
-      status: 'ok',             // 'ok' | 'pip' | 'fired'
-      firedT: 0, seated: false, hired: false
+      // crew[0] is whoever the player is watching: the owner once hired, an intern before that.
+      crew: [makeWorker('lead', 0.5)],
+      internName: pick(INTERN_NAMES),
+      parked: null,             // the one who was displaced, fishing at the right-hand end
+      items: [], puffs: [],
+      money: 0, rung: 0, strikes: 0, caught: 0, increments: 0,
+      status: 'ok',             // 'ok' | 'pip' | 'fired' | 'nirvana'
+      settled: false,
+      hired: false, entering: 0, leaving: 0
     };
   }
 
   function playW() { return Math.max(40, W - METER_W - 6); }
   function groundY() { return H - GROUND_INSET; }
   function groundAbs() { return skyH + groundY(); }
+  function lead() { return g.crew[0]; }
+  function rung() { return LADDER[Math.min(g.rung, LADDER.length - 1)]; }
   function speed() {
-    var s = BASE_SPEED;
-    for (var i = 0; i <= g.rung && i < LADDER.length; i++) s += LADDER[i].speed;
+    var s = BASE_SPEED + g.rung * 20;
     if (g.status === 'pip') s *= PIP_PENALTY;
     return Math.min(SPEED_CAP, s);
   }
-  function rank() {
-    var t = LADDER[0].title;
-    for (var i = 0; i <= g.rung && i < LADDER.length; i++) if (LADDER[i].title) t = LADDER[i].title;
-    return t;
+  // What the next package is worth: the base band, doubled once per rung, compounded by every
+  // increment along the way.
+  function packetValue() {
+    return (VALUE_LO + Math.random() * (VALUE_HI - VALUE_LO)) *
+           Math.pow(2, g.rung) * Math.pow(INCREMENT, g.increments);
   }
   function live() { return active && onScreen && !document.hidden && !reduced; }
+  function over() { return g.status === 'fired' || g.status === 'nirvana'; }
+
+  // ₹ in Indian units, because ₹1,00,00,00,000 is a number nobody reads.
+  function money(n) {
+    n = Math.round(n);
+    if (n >= 1e7) return '₹' + (n / 1e7).toFixed(n >= 1e8 ? 0 : 1) + ' Cr';
+    if (n >= 1e5) return '₹' + (n / 1e5).toFixed(n >= 1e6 ? 0 : 1) + ' L';
+    return '₹' + n.toLocaleString('en-IN');
+  }
 
   // ---------------------------------------------------------------- geometry
-  //
-  // Two canvases, one coordinate space. `y` is measured from the top of #app-shell, so an item
-  // spawned where you clicked keeps its place while the page reflows underneath it. The sky
-  // canvas covers everything above the stage and sits at z-index -1 — behind every card, which
-  // is what makes a falling parcel read as something happening back there rather than on top.
+
   function resize() {
     if (!cv || !shell) return;
-    // A hidden strip measures as a zero rect, and a zero rect made skyH the scroll offset: the
-    // canvas then overflowed the shell, the document got taller, the shell's top moved further
-    // up, and skyH grew again. The page reached a hundred thousand pixels. Never measure
-    // something that is not being rendered.
+    // A hidden strip measures as a zero rect, and a zero rect once made skyH the scroll offset:
+    // the canvas overflowed the shell, the document got taller, the shell's top moved up, and
+    // skyH grew again. Never measure something that is not being rendered.
     if (!cv.getClientRects().length) return;
     var host = cv.parentNode.getBoundingClientRect();
     H = host.width < 420 ? LOGICAL_H_SM : LOGICAL_H;
@@ -157,14 +204,13 @@
     cv.width = Math.round(W * dpr);
     cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = false;                 // pixel art: never interpolate
+    ctx.imageSmoothingEnabled = false;
 
     var sr = shell.getBoundingClientRect(), cr = cv.getBoundingClientRect();
     stageLeft = cr.left - sr.left;
     skyH = Math.max(0, Math.round(cr.top - sr.top));
     // The band only has to cover the highest anything is allowed to start from, so it is
-    // anchored just above the stage rather than stretched over the whole page. A shorter canvas
-    // is a cheaper clear every frame, and it cannot reach far enough to overflow anything.
+    // anchored just above the stage rather than stretched over the whole page.
     skyBand = Math.max(0, Math.min(skyH, DROP_MAX + 60));
     skyTop = skyH - skyBand;
     sky.style.left = stageLeft + 'px';
@@ -179,7 +225,7 @@
 
   // ---------------------------------------------------------------- input
 
-  var cursor = null;            // target as a fraction of the playfield, or null when unset
+  var cursor = null;
   var keyDir = 0;
   var dragId = null;
 
@@ -188,8 +234,6 @@
     return Math.max(0.02, Math.min(0.98, (x - cr.left) / Math.max(1, playW())));
   }
 
-  // Where a thing dropped from `clientY` starts. Clamped to one screenful above the stage: a
-  // click near the top of a long page should not mean a fifteen-second descent.
   function dropY(clientY) {
     var inShell = clientY - shell.getBoundingClientRect().top;
     var lo = Math.max(-ITEM, skyH - DROP_MAX);
@@ -197,26 +241,29 @@
   }
 
   function spawn(frac, y, bomb) {
-    if (!g || g.status === 'fired' || !live()) return;
-    // Deliberately unseeded: a coin flip per drop is the entire premise.
+    if (!g || over() || !live()) return;
+    var mgr = g.rung >= MANAGER_RUNG;
+    var isBomb = bomb == null ? Math.random() < 0.5 : bomb;
+    var big = !isBomb && mgr && Math.random() < BONUS_CHANCE;
     g.items.push({
       x: Math.max(0.02, Math.min(0.98, frac)),
       y: y,
-      bomb: bomb == null ? Math.random() < 0.5 : bomb
+      bomb: isBomb,
+      big: big,
+      fatal: isBomb && mgr && Math.random() < INSTAFIRE_CHANCE,
+      value: isBomb ? 0 : packetValue() * (big ? BONUS_MULT : 1),
+      taken: null
     });
-    if (g.items.length > 20) g.items.shift();          // a fast clicker cannot grow this forever
+    if (g.items.length > 26) g.items.shift();
     start();
   }
 
   function onPointerMove(e) {
-    if (touch) return;                                  // on a phone the cursor means nothing
-    if (e.clientX == null) return;
+    if (touch || e.clientX == null) return;
     cursor = fracFromClientX(e.clientX);
     if (live()) start();
   }
 
-  // Pointer devices: a click anywhere drops something. Phones: only once he has been hired,
-  // because before that the same tap is how you steer him.
   function onDocClick(e) {
     if (!live() || !g) return;
     if (e.target && e.target.closest && e.target.closest('#arcade-controls')) return;
@@ -225,12 +272,10 @@
     spawn(fracFromClientX(e.clientX == null ? 0 : e.clientX), dropY(e.clientY == null ? 0 : e.clientY));
   }
 
-  // Phones, before he is hired: drag along the strip to walk him. The stage carries
-  // `touch-action: none`, so a sideways drag there never turns into a page scroll.
   function onStagePointerDown(e) {
     if (!touch || !g || g.hired || !live()) return;
     dragId = e.pointerId;
-    if (cv.setPointerCapture) { try { cv.setPointerCapture(e.pointerId); } catch (x) { /* older engines */ } }
+    if (cv.setPointerCapture) { try { cv.setPointerCapture(e.pointerId); } catch (x) {} }
     cursor = fracFromClientX(e.clientX);
     start();
   }
@@ -239,16 +284,13 @@
     cursor = fracFromClientX(e.clientX);
     start();
   }
-  function onStagePointerUp(e) {
-    if (dragId == null || e.pointerId !== dragId) return;
-    dragId = null;
-  }
+  function onStagePointerUp(e) { if (dragId != null && e.pointerId === dragId) dragId = null; }
 
   function onStageKey(e) {
     if (!g || !live()) return;
     if (e.key === 'ArrowLeft') { keyDir = -1; cursor = null; }
     else if (e.key === 'ArrowRight') { keyDir = 1; cursor = null; }
-    else if (e.key === ' ' || e.key === 'Enter') { spawn(g.x, Math.max(-ITEM, skyH - 320)); }
+    else if (e.key === ' ' || e.key === 'Enter') { spawn(lead().x, Math.max(-ITEM, skyH - 320)); }
     else return;
     e.preventDefault();
     start();
@@ -257,70 +299,117 @@
     if ((e.key === 'ArrowLeft' && keyDir < 0) || (e.key === 'ArrowRight' && keyDir > 0)) keyDir = 0;
   }
 
-  // Phones, before he is hired: work arrives on its own schedule, as it does.
+  // Work arrives on its own once there is a team to do it — and on a phone from the start,
+  // since before the owner is hired a tap is how you steer rather than how you drop.
   function scheduleDrop() {
     clearTimeout(spawnTimer);
-    if (!touch || !g || g.hired || !live() || g.status === 'fired') return;
+    if (!g || !live() || over()) return;
+    var phone = touch && !g.hired;
+    if (!phone && g.rung < MANAGER_RUNG) return;
+    var gap = phone ? 900 + Math.random() * 1500 : AUTO_DROP * 1000 * (0.6 + Math.random() * 0.8);
     spawnTimer = setTimeout(function () {
       spawn(0.06 + Math.random() * 0.88, Math.max(-ITEM, skyH - (260 + Math.random() * 380)));
       scheduleDrop();
-    }, 900 + Math.random() * 1500);
+    }, gap);
+  }
+
+  // ---------------------------------------------------------------- the crew
+  //
+  // Who exists is a property of the rung, so it is derived rather than tracked. Interns line up
+  // beside whoever hired them, two a side; managers and directors walk about on their own.
+  function syncCrew() {
+    var r = rung();
+    var counts = { intern: 0, manager: 0, director: 0 };
+    g.crew.forEach(function (w) { if (counts[w.kind] != null) counts[w.kind]++; });
+    var want = { director: r.directors, manager: r.managers, intern: r.interns };
+    ['director', 'manager', 'intern'].forEach(function (kind) {
+      while (counts[kind] < want[kind]) {
+        var w = makeWorker(kind, Math.max(0.03, Math.min(0.97, lead().x + (counts[kind] % 2 ? 0.06 : -0.06))));
+        w.slot = counts[kind];
+        g.crew.push(w);
+        g.money = Math.max(0, g.money - HIRE_COST);
+        counts[kind]++;
+      }
+    });
+    // Interns are shared out over the lead and every manager, so the formations spread rather
+    // than piling four deep on one person.
+    var bosses = g.crew.filter(function (w) { return w.kind === 'lead' || w.kind === 'manager'; });
+    var n = 0;
+    g.crew.forEach(function (w) {
+      if (w.kind !== 'intern') return;
+      w.boss = bosses[n % bosses.length];
+      w.slot = Math.floor(n / bosses.length) * 2 + (n % 2);
+      n++;
+    });
+  }
+
+  function anchorFor(w) {
+    if (w.kind !== 'intern' || !w.boss) return null;
+    var side = (w.slot % 2) ? 1 : -1;
+    var step = (Math.floor(w.slot / 2) + 1) * (16 / playW());
+    return Math.max(0.02, Math.min(0.98, w.boss.x + side * step));
   }
 
   // ---------------------------------------------------------------- the brain
   //
-  // Two completely different animals, and that is the joke.
-  //
-  // NOT HIRED, he is a puppet: he goes exactly where the cursor goes and nowhere else. He does
-  // not dodge, he does not reach for a parcel, he has no instincts at all. Every parcel he
-  // catches and every bomb he wears is the person at the keyboard. That is the game.
-  //
-  // HIRED, he runs himself: bombs first, parcels second, and he is never hit — `land()` makes
-  // that a guarantee rather than a hope. Watching someone do the job properly is the point of
-  // the button.
-  function desire() {
-    var here = g.x;
-
-    if (!g.hired) {
-      var want = cursor != null ? cursor : here;
-      if (keyDir) want = here + keyDir * 0.06;
-      return { x: Math.max(0.02, Math.min(0.98, want)), urgent: false };
-    }
-
-    var pw = playW(), reach = speed() / pw, gy = groundAbs(), i;
-
-    var worst = null, worstT = 1e9;
-    for (i = 0; i < g.items.length; i++) {
+  // Unhired, the lead is a puppet: it goes where the cursor goes and nowhere else, so every
+  // package caught and every bomb worn is the person at the keyboard. Hired, the owner runs
+  // himself and is never hit. Managers and directors work to the owner's rules; interns take
+  // the smallest thing left and are pulled clear of a bomb only four times in five.
+  function threatFor(w, radius) {
+    var pw = playW(), gy = groundAbs(), worst = null, worstT = 1e9;
+    for (var i = 0; i < g.items.length; i++) {
       var it = g.items[i];
       if (!it.bomb) continue;
       var t = (gy - ITEM - it.y) / FALL;
       if (t < 0 || t > 2) continue;
-      if (Math.abs(it.x - here) * pw > CATCH + 34) continue;
+      if (Math.abs(it.x - w.x) * pw > radius) continue;
       if (t < worstT) { worstT = t; worst = it; }
     }
-    if (worst) {
-      var away = worst.x <= here ? 1 : -1;
-      var to = here + away * ((CATCH + 30) / pw);
-      if (to < 0.03 || to > 0.97) to = here - away * ((CATCH + 30) / pw);   // cornered: cut past it
+    return worst;
+  }
+
+  function claim(w, smallest) {
+    var pw = playW(), gy = groundAbs(), reach = speed() / pw;
+    var best = null, bestKey = smallest ? Infinity : -Infinity, fallback = null, fallbackT = 1e9;
+    for (var i = 0; i < g.items.length; i++) {
+      var p = g.items[i];
+      if (p.bomb || (p.taken && p.taken !== w)) continue;
+      var tt = (gy - ITEM - p.y) / FALL;
+      if (tt <= 0) continue;
+      if (tt < fallbackT) { fallbackT = tt; fallback = p; }
+      if (Math.abs(p.x - w.x) / Math.max(1e-6, reach) > tt * 0.95) continue;
+      if (smallest ? p.value < bestKey : p.value > bestKey) { bestKey = p.value; best = p; }
+    }
+    var go = best || fallback;
+    if (go) go.taken = w;
+    return go;
+  }
+
+  function desire(w) {
+    var pw = playW();
+    if (w === g.crew[0] && !g.hired) {
+      var want = cursor != null ? cursor : w.x;
+      if (keyDir) want = w.x + keyDir * 0.06;
+      return { x: Math.max(0.02, Math.min(0.98, want)), urgent: false };
+    }
+
+    var bomb = threatFor(w, CATCH + 34);
+    if (bomb) {
+      var away = bomb.x <= w.x ? 1 : -1;
+      var to = w.x + away * ((CATCH + 30) / pw);
+      if (to < 0.03 || to > 0.97) to = w.x - away * ((CATCH + 30) / pw);
       return { x: Math.max(0.02, Math.min(0.98, to)), urgent: true };
     }
 
-    // The one he can still make, by preference. Failing that, the nearest one anyway: standing
-    // still because nothing is catchable looks like a bug, and setting off now is how he
-    // catches the one after it.
-    var best = null, bestCost = 1e9, fallback = null, fallbackT = 1e9;
-    for (i = 0; i < g.items.length; i++) {
-      var pk = g.items[i];
-      if (pk.bomb) continue;
-      var tt = (gy - ITEM - pk.y) / FALL;
-      if (tt <= 0) continue;
-      if (tt < fallbackT) { fallbackT = tt; fallback = pk; }
-      var need = Math.abs(pk.x - here) / Math.max(1e-6, reach);
-      if (need > tt * 0.95) continue;
-      if (need < bestCost) { bestCost = need; best = pk; }
+    if (w.kind === 'intern') {
+      var mine = claim(w, true);
+      var home = anchorFor(w);
+      if (mine && Math.abs(mine.x - w.x) * pw < 90) return { x: mine.x, urgent: false };
+      return { x: home == null ? w.x : home, urgent: false };
     }
-    var go = best || fallback;
-    return { x: go ? go.x : here, urgent: false };
+    var take = claim(w, false);
+    return { x: take ? take.x : w.x, urgent: false };
   }
 
   // ---------------------------------------------------------------- simulation
@@ -330,81 +419,143 @@
     el.toast.textContent = text;
     el.toast.dataset.tone = tone || 'text';
     el.toast.classList.remove('hidden');
-    el.live.textContent = text;
+    if (el.live) el.live.textContent = text;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.toast.classList.add('hidden'); }, 2400);
+    toastTimer = setTimeout(function () { el.toast.classList.add('hidden'); }, 2600);
   }
 
+  function cheer(w) { w.jump = 0.62; w.cheer = 0.95; }
+
   function promoteIfDue() {
-    while (g.rung + 1 < LADDER.length && g.profit >= LADDER[g.rung + 1].at) {
+    while (g.rung + 1 < LADDER.length && g.money >= LADDER[g.rung + 1].at) {
       g.rung++;
-      var s = LADDER[g.rung];
-      toast(s.kind === 'promotion' ? 'Promoted — ' + s.title : 'Pay rise', 'good');
+      cheer(lead());
+      toast('Promoted — ' + LADDER[g.rung].title, 'good');
+      syncCrew();
+      scheduleDrop();
+      syncPanel();
+    }
+    if (g.money >= NIRVANA && g.status !== 'nirvana') {
+      g.status = 'nirvana';
+      g.settled = false;
+      clearTimeout(spawnTimer);
+      toast(pick(NIRVANA_LINES), 'good');
       syncPanel();
     }
   }
 
   function land(it) {
-    var hit = Math.abs(it.x - g.x) * playW() <= CATCH;
-    if (!hit) {
-      g.puffs.push({ x: it.x, y: groundY() - 10, t: 0, text: '' });
-      return;
+    var pw = playW(), hitBy = null;
+    for (var i = 0; i < g.crew.length; i++) {
+      if (Math.abs(it.x - g.crew[i].x) * pw <= CATCH) { hitBy = g.crew[i]; break; }
     }
+    if (!hitBy) { g.puffs.push({ x: it.x, y: groundY() - 10, t: 0, text: '' }); return; }
+
     if (!it.bomb) {
-      g.profit += PACKAGE_VALUE;
-      g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0, text: '+' + PACKAGE_VALUE });
+      g.money += it.value;
+      g.caught++;
+      g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0,
+                     text: (it.big ? '★ ' : '') + money(it.value), tone: 'good' });
+      // A rise comes up at random, about half the times another five have come in.
+      if (g.caught % 5 === 0 && Math.random() < 0.5) {
+        g.increments++;
+        toast(Math.random() < 0.5 ? 'Increment' : 'Bonus', 'good');
+      }
       promoteIfDue();
       syncPanel();
       return;
     }
-    // Hired, he is not hit. He will have stepped aside already in all but the contrived cases,
-    // and where he has not, the promise the button makes still holds.
-    if (g.hired) return;
+
+    // A bomb. An intern is somebody the boss tries to pull clear, and mostly does.
+    if (hitBy.kind === 'intern') {
+      if (Math.random() < INTERN_SAVED) {
+        g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0, text: 'saved', tone: 'text' });
+        return;
+      }
+      g.money = Math.max(0, g.money - INTERN_LOSS);
+      g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0, text: '-' + money(INTERN_LOSS), tone: 'bad' });
+      toast('An intern took one for the team', 'pip');
+      syncPanel();
+      return;
+    }
+    if (hitBy !== g.crew[0]) return;    // managers and directors look after themselves
+    if (g.hired) return;                // the owner is not hit; that is what hiring him buys
+
+    if (it.fatal) {
+      g.status = 'fired'; g.settled = false;
+      clearTimeout(spawnTimer);
+      toast('Gross misconduct. Out today.', 'bad');
+      syncPanel();
+      return;
+    }
     g.strikes++;
     if (g.strikes === 1) { g.status = 'pip'; toast('Performance improvement plan', 'pip'); }
-    else { g.status = 'fired'; g.firedT = 0; toast('Let go', 'bad'); clearTimeout(spawnTimer); }
+    else {
+      g.status = 'fired'; g.settled = false;
+      clearTimeout(spawnTimer);
+      toast('Let go', 'bad');
+    }
     syncPanel();
   }
 
-  var RETIRE_X = 0.90;          // where he goes to sit
+  var RETIRE_X = 0.90;          // where a displaced or let-go worker goes to fish
+  var CINEMA_X = 0.07;          // …and where a retired one goes to watch films
+
+  function walkTo(w, target, dt, sp) {
+    var pw = playW(), mv = ((sp || BASE_SPEED) / pw) * dt, d = target - w.x;
+    if (Math.abs(d) <= mv) { w.x = target; return true; }
+    w.facing = d > 0 ? 1 : -1;
+    w.x += w.facing * mv;
+    w.walkT += mv * pw;
+    if (w.walkT > 7) { w.walkT = 0; w.walk ^= 1; }
+    return false;
+  }
 
   function step(dt) {
-    if (g.status === 'fired') {
-      g.firedT += dt;
-      for (var q = g.puffs.length - 1; q >= 0; q--) if ((g.puffs[q].t += dt) > 1.4) g.puffs.splice(q, 1);
-      // He walks off to the end of the strip and sits down. Once he is there the scene is
-      // finished and the loop stops asking for frames — a permanent idle animation under
-      // someone's résumé is exactly the attention this is not supposed to draw.
-      g.facing = 1;
-      var want = RETIRE_X - g.x;
-      var mv = (BASE_SPEED / playW()) * dt;
-      if (Math.abs(want) <= mv) { g.x = RETIRE_X; g.seated = true; }
-      else { g.x += (want > 0 ? 1 : -1) * mv; g.walkT += mv * playW(); }
-      if (g.walkT > 7) { g.walkT = 0; g.walk ^= 1; }
-      return !g.seated || g.puffs.length > 0;
+    var i;
+    for (i = g.puffs.length - 1; i >= 0; i--) if ((g.puffs[i].t += dt) > 1.4) g.puffs.splice(i, 1);
+    g.crew.forEach(function (w) {
+      if (w.jump > 0) w.jump = Math.max(0, w.jump - dt);
+      if (w.cheer > 0) w.cheer = Math.max(0, w.cheer - dt);
+    });
+
+    // Two endings. Both walk somewhere and then stop asking for frames — a permanent idle
+    // animation under someone's résumé is exactly the attention this is not supposed to draw.
+    if (over()) {
+      var there = walkTo(lead(), g.status === 'nirvana' ? CINEMA_X : RETIRE_X, dt, BASE_SPEED);
+      if (there) g.settled = true;
+      return !there || g.puffs.length > 0;
     }
 
-    var pw = playW(), d = desire();
-    var maxStep = (speed() * (d.urgent ? 1.35 : 1) / pw) * dt;
-    var delta = d.x - g.x;
-    if (Math.abs(delta) <= maxStep) g.x = d.x;
-    else { var dir = delta > 0 ? 1 : -1; g.x += dir * maxStep; g.facing = dir; g.walkT += maxStep * pw; }
-    if (g.walkT > 7) { g.walkT = 0; g.walk ^= 1; }
+    // Somebody is walking on or off the strip; nothing else happens until they arrive.
+    if (g.leaving) {
+      if (walkTo(lead(), -0.12, dt, BASE_SPEED * 1.7)) { g.leaving = 0; g.entering = 1; lead().x = -0.12; }
+      return true;
+    }
+    if (g.entering) {
+      if (walkTo(lead(), 0.5, dt, BASE_SPEED * 1.7)) g.entering = 0;
+      return true;
+    }
 
-    var busy = false, gy = groundAbs(), i;
+    g.items.forEach(function (it) { it.taken = null; });
+    var busy = false;
+    g.crew.forEach(function (w) {
+      var d = desire(w);
+      var sp = speed() * (d.urgent ? 1.35 : 1) * (w.kind === 'intern' ? 0.9 : 1);
+      if (!walkTo(w, d.x, dt, sp)) busy = true;
+    });
+
+    var gy = groundAbs();
     for (i = g.items.length - 1; i >= 0; i--) {
       var it = g.items[i];
       it.y += FALL * dt;
       if (it.y >= gy - ITEM) { it.y = gy - ITEM; land(it); g.items.splice(i, 1); }
       else busy = true;
     }
-    for (i = g.puffs.length - 1; i >= 0; i--) {
-      if ((g.puffs[i].t += dt) > 1.4) g.puffs.splice(i, 1); else busy = true;
-    }
-    // `|| fired` matters: the bomb that ends it is spliced out in this same pass, so without it
-    // the loop reports "nothing left to animate" on the very frame he is let go and he never
-    // gets to walk off.
-    return busy || Math.abs(d.x - g.x) > 0.002 || g.status === 'fired';
+    // `|| over()` matters: the bomb that ends it is spliced out in this same pass, so without it
+    // the loop would report "nothing left to animate" on the very frame it happens.
+    return busy || g.puffs.length > 0 || over() ||
+           g.crew.some(function (w) { return w.jump > 0 || w.cheer > 0; });
   }
 
   // ---------------------------------------------------------------- drawing
@@ -414,11 +565,8 @@
   }
   function px(c, x, y, w, h) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
 
-  // A one-dimensional landscape: a ground line and two ranks of silhouettes, both offset by
-  // where he is standing. He walks; the world slides. That parallax is the only thing making a
-  // hundred-pixel strip feel like somewhere rather than a bar.
   function drawWorld(s) {
-    var gy = groundY(), pw = playW(), off = g ? g.x * pw : 0, i, x;
+    var gy = groundY(), pw = playW(), off = g ? lead().x * pw : 0, i, x;
     ctx.clearRect(0, 0, W, H);
     for (i = -2; i < 24; i++) {
       x = ((i * 46) - off * 0.18) % (24 * 46);
@@ -438,65 +586,73 @@
     for (i = 0; i < W; i += 8) px(s.grass, i + ((Math.floor(-off * 0.9) % 8) + 8) % 8, gy + 4, 4, 2);
   }
 
-  function drawSprite(s) {
-    var pw = playW(), w = SPRITE_W * PX, h = SPRITE_H * PX;
-    var left = Math.round(g.x * pw - w / 2);
-    var top = Math.round(groundY() - h);
-    var seated = g.status === 'fired' && g.seated;
-    var f = seated ? SEATED : FRAMES[g.walk];
+  function drawFigure(s, w, opts) {
+    var pw = playW(), ww = SPRITE_W * PX, hh = SPRITE_H * PX;
+    opts = opts || {};
+    var f = opts.seated ? SEATED : (w.cheer > 0 ? CHEER : FRAMES[w.walk]);
+    var left = Math.round(w.x * pw - ww / 2);
+    // A promotion is a jump: a half-second arc, with the fist up at the top of it.
+    var lift = w.jump > 0 ? Math.sin((1 - w.jump / 0.62) * Math.PI) * 13 : 0;
+    var top = Math.round(groundY() - hh - lift);
     var from = 0;
 
-    // Hired: his own head, clipped to a circle, over the body.
-    if (g.hired && head) {
+    if (opts.photo && head) {
       from = HEAD_ROWS;
       var hd = HEAD_ROWS * PX + 2;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(left + w / 2, top + hd / 2, hd / 2, 0, Math.PI * 2);
+      ctx.arc(left + ww / 2, top + hd / 2, hd / 2, 0, Math.PI * 2);
       ctx.clip();
-      ctx.imageSmoothingEnabled = true;                // a photograph, not pixel art
-      ctx.drawImage(head, left + w / 2 - hd / 2, top, hd, hd);
+      ctx.imageSmoothingEnabled = true;               // a photograph, not pixel art
+      ctx.drawImage(head, left + ww / 2 - hd / 2, top, hd, hd);
       ctx.restore();
       ctx.imageSmoothingEnabled = false;
     }
 
     ctx.save();
-    if (g.status === 'pip') ctx.globalAlpha = 0.68;    // visibly diminished, as intended
+    if (opts.alpha != null) ctx.globalAlpha = opts.alpha;
     for (var r = from; r < SPRITE_H; r++) {
       var row = f[r];
       for (var c = 0; c < SPRITE_W; c++) {
-        var ch = row.charAt(g.facing < 0 ? SPRITE_W - 1 - c : c);
-        if (ch !== '.') px(s[ch] || s.K, left + c * PX, top + r * PX, PX, PX);
+        var ch = row.charAt(w.facing < 0 ? SPRITE_W - 1 - c : c);
+        if (ch === '.') continue;
+        // The crew are the same drawing in quieter colours, so the eye knows who the subject is.
+        var col = s[ch] || s.K;
+        if (opts.quiet) { if (ch === 'B') col = s.crewB; else if (ch === 'K' || ch === 'M') col = s.crewK; }
+        px(col, left + c * PX, top + r * PX, PX, PX);
       }
     }
     ctx.restore();
 
-    // The rod, and a line out to the right. Drawn rather than stored in the grid because it
-    // reaches well past the ten pixels he occupies.
-    if (seated) {
-      var hx = left + w, hy = top + 9 * PX;
+    if (opts.seated) {
+      var hx = left + ww, hy = top + 9 * PX;
       for (var i = 0; i < 9; i++) px(s.K, hx + i * PX, hy - i * PX, PX, PX);
       var tipX = hx + 9 * PX, tipY = hy - 9 * PX;
       px(s.near, tipX, tipY, 1, groundY() - 3 - tipY);
-      px(s.pkg, tipX - 2, groundY() - 6, 4, 3);
+      px(s.cash, tipX - 2, groundY() - 6, 4, 3);
+    }
+    if (opts.cinema) {
+      var sx = left - 34, sy = groundY() - 32;
+      px(s.screen, sx, sy, 26, 17);
+      px(s.near, sx + 2, sy + 2, 22, 13);
+      px(s.screen, sx + 11, sy + 17, 4, 7);
+      px(s.near, sx + 7, sy + 24, 12, 2);
     }
   }
 
-  function itemShape(c, s, x, y, bomb) {
-    if (bomb) {
+  function itemShape(c, s, x, y, it) {
+    if (it.bomb) {
       c.fillStyle = s.bomb; c.fillRect(x + 1, y + 2, ITEM - 2, ITEM - 2); c.fillRect(x, y + 4, ITEM, ITEM - 5);
       c.fillStyle = s.fuse; c.fillRect(x + ITEM - 3, y - 1, 2, 3);
       c.fillStyle = s.spark; c.fillRect(x + ITEM - 3, y - 3, 2, 2);
+      if (it.fatal) { c.fillStyle = s.spark; c.fillRect(x + 3, y + 5, ITEM - 6, 2); }
     } else {
-      c.fillStyle = s.pkg; c.fillRect(x, y, ITEM, ITEM);
-      c.fillStyle = s.pkgTape; c.fillRect(x + ITEM / 2 - 1, y, 2, ITEM); c.fillRect(x, y + ITEM / 2 - 1, ITEM, 2);
+      c.fillStyle = s.cash; c.fillRect(x, y, ITEM, ITEM);
+      c.fillStyle = s.cashTape; c.fillRect(x + 2, y + 3, ITEM - 4, 1); c.fillRect(x + 2, y + 6, ITEM - 4, 1);
+      if (it.big) { c.fillStyle = s.cashTape; c.fillRect(x - 1, y - 1, 2, 2); c.fillRect(x + ITEM - 1, y - 1, 2, 2); }
     }
   }
 
-  // Everything above the stage, on a canvas at 40% resolution sitting behind the cards. The
-  // browser's own upscale is the blur — cheaper than a filter and it looks the same at this
-  // size — and the alpha ramps up as a thing nears the ground, so crossing onto the stage is a
-  // fade rather than a pop.
   function drawSky(s) {
     if (!sctx || !skyBand) return;
     sctx.clearRect(0, 0, W, skyBand);
@@ -506,23 +662,24 @@
       var it = g.items[i], y = it.y - skyTop;
       if (y < -ITEM || y > skyBand + ITEM) continue;
       sctx.globalAlpha = 0.14 + 0.26 * Math.max(0, Math.min(1, y / Math.max(1, skyBand)));
-      itemShape(sctx, s, Math.round(it.x * pw - ITEM / 2), Math.round(y), it.bomb);
+      itemShape(sctx, s, Math.round(it.x * pw - ITEM / 2), Math.round(y), it);
     }
     sctx.globalAlpha = 1;
   }
 
-  // The profit line: a track, a fill, and a notch for every rung. A chart of one number, which
-  // is the only chart this deserves.
+  // The profit line. Logarithmic, because ₹100 crore against ₹2,000 on a linear bar is a bar
+  // that does not move for twenty minutes.
+  function meterFrac(v) {
+    return v <= 0 ? 0 : Math.min(1, Math.log10(v / 1e4 + 1) / Math.log10(NIRVANA / 1e4 + 1));
+  }
   function drawMeter(s) {
     var x = W - METER_W + 6, top = 8, bot = groundY() - 4, h = bot - top;
     px(s.meter, x, top, 8, h);
-    var ceiling = LADDER[LADDER.length - 1].at;
-    var fh = Math.round(h * Math.max(0, Math.min(1, g.profit / ceiling)));
-    px(s.meterFill, x, bot - fh, 8, fh);
+    px(s.meterFill, x, bot - Math.round(h * meterFrac(g.money)), 8, Math.round(h * meterFrac(g.money)));
     for (var i = 1; i < LADDER.length; i++) {
-      var y = Math.round(bot - h * (LADDER[i].at / ceiling));
-      px(LADDER[i].kind === 'promotion' ? s.notch : s.meter, x - 3, y, 3, 1);
-      if (LADDER[i].kind === 'promotion') px(s.notch, x + 8, y, 3, 1);
+      var y = Math.round(bot - h * meterFrac(LADDER[i].at));
+      px(s.notch, x - 3, y, 3, 1);
+      px(s.notch, x + 8, y, 3, 1);
     }
   }
 
@@ -532,8 +689,8 @@
     ctx.textAlign = 'center';
     for (var i = 0; i < g.puffs.length; i++) {
       var p = g.puffs[i], k = p.t / 1.4;
-      ctx.globalAlpha = Math.max(0, 1 - k) * 0.8;
-      if (p.text) { ctx.fillStyle = s.text; ctx.fillText(p.text, p.x * pw, p.y - k * 16); }
+      ctx.globalAlpha = Math.max(0, 1 - k) * 0.85;
+      if (p.text) { ctx.fillStyle = s[p.tone] || s.text; ctx.fillText(p.text, p.x * pw, p.y - k * 16); }
       else px(s.text, p.x * pw - 4, p.y + 8 - k * 4, 8, 2);
     }
     ctx.globalAlpha = 1;
@@ -550,10 +707,18 @@
       var it = g.items[i], y = it.y - skyH;
       if (y < -ITEM * 2) continue;
       ctx.globalAlpha = Math.max(0.35, Math.min(1, 0.4 + (y + ITEM) / 26));
-      itemShape(ctx, s, Math.round(it.x * pw - ITEM / 2), Math.round(y), it.bomb);
+      itemShape(ctx, s, Math.round(it.x * pw - ITEM / 2), Math.round(y), it);
     }
     ctx.globalAlpha = 1;
-    drawSprite(s);
+    if (g.parked) drawFigure(s, g.parked, { seated: true, quiet: true, alpha: 0.9 });
+    // Back to front, so the lead is never hidden behind somebody they hired.
+    for (i = g.crew.length - 1; i >= 1; i--) drawFigure(s, g.crew[i], { quiet: true, alpha: 0.92 });
+    drawFigure(s, g.crew[0], {
+      photo: g.hired,
+      seated: g.status === 'fired' && g.settled,
+      cinema: g.status === 'nirvana' && g.settled,
+      alpha: g.status === 'pip' ? 0.68 : 1
+    });
     drawMeter(s);
     drawPuffs(s);
   }
@@ -563,8 +728,8 @@
   function frame(t) {
     rafId = 0;
     if (!running) return;
-    var dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016;  // a backgrounded tab must not
-    lastT = t;                                                     // resume with one huge step
+    var dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016;
+    lastT = t;
     var busy = step(dt);
     draw();
     if (busy && live()) rafId = requestAnimationFrame(frame);
@@ -584,45 +749,65 @@
 
   // ---------------------------------------------------------------- panel
 
+  function who() { return g.hired ? owner.name : g.internName; }
+
   function syncPanel() {
     if (!el.rank) return;
-    el.rank.textContent = rank();
-    el.profit.textContent = g.profit.toLocaleString('en-IN');
+    el.rank.textContent = who() + ' · ' + rung().title;
+    el.profit.textContent = money(g.money);
     var st = g.status;
-    el.status.textContent = st === 'fired' ? 'Let go' : st === 'pip' ? 'On a PIP' : 'In good standing';
+    el.status.textContent = st === 'nirvana' ? 'Retired' : st === 'fired' ? 'Let go'
+                          : st === 'pip' ? 'On a PIP' : 'In good standing';
     el.status.className = 'text-[11px] font-bold ' + (
-      st === 'fired' ? 'text-rose-700/70 dark:text-rose-300/70'
+      st === 'nirvana' ? 'text-emerald-700/70 dark:text-emerald-300/70'
+      : st === 'fired' ? 'text-rose-700/70 dark:text-rose-300/70'
       : st === 'pip' ? 'text-amber-700/70 dark:text-amber-300/70'
       : 'text-slate-500 dark:text-slate-400');
-    el.reset.classList.toggle('hidden', st === 'ok' && g.profit === 0);
+    el.reset.classList.toggle('hidden', st === 'ok' && g.money === 0);
+    if (el.hire) el.hire.textContent = (g.hired ? 'Fire ' : 'Hire ') + owner.name;
   }
 
   function loadHead(src) {
-    if (headTried) return;
+    if (headTried || !src) return;
     headTried = true;
     var img = new Image();
     img.decoding = 'async';
     img.onload = function () { head = img; draw(); };
-    img.onerror = function () { head = null; };        // no photo → he keeps his own head
+    img.onerror = function () { head = null; };
     img.src = src;
   }
 
-  function setHired(on, image) {
-    g.hired = on;
-    if (on && image) loadHead(image);
-    el.hire.setAttribute('aria-pressed', on ? 'true' : 'false');
-    el.hire.classList.toggle('border-slate-400', on);
-    el.hire.classList.toggle('dark:border-slate-500', on);
-    if (touch) { if (on) clearTimeout(spawnTimer); else scheduleDrop(); }
-    if (on) cursor = null;
+  // Hiring and firing are the same gesture from opposite ends: one of them walks off to the
+  // left and the other walks on from it. Nobody is sacked here — the one being replaced takes
+  // the rod at the far end, and the one leaving has been hired away at double.
+  function setHired(on) {
+    if (!g || g.entering || g.leaving) return;
+    if (on) {
+      loadHead(owner.image);
+      var displaced = makeWorker('intern', RETIRE_X);
+      displaced.facing = 1;
+      g.parked = displaced;
+      g.hired = true;
+      g.crew[0] = makeWorker('lead', -0.12);
+      g.entering = 1;
+      toast(owner.name + ' starts today', 'good');
+    } else {
+      g.hired = false;
+      g.parked = null;                       // the one who was fishing comes back to work
+      g.internName = pick(INTERN_NAMES);
+      g.leaving = 1;
+      toast(owner.name + ' hired away, 100% hike', 'good');
+    }
+    cursor = null;
+    syncPanel();
+    scheduleDrop();
     start();
-    draw();
   }
 
   function reset() {
     var wasHired = g && g.hired;
     g = freshGame();
-    g.hired = !!wasHired;
+    if (wasHired) { g.hired = true; g.parked = makeWorker('intern', RETIRE_X); }
     if (el.toast) el.toast.classList.add('hidden');
     syncPanel();
     scheduleDrop();
@@ -631,9 +816,6 @@
 
   // ---------------------------------------------------------------- setup
 
-  // Only FAQ and Recommendations, and only once the strip is actually on screen. Everywhere
-  // else it is not dormant, it is absent — a dead grey box on four other tabs would be exactly
-  // the kind of attention this is supposed not to attract.
   function setSectionForArcade(id) {
     if (!el.root || reduced) return;
     active = !!ACTIVE_SECTIONS[id];
@@ -664,8 +846,6 @@
     el.live = document.getElementById('arcade-live');
     el.toast = document.getElementById('arcade-toast');
 
-    // The canvas behind the cards. Built here rather than in index.html because every one of its
-    // dimensions is measured, so there is nothing meaningful to write in the markup.
     sky = document.createElement('canvas');
     sky.id = 'arcade-sky';
     sky.setAttribute('aria-hidden', 'true');
@@ -675,15 +855,13 @@
     sctx = sky.getContext('2d');
 
     touch = !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+    owner.name = (opts && opts.name) || 'the owner';
+    owner.image = (opts && opts.image) || '';
     g = freshGame();
     resize();
     syncPanel();
 
-    var name = (opts && opts.name) || 'me';
-    if (el.hire) {
-      el.hire.textContent = 'Hire ' + name;
-      el.hire.addEventListener('click', function () { setHired(!g.hired, opts && opts.image); });
-    }
+    if (el.hire) el.hire.addEventListener('click', function () { setHired(!g.hired); });
     if (el.reset) el.reset.addEventListener('click', function () { reset(); start(); });
 
     document.addEventListener('pointermove', onPointerMove, { passive: true });
@@ -704,8 +882,8 @@
     document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else start(); });
 
     if (window.IntersectionObserver) {
-      // A real threshold, not a margin: the point is that he starts when you have scrolled all
-      // the way down to him, not when he is nearly in view.
+      // A real threshold, not a margin: he starts when you have scrolled all the way down to
+      // him, not when he is nearly in view.
       new IntersectionObserver(function (entries) {
         onScreen = entries[0].isIntersecting;
         if (onScreen) { resize(); scheduleDrop(); start(); } else stop();
@@ -717,6 +895,23 @@
 
     setSectionForArcade((opts && opts.section) || 'overview');
   }
+
+  // A seam for the test suite. Reaching Associate Director honestly takes about a quarter of an
+  // hour of clicking, which is not a thing a test can do, so it can put money on the board and
+  // drop a specific kind of thing. Nothing here reads or writes anything outside this file, and
+  // nothing else in the page calls it — if it is ever used for anything but a test, that is a
+  // mistake rather than an API.
+  window.arcadeTest = {
+    drop: function (frac, bomb, above) { spawn(frac, groundAbs() - (above || 60), bomb); },
+    pay: function (v) { if (!g) return; g.money = v; promoteIfDue(); syncPanel(); start(); },
+    state: function () {
+      return g ? { rung: g.rung, title: rung().title, money: g.money, crew: g.crew.length,
+                   interns: g.crew.filter(function (w) { return w.kind === 'intern'; }).length,
+                   managers: g.crew.filter(function (w) { return w.kind === 'manager'; }).length,
+                   directors: g.crew.filter(function (w) { return w.kind === 'director'; }).length,
+                   status: g.status, hired: g.hired, parked: !!g.parked, caught: g.caught } : null;
+    }
+  };
 
   window.initArcade = initArcade;
   window.arcadeSetSection = setSectionForArcade;

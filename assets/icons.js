@@ -11,7 +11,7 @@
 // text around them, in light and dark alike, exactly as the CDN ones do.
 //
 // Sources, both MIT:
-//   - Feather      https://github.com/feathericons/feather   (c) 2013-2023 Cole Bemis  (30)
+//   - Feather      https://github.com/feathericons/feather   (c) 2013-2023 Cole Bemis  (31)
 //   - Tabler Icons https://github.com/tabler/tabler-icons     (c) 2020-2024 Paweł Kuna  (9)
 //
 // A brand mark is the trademark of its owner whatever the icon's licence says. These link to
@@ -87,6 +87,8 @@ const ICON_FALLBACK = {
   // feather
   "send-horizontal": "<line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"/><polygon points=\"22 2 15 22 11 13 2 9 22 2\"/>",
   // feather
+  // Feather "rotate-ccw" — the reset arrow.
+  "rotate-ccw": "<polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 2.13-9.36L1 10\"/>",
   "shuffle": "<polyline points=\"16 3 21 3 21 8\"/><line x1=\"4\" y1=\"20\" x2=\"21\" y2=\"3\"/><polyline points=\"21 16 21 21 16 21\"/><line x1=\"15\" y1=\"15\" x2=\"21\" y2=\"21\"/><line x1=\"4\" y1=\"4\" x2=\"9\" y2=\"9\"/>",
   // feather
   "star": "<polygon points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\"/>",
