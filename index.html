@@ -385,6 +385,12 @@
        ========================================================== */
     #print-resume { display: none; }
 
+    /* The document's own typeface, vendored and subset (assets/fonts/). The exported PDF embeds
+       these very files, so the preview and the file cannot disagree about metrics — and it works
+       with no network at all. One family, two weights: headings differ by weight and size. */
+    @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-resume-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Noto Sans Resume'; src: url('assets/fonts/noto-sans-resume-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+
     /* ==========================================================
        RESUME DOCUMENT STYLES (.pr-doc)
        Deliberately OUTSIDE @media print: one set of rules styles both
@@ -401,7 +407,7 @@
     .pr-doc.pr-d-compact { --pr-font: 9pt;  --pr-lead: 1.24; --pr-gap: 0.7; }
     .pr-doc.pr-d-roomy   { --pr-font: 10pt; --pr-lead: 1.44; --pr-gap: 1.45; }
     .pr-doc {
-      font-family: 'Inter', Arial, sans-serif;
+      font-family: 'Noto Sans Resume', 'Inter', Arial, sans-serif;
       color: #2d2d2d;
       background: #fff;
       font-size: var(--pr-font);
@@ -434,12 +440,12 @@
     /* Hero: photo left, details right */
     .pr-doc .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: calc(9px * var(--pr-gap)); }
     .pr-doc .pr-hero img { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; object-position: top; flex: 0 0 auto; }
-    .pr-doc .pr-name { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.9em; font-weight: 800; line-height: 1.08; }
+    .pr-doc .pr-name { font-size: 1.9em; font-weight: 800; line-height: 1.08; }
     .pr-doc .pr-title { font-weight: 600; font-size: 1.05em; margin-top: 1px; }
     .pr-doc .pr-meta { font-size: 0.9em; margin-top: 3px; }
 
     .pr-doc .pr-section-h {
-      font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 1.16em; font-weight: 700;
+      font-size: 1.16em; font-weight: 700;
       margin: calc(10px * var(--pr-gap)) 0 calc(4px * var(--pr-gap)); border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
     }
     .pr-doc .pr-summary { margin: 0; }
@@ -772,12 +778,18 @@
         <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40">
           <div class="flex items-center justify-between sm:justify-start gap-3">
             <button id="pdf-reset" onclick="resetPdfConfig()" class="text-xs font-semibold whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-2 py-1 transition-colors">Reset to defaults</button>
-            <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">Pick <em>Save as PDF</em> in the dialog — a one-click PDF and DOCX are coming.</span>
+            <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden lg:inline">Text stays selectable and links stay clickable.</span>
           </div>
           <div class="flex items-center justify-end gap-2">
-            <button id="pdf-cancel" onclick="closePdfModal()" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
-            <button id="pdf-generate" onclick="generatePdf()" class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
+            <button id="pdf-cancel" onclick="closePdfModal()" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">Cancel</button>
+            <button id="pdf-docx" onclick="saveDocx(this)" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+              <i data-lucide="file-text" class="w-4 h-4"></i>DOCX
+            </button>
+            <button id="pdf-print" onclick="generatePdf()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/60 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
               <i data-lucide="printer" class="w-4 h-4"></i>Print…
+            </button>
+            <button id="pdf-generate" onclick="savePdf(this)" class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 shadow-md hover:shadow-lg hover:bg-indigo-500 dark:hover:bg-amber-300 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-all">
+              <i data-lucide="download" class="w-4 h-4"></i>Save PDF
             </button>
           </div>
         </div>
@@ -4044,28 +4056,84 @@
       return blocks;
     }
 
-    // Greedy fill, one block at a time. A heading left stranded at the foot of a page moves down
-    // with the block it introduces, which is what the printer does too.
-    function pdfPaginate(blocks, usableH) {
-      const pages = [];
-      let page = [], used = 0;
-      blocks.forEach(b => {
-        if (used > 0 && used + b.height > usableH + 0.5) { pages.push({ blocks: page, used: used }); page = []; used = 0; }
-        page.push(b);
-        used += b.height;
-      });
-      if (page.length) pages.push({ blocks: page, used: used });
+    // Fill real sheets, measuring as we go.
+    //
+    // An earlier version modelled this — sum the measured block heights, divide into pages — and
+    // it was wrong by up to 30px a page, because a block's height depends on what it sits next to:
+    // margins collapse differently, and the separator above a role disappears when that role
+    // becomes the first on a page. So the blocks go into the actual sheet one at a time and the
+    // sheet itself is measured after each. Slower by a few milliseconds, exact instead of close.
+    function pdfLayoutSheets(host, blocks, opts) {
+      host.innerHTML = '';
+      const sheets = [];
+      let sheet = null, body = null, wrap = null, wrapKey = '', placed = 0;
 
-      for (let i = 0; i < pages.length - 1; i++) {
-        const last = pages[i].blocks[pages[i].blocks.length - 1];
-        if (last && last.isHeading && pages[i].blocks.length > 1) {
-          pages[i].blocks.pop();
-          pages[i].used -= last.height;
-          pages[i + 1].blocks.unshift(last);
-          pages[i + 1].used += last.height;
+      const newSheet = () => {
+        sheet = document.createElement('div');
+        sheet.className = 'pdf-page pr-doc pr-d-' + opts.density;
+        sheet.style.width = opts.pageW + 'px';
+        sheet.style.minHeight = opts.pageH + 'px';
+        sheet.style.padding = opts.pad + 'px';
+        body = document.createElement('div');
+        body.className = 'pdf-sheet-body';
+        sheet.appendChild(body);
+        host.appendChild(sheet);
+        sheets.push({ el: sheet, body: body, blocks: [] });
+        wrap = null; wrapKey = ''; placed = 0;
+      };
+
+      const put = b => {
+        const key = b.wrapTag ? b.wrapTag + '|' + b.wrapClass : '';
+        let node;
+        if (!key) { wrap = null; wrapKey = ''; node = b.node.cloneNode(true); body.appendChild(node); }
+        else {
+          if (key !== wrapKey) { wrap = document.createElement(b.wrapTag); wrap.className = b.wrapClass; wrapKey = key; body.appendChild(wrap); }
+          node = b.node.cloneNode(true);
+          wrap.appendChild(node);
+        }
+        placed++;
+        sheets[sheets.length - 1].blocks.push(b);
+        return node;
+      };
+
+      const unput = node => {
+        const parent = node.parentNode;
+        parent.removeChild(node);
+        if (parent !== body && !parent.children.length) parent.parentNode.removeChild(parent);
+        placed--;
+        sheets[sheets.length - 1].blocks.pop();
+      };
+
+      // offsetHeight stops at the box; a child's bottom margin escapes it. The visible extent is
+      // what has to fit on the paper, so measure to the last child's bottom edge.
+      const extent = () => {
+        const kids = body.children;
+        if (!kids.length) return 0;
+        return kids[kids.length - 1].getBoundingClientRect().bottom - body.getBoundingClientRect().top;
+      };
+
+      newSheet();
+      for (let i = 0; i < blocks.length; i++) {
+        const node = put(blocks[i]);
+        if (placed > 1 && extent() > opts.usableH) {
+          unput(node);
+          // A heading alone at the foot of a page belongs with what it introduces.
+          const prev = sheets[sheets.length - 1].blocks[placed - 1];
+          let carry = null;
+          if (prev && prev.isHeading && placed > 1) {
+            carry = prev;
+            unput(body.lastElementChild);
+          }
+          newSheet();
+          if (carry) put(carry);
+          put(blocks[i]);
         }
       }
-      return pages;
+      return sheets.map(s => {
+        const kids = s.body.children;
+        const used = kids.length ? kids[kids.length - 1].getBoundingClientRect().bottom - s.body.getBoundingClientRect().top : 0;
+        return { el: s.el, used: used };
+      });
     }
 
     // --- Live preview + section rail ---------------------------------------
@@ -4074,6 +4142,7 @@
     // guides are drawn where a page would end; they are indicative, since the browser does the
     // final pagination.
     let _pdfPreviewTimer = null;
+    let _pdfFontWait = null;
 
     function schedulePdfPreview() {
       if (_pdfPreviewTimer) clearTimeout(_pdfPreviewTimer);
@@ -4094,6 +4163,20 @@
       // included. openPdfModal() calls back once the dialog is actually on screen.
       if (pane.offsetParent === null) return;
 
+      // The document's own webfont loads asynchronously, and font-display: swap means the first
+      // layout happens in the fallback face. Measuring then pages the document against the wrong
+      // metrics — pages overflowed by ~50px — so wait for the real face and lay out once.
+      if (document.fonts && !document.fonts.check('400 10pt "Noto Sans Resume"')) {
+        if (!_pdfFontWait) {
+          _pdfFontWait = Promise.all([
+            document.fonts.load('400 10pt "Noto Sans Resume"'),
+            document.fonts.load('700 10pt "Noto Sans Resume"')
+          ]).catch(() => {});
+          _pdfFontWait.then(() => { _pdfFontWait = null; refreshPdfPreview(); });
+        }
+        return;
+      }
+
       const cfg = pdfConfig.page || { size: 'a4', density: 'normal' };
       const dims = PR_PAGE_MM[cfg.size] || PR_PAGE_MM.a4;
       const marginMm = PR_MARGIN_MM[cfg.density] || PR_MARGIN_MM.normal;
@@ -4102,40 +4185,27 @@
       const usableH = (dims[1] - 2 * marginMm) * MM_PX;
       const density = cfg.density || 'normal';
 
-      // 1. Render the whole document off-screen at content width and measure it.
+      // 1. Render the whole document off-screen at content width; this is what the blocks and
+      //    the Word export are taken from.
       doc.className = 'pr-doc pdf-measure pr-d-' + density;
       doc.style.width = (pageW - 2 * pad) + 'px';
       doc.innerHTML = buildPrintResumeHTML(pdfConfig);
-      const pages = pdfPaginate(pdfBreakBlocks(doc), usableH);
 
-      // 2. Lay the blocks out on real sheets, one element per page.
-      pagesHost.innerHTML = '';
-      pages.forEach((pg, i) => {
-        const sheet = document.createElement('div');
-        sheet.className = 'pdf-page pr-doc pr-d-' + density;
-        sheet.style.width = pageW + 'px';
-        sheet.style.minHeight = (dims[1] * MM_PX) + 'px';
-        sheet.style.padding = pad + 'px';
-        let wrap = null, wrapKey = '';
-        pg.blocks.forEach(b => {
-          const key = b.wrapTag ? b.wrapTag + '|' + b.wrapClass : '';
-          if (!key) { wrap = null; wrapKey = ''; sheet.appendChild(b.node.cloneNode(true)); return; }
-          if (key !== wrapKey) {
-            wrap = document.createElement(b.wrapTag);
-            wrap.className = b.wrapClass;
-            wrapKey = key;
-            sheet.appendChild(wrap);
-          }
-          wrap.appendChild(b.node.cloneNode(true));
-        });
-        pagesHost.appendChild(sheet);
-
+      // 2. Fill real sheets, measuring each as it fills. The scale comes off first: a rect read
+      //    through a transform comes back multiplied, which is exactly the bug that made the old
+      //    page counts wrong.
+      scaler.style.transform = 'none';
+      const laid = pdfLayoutSheets(pagesHost, pdfBreakBlocks(doc), {
+        density: density, pageW: pageW, pageH: dims[1] * MM_PX, pad: pad, usableH: usableH
+      });
+      laid.forEach((pg, i) => {
         const cap = document.createElement('div');
         cap.className = 'pdf-caption';
-        cap.textContent = 'Page ' + (i + 1) + ' of ' + pages.length +
-          ' \u00b7 ' + Math.round((pg.used / usableH) * 100) + '% full';
-        pagesHost.appendChild(cap);
+        cap.textContent = 'Page ' + (i + 1) + ' of ' + laid.length +
+          ' \u00b7 ' + Math.min(100, Math.round((pg.used / usableH) * 100)) + '% full';
+        pagesHost.insertBefore(cap, pg.el.nextSibling);
       });
+      const pages = laid;
 
       // 3. Scale the sheets to the pane.
       const avail = Math.max(120, scroll.clientWidth - 32);
@@ -4174,6 +4244,475 @@
           const target = body.querySelector('[data-pdf-section-index="' + btn.getAttribute('data-pdf-goto') + '"]');
           if (target) target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
         });
+      }
+    }
+
+    /* ============================================================
+       PDF EXPORT (assets/vendor/jspdf.umd.min.js, loaded on demand)
+
+       The generator does NOT lay the document out a second time. The browser has already done
+       that in the preview, so this walks those very sheets and transcribes what it finds —
+       every line of text at the position the browser put it, every link as a real annotation,
+       every rule and bullet. Two layout engines would drift; one cannot.
+
+       Text stays text: selectable, searchable, and readable by an ATS. Nothing is rasterised.
+       ============================================================ */
+    const PDF_FONT = 'NotoResume';
+    let _pdfLibPromise = null;
+
+    function pdfEnsureLib() {
+      if (_pdfLibPromise) return _pdfLibPromise;
+      _pdfLibPromise = new Promise((resolve, reject) => {
+        if (window.jspdf && window.jspdf.jsPDF) return resolve(window.jspdf.jsPDF);
+        const tag = document.createElement('script');
+        tag.src = 'assets/vendor/jspdf.umd.min.js';
+        tag.onload = () => (window.jspdf && window.jspdf.jsPDF) ? resolve(window.jspdf.jsPDF) : reject(new Error('jsPDF missing'));
+        tag.onerror = () => reject(new Error('could not load assets/vendor/jspdf.umd.min.js'));
+        document.head.appendChild(tag);
+      });
+      return _pdfLibPromise;
+    }
+
+    async function pdfFetchBase64(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(url + ' → ' + res.status);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+
+    // The very files the preview renders with, embedded in the file.
+    async function pdfRegisterFonts(doc) {
+      const faces = [['assets/fonts/noto-sans-resume-regular.ttf', 'normal'],
+                     ['assets/fonts/noto-sans-resume-bold.ttf', 'bold']];
+      for (const [url, style] of faces) {
+        const name = url.split('/').pop();
+        doc.addFileToVFS(name, await pdfFetchBase64(url));
+        doc.addFont(name, PDF_FONT, style);
+      }
+    }
+
+    // Images are fetched (not canvas-copied from the page), so a cross-origin logo cannot taint
+    // anything — and each one is redrawn at twice its printed size before embedding. A profile
+    // photo straight from disk is a couple of megabytes; at 76pt on paper it needs about 8 KB,
+    // and a résumé nobody can email is not an export.
+    const PDF_IMG_OVERSAMPLE = 2;
+    const _pdfImgCache = {};
+    async function pdfImageData(src, wPx, hPx) {
+      const key = src + '@' + Math.round(wPx) + 'x' + Math.round(hPx);
+      if (_pdfImgCache[key] !== undefined) return _pdfImgCache[key];
+      try {
+        const res = await fetch(src, { mode: 'cors' });
+        if (!res.ok) throw new Error(String(res.status));
+        const blob = await res.blob();
+        let source;
+        try {
+          source = await createImageBitmap(blob);
+        } catch (e) {
+          // SVG and anything createImageBitmap refuses: go via an <img> and an object URL.
+          source = await new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+            img.src = url;
+          });
+        }
+        const cw = Math.max(1, Math.round(wPx * PDF_IMG_OVERSAMPLE));
+        const ch = Math.max(1, Math.round(hPx * PDF_IMG_OVERSAMPLE));
+        const canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';            // JPEG carries no alpha
+        ctx.fillRect(0, 0, cw, ch);
+        // Cover-fit, matching the object-fit: cover the page uses for photos and logos.
+        const sw = source.width, sh = source.height;
+        const ratio = Math.max(cw / sw, ch / sh);
+        const dw = sw * ratio, dh = sh * ratio;
+        ctx.drawImage(source, (cw - dw) / 2, 0, dw, dh);
+        _pdfImgCache[key] = canvas.toDataURL('image/jpeg', 0.85);
+      } catch (e) {
+        _pdfImgCache[key] = null;   // a logo that will not load must not fail the export
+      }
+      return _pdfImgCache[key];
+    }
+
+    // Split a text node into the lines the BROWSER broke it into, each with its own box.
+    function pdfTextLines(node, lineH) {
+      const text = node.nodeValue || '';
+      if (!text.trim()) return [];
+      const range = document.createRange();
+      const lines = [];
+      let start = 0;
+      while (start < text.length) {
+        while (start < text.length && /\s/.test(text[start]) && text[start] !== ' ') start++;
+        if (start >= text.length) break;
+        // Grow the range while it still occupies a single line box.
+        let lo = start + 1, hi = text.length, end = start + 1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          range.setStart(node, start); range.setEnd(node, mid);
+          const r = range.getBoundingClientRect();
+          if (r.height <= lineH * 1.35) { end = mid; lo = mid + 1; } else { hi = mid - 1; }
+        }
+        range.setStart(node, start); range.setEnd(node, end);
+        const rect = range.getBoundingClientRect();
+        const str = text.slice(start, end).replace(/\s+$/, '');
+        if (str) lines.push({ text: str, x: rect.left, top: rect.top, height: rect.height });
+        start = end;
+      }
+      return lines;
+    }
+
+    function pdfRgb(css) {
+      const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(css || '');
+      return m ? [ +m[1], +m[2], +m[3] ] : [ 0, 0, 0 ];
+    }
+
+    // Walk one rendered sheet and draw everything on it.
+    async function pdfDrawSheet(doc, sheet, origin, PX) {
+      const jobs = [];            // images are async; collect and await at the end
+      const walk = document.createTreeWalker(sheet, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null);
+      const X = px => (px - origin.left) * PX;
+      const Y = px => (px - origin.top) * PX;
+
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (n.nodeType === Node.TEXT_NODE) {
+          const parent = n.parentElement;
+          if (!parent) continue;
+          const cs = getComputedStyle(parent);
+          if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+          const size = parseFloat(cs.fontSize);
+          const lineH = parseFloat(cs.lineHeight) || size * 1.3;
+          const bold = (parseInt(cs.fontWeight, 10) || 400) >= 600;
+          doc.setFont(PDF_FONT, bold ? 'bold' : 'normal');
+          doc.setFontSize(size * PX);
+          const [r, g, b] = pdfRgb(cs.color);
+          doc.setTextColor(r, g, b);
+          pdfTextLines(n, lineH).forEach(line => {
+            // Half-leading puts the em box in the middle of the line box.
+            const top = line.top + (line.height - size) / 2;
+            doc.text(line.text, X(line.x), Y(top), { baseline: 'top' });
+          });
+          continue;
+        }
+
+        const el = n;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        const box = el.getBoundingClientRect();
+
+        if (el.tagName === 'IMG' && el.src) {
+          jobs.push(pdfImageData(el.src, box.width, box.height).then(data => {
+            if (!data) return;
+            try { doc.addImage(data, 'JPEG', X(box.left), Y(box.top), box.width * PX, box.height * PX); } catch (e) {}
+          }));
+          continue;
+        }
+
+        // Rules: the section underline and the separator above each role.
+        const bw = parseFloat(cs.borderBottomWidth) || 0;
+        if (bw > 0 && cs.borderBottomStyle !== 'none') {
+          const [r, g, b] = pdfRgb(cs.borderBottomColor);
+          doc.setDrawColor(r, g, b); doc.setLineWidth(bw * PX);
+          doc.line(X(box.left), Y(box.bottom), X(box.right), Y(box.bottom));
+        }
+        const tw = parseFloat(cs.borderTopWidth) || 0;
+        if (tw > 0 && cs.borderTopStyle !== 'none') {
+          const [r, g, b] = pdfRgb(cs.borderTopColor);
+          doc.setDrawColor(r, g, b); doc.setLineWidth(tw * PX);
+          doc.line(X(box.left), Y(box.top), X(box.right), Y(box.top));
+        }
+
+        // List markers live in ::marker, which is not in the DOM — draw them.
+        if (el.tagName === 'LI' && cs.listStyleType === 'disc') {
+          const size = parseFloat(cs.fontSize);
+          const [r, g, b] = pdfRgb(cs.color);
+          doc.setFillColor(r, g, b);
+          doc.circle(X(box.left - size * 0.55), Y(box.top + size * 0.62), size * 0.1 * PX, 'F');
+        }
+
+        // Real link annotations, which is the whole point of not rasterising.
+        if (el.tagName === 'A' && el.getAttribute('href')) {
+          doc.link(X(box.left), Y(box.top), box.width * PX, box.height * PX, { url: el.href });
+        }
+      }
+      await Promise.all(jobs);
+    }
+
+    function pdfFileName(ext) {
+      const name = ((typeof PERSONAL_DATA !== 'undefined' && PERSONAL_DATA.name) || 'resume')
+        .replace(/[^\w]+/g, '_').replace(/^_|_$/g, '');
+      return name + '_Resume.' + ext;
+    }
+
+    // Build the file from the sheets on screen. The scale is lifted for the duration so every
+    // measurement is in real CSS pixels.
+    async function exportResumePdf() {
+      const jsPDFCtor = await pdfEnsureLib();
+      const scaler = document.getElementById('pdf-preview-scaler');
+      const sheets = Array.prototype.slice.call(document.querySelectorAll('#pdf-preview-pages .pdf-page'));
+      if (!sheets.length) throw new Error('nothing to export');
+
+      const cfg = (pdfConfig && pdfConfig.page) || { size: 'a4' };
+      const dims = PR_PAGE_MM[cfg.size] || PR_PAGE_MM.a4;
+      const PX = 72 / 96;                      // CSS pixels → PDF points
+      const prevTransform = scaler ? scaler.style.transform : '';
+      if (scaler) scaler.style.transform = 'none';
+
+      try {
+        // Points throughout: the paper size converts once, and every coordinate below is then
+        // a straight CSS-pixel → point conversion with no unit juggling.
+        const pagePt = [dims[0] * 72 / 25.4, dims[1] * 72 / 25.4];
+        const doc = new jsPDFCtor({ unit: 'pt', format: pagePt, compress: true });
+        await pdfRegisterFonts(doc);
+        for (let i = 0; i < sheets.length; i++) {
+          if (i) doc.addPage(pagePt);
+          const box = sheets[i].getBoundingClientRect();
+          await pdfDrawSheet(doc, sheets[i], { left: box.left, top: box.top }, PX);
+        }
+        doc.setProperties({
+          title: ((typeof PERSONAL_DATA !== 'undefined' && PERSONAL_DATA.name) || '') + ' — Résumé',
+          author: (typeof PERSONAL_DATA !== 'undefined' && PERSONAL_DATA.name) || '',
+          creator: 'aaronified.github.io'
+        });
+        return doc;
+      } finally {
+        if (scaler) scaler.style.transform = prevTransform;
+      }
+    }
+
+    async function savePdf(btn) {
+      const label = btn && btn.innerHTML;
+      try {
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Building PDF…'; }
+        const doc = await exportResumePdf();
+        doc.save(pdfFileName('pdf'));
+      } catch (e) {
+        alert('Could not build the PDF: ' + e.message + '\nYou can still use Print.');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = label; if (window.lucide) lucide.createIcons(); }
+      }
+    }
+
+
+    /* ============================================================
+       DOCX EXPORT — no library.
+
+       A .docx is a ZIP of a few XML parts, and Word accepts STORED (uncompressed) entries, so
+       the whole writer is a CRC32 plus a couple of headers. That keeps the promise the rest of
+       this repo makes: nothing to install.
+
+       The Word file is deliberately LINEARISED — one column, no tables — because its job is to
+       survive an ATS upload, and applicant tracking systems routinely read multi-column layouts
+       in the wrong order. The PDF is the one you send to a person.
+       ============================================================ */
+    const _crcTable = (() => {
+      const t = new Int32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[n] = c;
+      }
+      return t;
+    })();
+    function crc32(bytes) {
+      let c = -1;
+      for (let i = 0; i < bytes.length; i++) c = (c >>> 8) ^ _crcTable[(c ^ bytes[i]) & 0xFF];
+      return (c ^ -1) >>> 0;
+    }
+
+    // Minimal ZIP writer: stored entries only, which Word reads happily.
+    function zipStore(files) {
+      const enc = new TextEncoder();
+      const parts = [], central = [];
+      let offset = 0;
+      const u16 = v => [v & 0xFF, (v >>> 8) & 0xFF];
+      const u32 = v => [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF];
+      files.forEach(f => {
+        const name = enc.encode(f.name);
+        const data = enc.encode(f.data);
+        const crc = crc32(data);
+        const local = [].concat([0x50, 0x4B, 0x03, 0x04], u16(20), u16(0), u16(0), u16(0), u16(0),
+          u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0));
+        parts.push(new Uint8Array(local), name, data);
+        central.push(new Uint8Array([].concat([0x50, 0x4B, 0x01, 0x02], u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+          u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0),
+          u32(0), u32(offset))), name);
+        offset += local.length + name.length + data.length;
+      });
+      let centralLen = 0;
+      central.forEach(c => { centralLen += c.length; });
+      const end = new Uint8Array([].concat([0x50, 0x4B, 0x05, 0x06], u16(0), u16(0), u16(files.length), u16(files.length),
+        u32(centralLen), u32(offset), u16(0)));
+      const out = new Uint8Array(offset + centralLen + end.length);
+      let pos = 0;
+      parts.forEach(c => { out.set(c, pos); pos += c.length; });
+      central.forEach(c => { out.set(c, pos); pos += c.length; });
+      out.set(end, pos);
+      return out;
+    }
+
+    function xmlEsc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Walk the rendered document and turn it into Word paragraphs. Reusing the DOM means the
+    // selections, order and (later) edits come along without a second content pipeline.
+    function docxFromDocument(root) {
+      const rels = [];
+      const body = [];
+      const relFor = url => {
+        const found = rels.filter(r => r.url === url)[0];
+        if (found) return found.id;
+        const id = 'rId' + (100 + rels.length);
+        rels.push({ id: id, url: url });
+        return id;
+      };
+
+      const runsOf = el => {
+        const out = [];
+        const walk = (node, bold, link) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.nodeValue.replace(/\s+/g, ' ');
+            if (text.trim()) out.push({ text: text, bold: bold, link: link });
+            return;
+          }
+          if (node.nodeType !== Node.ELEMENT_NODE || node.tagName === 'IMG') return;
+          const cs = getComputedStyle(node);
+          const b = bold || (parseInt(cs.fontWeight, 10) || 400) >= 600;
+          const l = (node.tagName === 'A' && node.getAttribute('href')) ? node.href : link;
+          Array.prototype.forEach.call(node.childNodes, ch => walk(ch, b, l));
+        };
+        walk(el, false, null);
+        return out;
+      };
+
+      const para = (runs, opts) => {
+        opts = opts || {};
+        if (!runs.length) return;
+        const props = ['<w:pPr>'];
+        if (opts.bullet) props.push('<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>');
+        props.push('<w:spacing w:before="' + (opts.before || 0) + '" w:after="' + (opts.after == null ? 60 : opts.after) + '"/>');
+        props.push('</w:pPr>');
+        const xml = runs.map(r => {
+          const fmt = '<w:rPr>' + (r.bold ? '<w:b/>' : '') +
+            (r.link ? '<w:color w:val="1D4ED8"/><w:u w:val="single"/>' : '') +
+            (opts.size ? '<w:sz w:val="' + opts.size + '"/><w:szCs w:val="' + opts.size + '"/>' : '') + '</w:rPr>';
+          const run = '<w:r>' + fmt + '<w:t xml:space="preserve">' + xmlEsc(r.text) + '</w:t></w:r>';
+          return r.link ? '<w:hyperlink r:id="' + relFor(r.link) + '">' + run + '</w:hyperlink>' : run;
+        }).join('');
+        body.push('<w:p>' + props.join('') + xml + '</w:p>');
+      };
+
+      Array.prototype.forEach.call(root.children, section => {
+        if (section.classList.contains('pr-hero')) {
+          const name = section.querySelector('.pr-name');
+          const title = section.querySelector('.pr-title');
+          if (name) para([{ text: name.textContent.trim(), bold: true }], { size: 40, after: 40 });
+          if (title) para(runsOf(title), { size: 22, after: 40 });
+          Array.prototype.forEach.call(section.querySelectorAll('.pr-meta'), m => para(runsOf(m), { size: 18, after: 40 }));
+          return;
+        }
+        if (section.classList.contains('pr-section-h')) {
+          para([{ text: section.textContent.trim(), bold: true }], { size: 26, before: 200, after: 80 });
+          return;
+        }
+        if (section.tagName === 'TABLE') {
+          Array.prototype.forEach.call(section.tBodies, tb => {
+            const co = tb.querySelector('.co'), role = tb.querySelector('.role'), period = tb.querySelector('.period');
+            const head = [];
+            const coLink = co ? co.querySelector('a') : null;
+            if (co) head.push({ text: co.textContent.trim(), bold: true, link: coLink ? coLink.href : null });
+            if (role) head.push({ text: ' ' + role.textContent.trim(), bold: false });
+            if (period) head.push({ text: '  —  ' + period.textContent.trim(), bold: false });
+            para(head, { before: 120, after: 20 });
+            const lead = tb.querySelector('.lead');
+            if (lead) para(runsOf(lead), { after: 20 });
+            Array.prototype.forEach.call(tb.querySelectorAll('li'), li => para(runsOf(li), { bullet: true, after: 0 }));
+          });
+          return;
+        }
+        const items = section.children.length ? Array.prototype.slice.call(section.children) : [section];
+        items.forEach(item => {
+          if (item.tagName === 'UL' || item.tagName === 'OL') {
+            Array.prototype.forEach.call(item.children, li => para(runsOf(li), { bullet: true, after: 0 }));
+            return;
+          }
+          const lists = item.querySelectorAll ? Array.prototype.slice.call(item.querySelectorAll('ul')) : [];
+          const clone = item.cloneNode(true);
+          if (clone.querySelectorAll) Array.prototype.forEach.call(clone.querySelectorAll('ul'), ul => ul.parentNode.removeChild(ul));
+          para(runsOf(clone), { after: 20 });
+          lists.forEach(ul => Array.prototype.forEach.call(ul.children, li => para(runsOf(li), { bullet: true, after: 0 })));
+        });
+      });
+
+      return { body: body.join(''), rels: rels };
+    }
+
+    function docxBuild(root) {
+      const built = docxFromDocument(root);
+      const NS = 'http://schemas.openxmlformats.org/';
+      const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="' + NS + 'package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+        '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
+        '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+        '</Types>';
+      const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="' + NS + 'package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="' + NS + 'officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+        '</Relationships>';
+      const docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="' + NS + 'package/2006/relationships">' +
+        '<Relationship Id="rId2" Type="' + NS + 'officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        '<Relationship Id="rId3" Type="' + NS + 'officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
+        built.rels.map(r => '<Relationship Id="' + r.id + '" Type="' + NS + 'officeDocument/2006/relationships/hyperlink" Target="' + xmlEsc(r.url) + '" TargetMode="External"/>').join('') +
+        '</Relationships>';
+      const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<w:styles xmlns:w="' + W + '"><w:docDefaults><w:rPrDefault><w:rPr>' +
+        '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/></w:rPr></w:rPrDefault></w:docDefaults></w:styles>';
+      const numbering = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<w:numbering xmlns:w="' + W + '">' +
+        '<w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/>' +
+        '<w:lvlText w:val="•"/><w:pPr><w:ind w:left="360" w:hanging="180"/></w:pPr></w:lvl></w:abstractNum>' +
+        '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>';
+      const documentXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<w:document xmlns:w="' + W + '" xmlns:r="' + NS + 'officeDocument/2006/relationships"><w:body>' +
+        built.body +
+        '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850"/></w:sectPr>' +
+        '</w:body></w:document>';
+      return zipStore([
+        { name: '[Content_Types].xml', data: contentTypes },
+        { name: '_rels/.rels', data: rootRels },
+        { name: 'word/document.xml', data: documentXml },
+        { name: 'word/_rels/document.xml.rels', data: docRels },
+        { name: 'word/styles.xml', data: styles },
+        { name: 'word/numbering.xml', data: numbering }
+      ]);
+    }
+
+    function saveDocx(btn) {
+      const label = btn && btn.innerHTML;
+      try {
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Building...'; }
+        const root = document.getElementById('pdf-preview-doc');
+        if (!root || !root.children.length) throw new Error('nothing to export');
+        const blob = new Blob([docxBuild(root)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = pdfFileName('docx');
+        document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) {
+        alert('Could not build the Word file: ' + e.message);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = label; if (window.lucide) lucide.createIcons(); }
       }
     }
 

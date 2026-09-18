@@ -601,9 +601,15 @@ A few notes:
 ## Downloadable PDF Resume
 
 The **Save PDF** button (under the profile photo, and in the sticky bar) opens the export screen:
-a **section rail**, the **settings**, and a **live preview** of the document itself. **Print / Save
-as PDF** then hands off to your browser's print dialog — choose *Save as PDF*. What you get is a
-**separate, compact layout** built from the same data, not the on-screen page:
+a **section rail**, the **settings**, and a **live preview** of the document itself. Three ways out:
+
+| Button | What it does |
+|---|---|
+| **Save PDF** | Builds the PDF in your browser and downloads it, correctly named. Text stays selectable, links stay clickable, fonts are embedded. ~77 KB, no dialog. |
+| **DOCX** | A real Word file, written without a library. Deliberately **single-column** — an ATS reads multi-column layouts in the wrong order, so this is the one to upload to a form. |
+| **Print…** | Your browser's print dialog, if you want paper or its own PDF writer. |
+
+All three render the **same curated layout** built from the same data, not the on-screen page:
 
 - **Hero** — photo left; name, tagline, contacts (incl. the live web URL from `PERSONAL_DATA.website`
   or the auto-detected host), and computed **Experience · Base** on the right.
@@ -616,10 +622,15 @@ as PDF** then hands off to your browser's print dialog — choose *Save as PDF*.
   you set on the selection screen.
 - **Education** — degrees, with any **internships nested under the college** attended at that time
   (matched automatically by date).
-- **Links are real links.** Contact lines, employer names and project URLs are anchors, so they
-  stay **clickable in the exported PDF**. One caveat worth knowing: every browser's own *Save as
-  PDF* preserves them, but Windows' *Microsoft Print to PDF* is a printer driver and flattens
-  everything — pick the browser's PDF option, not that one.
+- **Links are real links.** Contact lines, employer names and project URLs become clickable
+  annotations in the PDF and hyperlink relationships in the DOCX. (If you use **Print…** instead,
+  every browser's own *Save as PDF* keeps them, but Windows' *Microsoft Print to PDF* is a printer
+  driver and flattens everything — pick the browser's option, not that one.)
+- **The PDF is the preview, transcribed.** The generator does not lay the document out a second
+  time: the browser has already done that in the preview, so the exporter walks those sheets and
+  writes each line where the browser put it. Two layout engines would drift; one cannot.
+- **Fonts are embedded** from `assets/fonts/` — subsets of Noto Sans, 12 KB each, the same files
+  the preview renders with. That is why **₹** and accented characters survive.
 - **Colours:** body text is dark grey, headings are black, and all inline highlights render as
   **bold blue** (no pills/backgrounds).
 - FAQ and Recommendations are omitted.
