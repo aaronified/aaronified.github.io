@@ -801,7 +801,12 @@
       : st === 'pip' ? 'text-amber-700/70 dark:text-amber-300/70'
       : 'text-slate-500 dark:text-slate-400');
     el.reset.classList.toggle('hidden', st === 'ok' && g.money === 0);
-    if (el.hire) el.hire.textContent = (g.hired ? 'Fire ' : 'Hire ') + owner.name;
+    if (el.hire) {
+      el.hire.textContent = (g.hired ? 'Fire ' : 'Hire ') + owner.name;
+      // There is no job to offer once the company has finished. Reset is the way on from here.
+      el.hire.disabled = st === 'nirvana';
+      el.hire.classList.toggle('opacity-40', st === 'nirvana');
+    }
   }
 
   function loadHead(src) {
@@ -819,6 +824,13 @@
   // the rod at the far end, and the one leaving has been hired away at double.
   function setHired(on) {
     if (!g || g.entering || g.leaving) return;
+    // Nirvana is the end of the story, not a vacancy. Swapping anyone in would re-trip it on
+    // the next frame, since the money is already past the line.
+    if (g.status === 'nirvana') return;
+    // Whoever walks on starts their own shift. Without this, hiring the owner after the intern
+    // had been let go left the game in its ended state: he arrived, walked straight to the far
+    // corner and sat down to fish, still reading "Let go".
+    if (g.status !== 'ok') { g.status = 'ok'; g.strikes = 0; g.settled = false; }
     if (on) {
       loadHead(owner.image);
       var displaced = makeWorker('intern', RETIRE_X);
