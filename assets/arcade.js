@@ -645,7 +645,7 @@
   }
 
   var RETIRE_X = 0.90;          // where a displaced or let-go worker goes to fish
-  var CINEMA_X = 0.07;          // …and where a retired one goes to watch films
+  var CINEMA_X = 0.13;          // …and where a retired one goes to watch films
 
   function walkTo(w, target, dt, sp) {
     var pw = playW(), mv = ((sp || BASE_SPEED) / pw) * dt, d = target - w.x;
@@ -808,7 +808,7 @@
 
     // A rod out to the right for whoever was displaced. `tug` swings it; `slump` is the moment
     // after, when there was nothing on the end of it.
-    if (opts.seated) {
+    if (opts.rod) {
       var swing = opts.tug || 0;
       var hx = left + ww, hy = top + (9 - Math.round(swing * 2)) * PX;
       for (var i = 0; i < 9; i++) px(s.K, hx + i * PX, hy - i * PX, PX, PX);
@@ -816,17 +816,29 @@
       px(s.near, tipX, tipY, 1, groundY() - 3 - tipY - Math.round(swing * 10));
       px(s.cash, tipX - 2, groundY() - 6 - Math.round(swing * 10), 4, 3);
     }
-    // The screen, and whatever is moving on it.
+    // The screen he retired in front of. Drawn side on, like everything else here: the back of
+    // the case toward us on the left, the lit face turned right, at him. It stands ON the
+    // ground — the stand used to stop seven pixels short and the whole thing floated.
     if (opts.cinema) {
-      var sx = left - 36, sy = groundY() - 34;
-      px(s.screen, sx, sy, 28, 18);
-      px(s.near, sx + 2, sy + 2, 24, 14);
-      for (var b = 0; b < 5; b++) {
-        var on = (opts.flicker + b * 3) % 7 < 3;
-        px(on ? s.screen : s.near, sx + 4 + b * 4, sy + 4 + ((b * 5 + opts.flicker) % 7), 3, 4);
+      var gy = groundY();
+      var bx = left - 24, bw = 12, bh = 16;
+      var by = gy - 27;
+      // Drawn in the figure's own dark, not the landscape's grey: in the landscape's grey it
+      // was just another building with a post under it.
+      px(s.K, bx - 2, gy - 3, 11, 3);               // base, sitting ON the ground line
+      px(s.K, bx + 3, gy - 11, 4, 8);               // post
+      px(s.K, bx, by, bw, bh);                      // the case, its back to us
+      // Side on, the only part of a screen you can see is the lit strip at its front edge. It
+      // gets a dark bezel on the outside or it bleeds straight into the sky behind it.
+      px(s.far, bx + bw - 4, by + 2, 3, bh - 4);
+      px(s.K, bx + bw - 1, by + 2, 1, bh - 4);
+      for (var b = 0; b < 3; b++) {
+        var on = (opts.flicker + b * 3) % 7 < 4;
+        px(on ? s.near : s.far, bx + bw - 4, by + 4 + b * 4, 3, 2);
       }
-      px(s.screen, sx + 12, sy + 18, 4, 7);
-      px(s.near, sx + 8, sy + 25, 12, 2);
+      // …and the light it throws on the person watching it.
+      px(s.far, bx + bw + 1, by + 5, 2, 1);
+      px(s.far, bx + bw + 3, by + 8, 2, 1);
     }
   }
 
@@ -900,7 +912,7 @@
       itemShape(ctx, s, Math.round(it.x * pw - ITEM / 2), Math.round(y), it);
     }
     ctx.globalAlpha = 1;
-    if (g.parked) drawFigure(s, g.parked, { seated: true, look: 'intern' });
+    if (g.parked) drawFigure(s, g.parked, { seated: true, rod: true, look: 'intern' });
     // Back to front, so the lead is never hidden behind somebody they hired. Drawn solid: the
     // ranks are told apart by what they wear, and a translucent sprite over a moving backdrop
     // is a different colour every frame.
@@ -910,7 +922,10 @@
     drawFigure(s, g.crew[0], {
       look: g.hired ? 'lead' : 'player',
       photo: g.hired,
-      seated: fishing,
+      // Both endings are the same pose — on a stool, seen from the side. One of them has a rod
+      // in their hand and the other is turned the other way, watching something.
+      seated: fishing || watching,
+      rod: fishing,
       cinema: watching,
       // The rod swings on a pull and drops back; the head turns away on a sideways look.
       tug: fishing ? (g.tug > 0 ? Math.sin((1 - g.tug / 0.9) * Math.PI) : 0) : 0,
