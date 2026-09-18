@@ -78,5 +78,30 @@ const OVERVIEW_DATA = {
       description: "^Data literacy programs^. Mentorship. Process automation. Revenue opportunity identification. Cost optimization. ^Strategic reporting to leadership^.",
       skills: ["Data literacy", "Mentorship", "Process automation", "Revenue opportunities", "Cost optimization", "Strategic reporting"]
     }
-  ]
+  ],
+
+  // STRENGTHS — the `title` of each competency above that you want a recruiter to take away.
+  // A subset of what you already claim, not a second list that can drift out of step with it:
+  // anything here that is not a competency title is ignored.
+  //
+  // Drawn as plain pills, with no proficiency scale — `skillBars` is where levels live. Leave
+  // it empty and nothing is drawn, on the page or in the résumé.
+  strengths: [
+    "Analytics & Data Science",
+    "Strategic Leadership",
+    "Analytics Infrastructure",
+    "Supply Chain & Operations",
+    "Technical Tools",
+    "Cross-Functional Impact"
+  ],
+
+  // LANGUAGES — shown on the Overview tab beside the global footprint, and in the résumé's
+  // column. `level` is free text: "Native", "Professional", "Conversational", whatever is true.
+  // Example: { name: "English", level: "Professional" }
+  languages: [],
+
+  // INTERESTS — the last thing on the Overview tab, and nowhere near the résumé unless you put
+  // it there. Plain strings.
+  // Example: "Long-distance cycling"
+  interests: []
 };

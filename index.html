@@ -970,7 +970,21 @@
     .pr-doc.pr-t-dokra .pr-aside li { margin: 0 0 calc(3px * var(--pr-gap)); font-size: 0.95em; }
     .pr-doc.pr-t-dokra .pr-aside .t { font-weight: 700; }
     .pr-doc.pr-t-dokra .pr-aside .pr-aside-sk { font-size: 0.9em; color: #52606d; }
-    .pr-doc.pr-t-dokra .pr-aside .pr-summary { margin: 0; font-size: 0.95em; }
+
+    /* About spans the paper above the pair of columns. It sits before the floats in the
+       markup, so it is full width by construction; `clear: both` on .pr-section-h would
+       otherwise be doing nothing here anyway. */
+    .pr-doc.pr-t-dokra .pr-summary.pr-dokra-about { margin: 0 0 calc(6px * var(--pr-gap)); }
+
+    /* Strengths, as tokens. Deliberately unranked. Scoped to the template that shows them —
+       an unscoped rule here would be dead CSS in the other two, which is what the drift suite
+       is watching for. */
+    .pr-doc.pr-t-dokra .pr-pills { display: flex; flex-wrap: wrap; gap: 3px 4px; margin: 2px 0 0; }
+    .pr-doc.pr-t-dokra .pr-pill {
+      display: inline-block; padding: 1px 5px; border-radius: 999px; font-size: 0.85em;
+      line-height: 1.5; border: 1px solid var(--pr-accent); color: var(--pr-accent);
+      print-color-adjust: exact; -webkit-print-color-adjust: exact;
+    }
 
     /* The projects take the other half of the opening row. */
     .pr-doc.pr-t-dokra .pr-dokra-right {
@@ -2645,9 +2659,18 @@
       // Dokra is built for someone whose experience is still short: what they know and what
       // they have studied come first, what they have built sits beside it, and the roles run
       // underneath. A long career would fill the bottom; a short one does not have to pretend.
+      // Strengths: a few things out of the competencies, as plain pills. No scale — the bars
+      // are where levels live, and a pill with a number on it is a bar pretending not to be one.
+      const compTitles = (OVERVIEW_DATA.competencies || []).map(c => c.title);
+      const strengthPills = (OVERVIEW_DATA.strengths || []).filter(x => compTitles.indexOf(x) >= 0);
+      const strengthsHTML = strengthPills.length
+        ? `<div class="pr-pills">${strengthPills.map(x => `<span class="pr-pill">${escapeHtml(x)}</span>`).join('')}</div>` : '';
+      const langRows = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
+      const languagesHTML = langRows.length
+        ? `<ul class="pr-langs">${langRows.map(l => `<li><span class="t">${escapeHtml(l.name)}</span>` +
+            `${l.level ? `<span class="pr-aside-sk"> &middot; ${escapeHtml(l.level)}</span>` : ''}</li>`).join('')}</ul>` : '';
+
       const dokraAside = (template !== 'dokra') ? '' : (() => {
-        const about = (sumCfg.include !== false && summaryHtml)
-          ? `<h4>About</h4><p class="pr-summary" data-edit="sum">${summaryHtml}</p>` : '';
         const bars = skillBarsHTML ? `<h4>Skills</h4>${skillBarsHTML}` : '';
         const edu = eduList
           .filter(e => !(entCfg[e.id] && !entCfg[e.id].include))
@@ -2660,9 +2683,16 @@
                    `<div class="pr-aside-sk">${escapeHtml(e.role)}${score} &middot; ${escapeHtml(e.period)}</div>${desc}</li>`;
           }).join('');
         const eduBlock = edu ? `<h4>Education</h4><ul>${edu}</ul>` : '';
-        return (about || bars || eduBlock)
-          ? `<aside class="pr-aside">${about}${bars}${eduBlock}</aside>` : '';
+        const strBlock = strengthsHTML ? `<h4>Strengths</h4>${strengthsHTML}` : '';
+        const langBlock = languagesHTML ? `<h4>Languages</h4>${languagesHTML}` : '';
+        const body = bars + eduBlock + strBlock + langBlock;
+        return body ? `<aside class="pr-aside">${body}</aside>` : '';
       })();
+      // About runs the full width of the paper ABOVE the two columns, so it must come before
+      // the floats — a float only has things wrap around it, and About is not meant to.
+      const dokraAbout = (template !== 'dokra' || sumCfg.include === false || !summaryHtml) ? ''
+        : `<div class="pr-section-h pr-dokra-about">About</div>` +
+          `<p class="pr-summary pr-dokra-about" data-edit="sum">${summaryHtml}</p>`;
       // …and the projects take the other half of that row.
       // Two top-level blocks rather than one wrapper: pdfBreakBlocks already splits a
       // `.pr-projects` container into its items, so the column can run over a page break. As a
@@ -2729,7 +2759,7 @@
       // beside everything, so its aside comes first; Dokra's banner spans the full page and the
       // column starts under it, so there the aside comes after the banner and the strip.
       return `
-        ${template === 'dokra' ? heroHTML + asideHTML + dokraRight : asideHTML + heroHTML}
+        ${template === 'dokra' ? heroHTML + dokraAbout + asideHTML + dokraRight : asideHTML + heroHTML}
 
         ${(sumCfg.include !== false && sumFlow) ? `<div class="pr-section-h">Summary</div><p class="pr-summary" data-edit="sum">${sumFlow}</p>` : ''}
 
