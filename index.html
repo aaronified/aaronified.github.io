@@ -634,6 +634,65 @@
     .dark #arcade-toast[data-tone="pip"]  { color: #c4a468; }
     .dark #arcade-toast[data-tone="bad"]  { color: #c98d8d; }
 
+    /* RUNNING MATTER — what repeats on every sheet: whose résumé this is, how to reach them,
+       and where you are in it. All of it lives in the paper margin, so it takes nothing from
+       the content; `position: absolute` against .pdf-page, which is already relative.
+
+       It is added by prAddRunningMatter() on the SHEETS only. #print-resume is one continuous
+       document with no page boundaries of its own, so there is nothing there to number — and
+       Ctrl-P is routed to the real export anyway. */
+    .pr-runfoot, .pr-runbar {
+      font-size: 7.4pt; letter-spacing: .01em; line-height: 1.25;
+      font-variant-numeric: tabular-nums;
+    }
+    .pr-runfoot {
+      position: absolute; bottom: calc(var(--pr-pad, 12mm) * 0.34);
+      display: flex; align-items: baseline; gap: 7px; color: #94a3b8;
+    }
+    .pr-runfoot .pr-run-n { font-weight: 700; }
+    /* Bhagirathi and Dokra: bottom right, right-aligned. */
+    .pdf-page.pr-t-bhagirathi .pr-runfoot,
+    .pdf-page.pr-t-dokra .pr-runfoot { right: var(--pr-pad, 12mm); justify-content: flex-end; }
+    /* Pattachitra: the page number always sits at the bottom left, in the painted column, on
+       the theme colour. The contact line joins it there on the opening page, where the column
+       is 56mm wide; on the pages after it the column narrows to 13mm and the line would break
+       into a stack of fragments, so it steps out to the right of the column instead. */
+    .pdf-page.pr-t-pattachitra .pr-runnum {
+      position: absolute; bottom: calc(var(--pr-pad, 12mm) * 0.34);
+      left: var(--pr-pad, 12mm); font-size: 7.4pt; font-weight: 700; line-height: 1.25;
+      font-variant-numeric: tabular-nums; color: var(--pr-on-theme, #e3d8ca); opacity: .8;
+    }
+    .pdf-page.pr-t-pattachitra:first-of-type .pr-runfoot {
+      /* border-box, or the 12mm+6mm padding is added to the 56mm and the block hangs exactly
+         that far off the painted column. */
+      box-sizing: border-box;
+      left: 0; width: var(--pr-band); padding: 0 6mm 0 var(--pr-pad, 12mm);
+      bottom: calc(var(--pr-pad, 12mm) * 0.34 + 11pt);
+      flex-wrap: wrap; gap: 2px 7px; color: var(--pr-on-theme, #e3d8ca); opacity: .8;
+    }
+    .pdf-page.pr-t-pattachitra:not(:first-of-type) .pr-runfoot {
+      left: calc(var(--pr-band) + 6mm); right: var(--pr-pad, 12mm);
+    }
+    .pdf-page.pr-t-pattachitra .pr-runfoot .pr-run-id { font-weight: 700; }
+    /* min-width:0 because a flex item will not shrink below its content otherwise, and the
+       email then ran straight off the painted column onto the paper. */
+    .pdf-page.pr-t-pattachitra:first-of-type .pr-runfoot .pr-run-id,
+    .pdf-page.pr-t-pattachitra:first-of-type .pr-runfoot .pr-run-c {
+      width: 100%; min-width: 0; overflow-wrap: anywhere;
+    }
+    /* Dokra: a slim bar across the head of every continuation page, edge to edge like the
+       banner it is standing in for. */
+    .pr-runbar {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 2.2mm var(--pr-pad, 12mm);
+      background: var(--pr-theme, #2f3640); color: var(--pr-on-theme, #fff);
+      print-color-adjust: exact; -webkit-print-color-adjust: exact;
+    }
+    .pr-runbar .pr-run-id { font-weight: 700; }
+    .pr-runbar .pr-run-c { opacity: .82; flex: 1; }
+    .pr-runbar .pr-run-n { font-weight: 700; opacity: .82; }
+
     /* Template carousel: a deck rather than a strip. The chosen template is centred and full
        size; the others sit behind it, turned away and dimmed, close enough to read. Each card
        is a whole page of the user's own résumé at true width, scaled into the card, so the
@@ -4901,6 +4960,20 @@
     }
     function pdfContactKey(c, i) { return (c && c.type) ? String(c.type) : ('contact-' + i); }
     // Ordered hero-contact choices: each PERSONAL_DATA contact + the derived web URL ('__web').
+    // Who this is and how to reach them, for the matter that repeats on every sheet. Read
+    // through the SAME include toggles as the hero: a phone somebody removed from their résumé
+    // must not reappear along the bottom of every page.
+    function prRunningInfo(config) {
+      const cfg = (config && config.contacts && config.contacts.items) || {};
+      const kept = pdfContactChoices().filter(cc => !(cfg[cc.key] && cfg[cc.key].include === false));
+      const find = re => (kept.find(cc => re.test(cc.href || '')) || {}).label || '';
+      return {
+        name: PERSONAL_DATA.name || '',
+        phone: find(/^tel:/i),
+        email: find(/^mailto:/i)
+      };
+    }
+
     function pdfContactChoices() {
       const list = (PERSONAL_DATA.contacts || []).map((c, i) => ({ key: pdfContactKey(c, i), label: c.label, icon: c.icon, href: c.href }));
       const web = pdfWebUrl();
@@ -5278,6 +5351,58 @@
     // margins collapse differently, and the separator above a role disappears when that role
     // becomes the first on a page. So the blocks go into the actual sheet one at a time and the
     // sheet itself is measured after each. Slower by a few milliseconds, exact instead of close.
+    // WHERE EACH TEMPLATE PUTS IT.
+    //   Bhagirathi — bottom right of the margin, one quiet line.
+    //   Pattachitra — down in the painted column, bottom-aligned, printed on the theme colour.
+    //   Dokra — a slim theme-coloured bar across the head of every continuation page, so a page
+    //           that arrives on its own still says whose it is. Page one already has the banner
+    //           for that, so it takes the page number in the footer instead and no bar.
+    function prAddRunningMatter(sheets, opts) {
+      const info = opts.running || { name: '', phone: '', email: '' };
+      const total = sheets.length;
+      const bits = [info.phone, info.email].filter(Boolean).join(' \u00b7 ');
+      sheets.forEach((s, i) => {
+        const n = i + 1;
+        const num = n + ' of ' + total;
+        const el = document.createElement('div');
+        el.className = 'pr-runfoot';
+        el.setAttribute('aria-hidden', 'true');
+        if (opts.template === 'dokra' && n > 1) {
+          const bar = document.createElement('div');
+          bar.className = 'pr-runbar';
+          bar.setAttribute('aria-hidden', 'true');
+          bar.innerHTML = '<span class="pr-run-id"></span><span class="pr-run-c"></span><span class="pr-run-n"></span>';
+          bar.querySelector('.pr-run-id').textContent = info.name;
+          bar.querySelector('.pr-run-c').textContent = bits;
+          bar.querySelector('.pr-run-n').textContent = num;
+          s.el.appendChild(bar);
+          return;                       // the bar already says all of it; no footer as well
+        }
+        if (opts.template === 'pattachitra') {
+          // Two elements, because the painted column is 56mm on the opening page and 13mm after
+          // it. On page one the whole block sits in the column; after that only the number fits
+          // there and the contact line moves out beside it. One element could not do both.
+          el.innerHTML = '<span class="pr-run-id"></span><span class="pr-run-c"></span>';
+          el.querySelector('.pr-run-id').textContent = info.name;
+          el.querySelector('.pr-run-c').textContent = bits;
+          const numEl = document.createElement('div');
+          numEl.className = 'pr-runnum';
+          numEl.setAttribute('aria-hidden', 'true');
+          numEl.textContent = num;
+          s.el.appendChild(el);
+          s.el.appendChild(numEl);
+          return;
+        }
+        {
+          el.innerHTML = '<span class="pr-run-c"></span><span class="pr-run-n"></span>';
+          el.querySelector('.pr-run-c').textContent =
+            opts.template === 'dokra' ? '' : [info.name, bits].filter(Boolean).join(' \u00b7 ');
+        }
+        el.querySelector('.pr-run-n').textContent = num;
+        s.el.appendChild(el);
+      });
+    }
+
     function pdfLayoutSheets(host, blocks, opts) {
       host.innerHTML = '';
       const sheets = [];
@@ -5361,6 +5486,11 @@
           put(blocks[i]);
         }
       }
+      // Running matter, added once the sheets exist because "2 of 3" cannot be known before
+      // then. It lives in the paper margin, so it costs the content nothing: usableH is
+      // untouched and a document that fitted on two pages still fits on two.
+      prAddRunningMatter(sheets, opts);
+
       // The same measurement the filling loop uses — the maximum bottom, not the last child's.
       // They were computed differently, so a page could be PAGINATED against a float and then
       // REPORTED as though the float were not there: "20% full" on a page running off the paper.
@@ -5476,7 +5606,7 @@
       scaler.style.transform = 'none';
       const laid = pdfLayoutSheets(pagesHost, pdfBreakBlocks(doc), {
         density: density, font: cfg.font, template: cfg.template,
-        accent: cfg.accent, theme: cfg.theme,
+        accent: cfg.accent, theme: cfg.theme, running: prRunningInfo(pdfConfig),
         pageW: pageW, pageH: dims[1] * MM_PX, pad: pad, usableH: usableH
       });
       laid.forEach((pg, i) => {
