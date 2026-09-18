@@ -646,6 +646,19 @@
     .pdf-tmpl-scaler { transform-origin: top left; position: absolute; top: 0; left: 0; }
     .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(15, 23, 42, .45); }
     .dark .pdf-tmpl-card[aria-checked="true"] { box-shadow: 0 12px 28px -8px rgba(0, 0, 0, .7); }
+    /* Selection ring for a colour swatch. Two rings, not one: the inner one is the surface
+       behind the swatch, so the outer ring never touches the colour it is marking. Without it a
+       blue ring on the indigo swatch, or an amber ring on the ochre one, disappears into the
+       thing it is supposed to be pointing at. */
+    .pdf-swatch[aria-checked="true"],
+    .pdf-theme-swatch[aria-checked="true"] {
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2563eb;
+    }
+    .dark .pdf-swatch[aria-checked="true"],
+    .dark .pdf-theme-swatch[aria-checked="true"] {
+      box-shadow: 0 0 0 2px #0b1220, 0 0 0 4px #fbbf24;
+    }
+
     .pdf-tmpl-dots { display: flex; justify-content: center; gap: 6px; }
     .pdf-tmpl-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(100, 116, 139, .35); }
     .pdf-tmpl-dot[aria-current="true"] { width: 18px; background: #4f46e5; }
@@ -708,7 +721,10 @@
       padding: calc(6px * var(--pr-gap)) var(--pr-pad, 10px);
       padding-top: calc(var(--pr-pad, 0px) + 6px * var(--pr-gap));
     }
-    .dark .pr-doc.pr-t-bhagirathi .pr-hero { background: #eef2ff; }   /* the document is always on white paper */
+    /* No dark-mode override here. The document is printed on white paper whatever the site's
+       theme is, and the base rule already says so — restating it with a hard-coded colour
+       simply outranked the chosen theme, so picking a dark band left the band light and the
+       text inverted to white on it: invisible. */
 
     /* --- Pattachitra: the scroll painting. A full-height painted column down the left, the
        way a pata is bordered, carrying contact and competencies; the narrative runs beside it.
@@ -2102,10 +2118,16 @@
     // The three layouts, each named for a Bengali craft it takes its logic from. `bhagirathi` is
     // the document as it has always been — a single flowing column — so it is the default and
     // nothing changes for anyone who never opens the picker.
+    // `accent` and `theme` are what the template renders when nothing is chosen. Declared, so
+    // the picker can ring the swatch that "Default" actually resolves to rather than showing
+    // nothing selected and leaving the reader to guess.
     const PR_TEMPLATES = {
-      bhagirathi:  { label: 'Bhagirathi', tagline: 'One flowing column, like the river' },
-      pattachitra: { label: 'Pattachitra', tagline: 'Panel by panel, with a skills sidebar' },
-      dokra:       { label: 'Dokra', tagline: 'Fine hatched lines, cast compact' }
+      bhagirathi:  { label: 'Bhagirathi', tagline: 'One flowing column, like the river',
+                     accent: '#4F46E5', theme: null },
+      pattachitra: { label: 'Pattachitra', tagline: 'Panel by panel, with a skills sidebar',
+                     accent: '#B45309', theme: '#2A1A14' },
+      dokra:       { label: 'Dokra', tagline: 'Fine hatched lines, cast compact',
+                     accent: '#9A6B3F', theme: '#2F3640' }
     };
     const PR_TEMPLATE_DEFAULT = 'bhagirathi';
     // Four to pick from PER TEMPLATE, and a field for anything else. Each set is drawn from
@@ -2160,6 +2182,15 @@
       ]
     };
     function prThemes(template) { return PR_THEMES[template] || null; }
+
+    // The colour actually in force: what was chosen, or what the template renders without a
+    // choice. The picker rings THIS, so "Default" is a visible state rather than an absence.
+    function prInForce(kind, page) {
+      const chosen = (page || {})[kind];
+      if (PR_HEX.test(String(chosen || ''))) return String(chosen).toUpperCase();
+      const t = PR_TEMPLATES[(page || {}).template] || PR_TEMPLATES[PR_TEMPLATE_DEFAULT];
+      return (t && t[kind]) ? t[kind].toUpperCase() : null;
+    }
     const PR_HEX = /^#[0-9a-f]{6}$/i;
 
     // --- The owner's settings ------------------------------------------------------------
@@ -6518,7 +6549,7 @@
       pdfConfig.page.accent = hex ? hex.toUpperCase() : null;
       savePdfConfigDebounced();
       applyPrintPageStyle(pdfConfig);
-      prSyncSwatches('pdf-accent-row', 'pdf-swatch', prAccents(pdfConfig.page.template), pdfConfig.page.accent);
+      prSyncSwatches('pdf-accent-row', 'pdf-swatch', prAccents(pdfConfig.page.template), prInForce('accent', pdfConfig.page));
       const field = document.getElementById('pdf-accent-hex');
       if (field && !typing) field.value = pdfConfig.page.accent || '';
       renderTemplateThumbs();
@@ -6536,7 +6567,7 @@
       pdfConfig.page.theme = hex ? hex.toUpperCase() : null;
       savePdfConfigDebounced();
       applyPrintPageStyle(pdfConfig);
-      prSyncSwatches('pdf-theme-row', 'pdf-theme-swatch', prThemes(pdfConfig.page.template) || [], pdfConfig.page.theme);
+      prSyncSwatches('pdf-theme-row', 'pdf-theme-swatch', prThemes(pdfConfig.page.template) || [], prInForce('theme', pdfConfig.page));
       const field = document.getElementById('pdf-theme-hex');
       if (field && !typing) field.value = pdfConfig.page.theme || '';
       renderTemplateThumbs();
@@ -6550,10 +6581,7 @@
       if (!row) return;
       Array.prototype.forEach.call(row.querySelectorAll('.' + cls), b => {
         const match = (palette || []).find(a => a.label === b.getAttribute('title'));
-        const on = !!match && (current || '') === match.hex;
-        b.setAttribute('aria-checked', String(on));
-        b.classList.toggle('border-slate-900', on);
-        b.classList.toggle('dark:border-white', on);
+        b.setAttribute('aria-checked', String(!!match && (current || '') === match.hex));
       });
     }
 
@@ -6833,10 +6861,10 @@
             '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Theme colour <span class="normal-case tracking-normal font-normal">(background)</span></div>' +
             '<div id="pdf-theme-row" class="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="theme colour">' +
               (prThemes(page.template) || []).map(a =>
-                '<button type="button" role="radio" aria-checked="' + ((page.theme || '').toUpperCase() === a.hex ? 'true' : 'false') + '"' +
+                '<button type="button" role="radio" aria-checked="' + (prInForce('theme', page) === a.hex ? 'true' : 'false') + '"' +
                 ' onclick="setPdfTheme(\'' + a.hex + '\')" title="' + a.label + '" aria-label="' + a.label + '"' +
                 ' class="pdf-theme-swatch w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
-                ((page.theme || '').toUpperCase() === a.hex ? 'border-slate-900 dark:border-white' : 'border-slate-300/50 dark:border-slate-700/50') +
+                'border-transparent' +
                 '" style="background:' + a.hex + '"></button>').join('') +
             '</div>' +
             '<div class="flex items-center gap-1.5">' +
@@ -6848,10 +6876,10 @@
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Accent colour <span class="normal-case tracking-normal font-normal">(rules &amp; highlights)</span></div>' +
             '<div id="pdf-accent-row" class="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="theme colour">' +
               prAccents(page.template).map(a =>
-                '<button type="button" role="radio" aria-checked="' + ((page.accent || '').toUpperCase() === a.hex ? 'true' : 'false') + '"' +
+                '<button type="button" role="radio" aria-checked="' + (prInForce('accent', page) === a.hex ? 'true' : 'false') + '"' +
                 ' onclick="setPdfAccent(\'' + a.hex + '\')" title="' + a.label + '" aria-label="' + a.label + '"' +
                 ' class="pdf-swatch w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
-                ((page.accent || '').toUpperCase() === a.hex ? 'border-slate-900 dark:border-white' : 'border-transparent') +
+                'border-transparent' +
                 '" style="background:' + a.hex + '"></button>').join('') +
             '</div>' +
             '<div class="flex items-center gap-1.5">' +
@@ -7598,14 +7626,11 @@
             b.title = a.label;
             b.setAttribute('aria-label', a.label);
             b.setAttribute('onclick', setter + "('" + a.hex + "')");
-            const on = (current || '') === a.hex;
-            b.setAttribute('aria-checked', String(on));
-            b.classList.toggle('border-slate-900', on);
-            b.classList.toggle('dark:border-white', on);
+            b.setAttribute('aria-checked', String((current || '') === a.hex));
           });
         };
-        repaint('pdf-accent-row', 'pdf-swatch', prAccents(value), pdfConfig.page.accent, 'setPdfAccent');
-        repaint('pdf-theme-row', 'pdf-theme-swatch', prThemes(value), pdfConfig.page.theme, 'setPdfTheme');
+        repaint('pdf-accent-row', 'pdf-swatch', prAccents(value), prInForce('accent', pdfConfig.page), 'setPdfAccent');
+        repaint('pdf-theme-row', 'pdf-theme-swatch', prThemes(value), prInForce('theme', pdfConfig.page), 'setPdfTheme');
         const themeOpt = document.getElementById('pdf-theme-opt');
         if (themeOpt) themeOpt.classList.toggle('hidden', !prThemes(value));
         updateResetButton();
