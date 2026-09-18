@@ -631,6 +631,16 @@
       100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     .gag-in { animation: gag-pop .26s cubic-bezier(.34, 1.56, .64, 1) both; }
+    /* The refusal itself. The option shakes its head before anything is said. */
+    @keyframes gag-shake {
+      0%, 100% { transform: translateX(0); }
+      12%  { transform: translateX(-5px) rotate(-2deg); }
+      28%  { transform: translateX(5px) rotate(2deg); }
+      44%  { transform: translateX(-4px) rotate(-1.5deg); }
+      60%  { transform: translateX(4px) rotate(1.5deg); }
+      78%  { transform: translateX(-2px); }
+    }
+    .gag-shake { animation: gag-shake .44s ease-in-out both; }
     /* The decoys look exactly as selectable as the real thing, which is the joke. What they
        never get is the selection ring — they are never selected. */
     .pdf-gag-chip svg { height: 15px; width: auto; display: block; }
@@ -988,14 +998,21 @@
        otherwise be doing nothing here anyway. */
     .pr-doc.pr-t-dokra .pr-summary.pr-dokra-about { margin: 0 0 calc(6px * var(--pr-gap)); }
 
-    /* Strengths, as tokens. Deliberately unranked. Scoped to the template that shows them —
-       an unscoped rule here would be dead CSS in the other two, which is what the drift suite
-       is watching for. */
-    .pr-doc.pr-t-dokra .pr-pills { display: flex; flex-wrap: wrap; gap: 3px 4px; margin: 2px 0 0; }
-    .pr-doc.pr-t-dokra .pr-pill {
+    /* Strengths, as tokens. Deliberately unranked. Scoped to the two templates that show
+       them — Bhagirathi has no column to put them in, and an unscoped rule would be dead CSS
+       there, which is what the drift suite is watching for. */
+    .pr-doc.pr-t-dokra .pr-pills,
+    .pr-doc.pr-t-pattachitra .pr-pills { display: flex; flex-wrap: wrap; gap: 3px 4px; margin: 2px 0 0; }
+    .pr-doc.pr-t-dokra .pr-pill,
+    .pr-doc.pr-t-pattachitra .pr-pill {
       display: inline-block; padding: 1px 5px; border-radius: 999px; font-size: 0.85em;
       line-height: 1.5; border: 1px solid var(--pr-accent); color: var(--pr-accent);
       print-color-adjust: exact; -webkit-print-color-adjust: exact;
+    }
+    /* On the painted column the accent is not readable, so these follow the column's own ink.
+       After the shared rule, not before it: same specificity, so order is what decides. */
+    .pr-doc.pr-t-pattachitra .pr-pill {
+      border-color: var(--pr-on-theme, #e3d8ca); color: var(--pr-on-theme, #e3d8ca);
     }
 
     /* The projects take the other half of the opening row. */
@@ -1239,6 +1256,15 @@
               <p id="global-footprint-text" class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4"></p>
               
               <div class="flex flex-wrap gap-2.5" id="overview-countries"></div>
+
+              <!-- Languages live with the footprint: where someone has worked and what they
+                   speak there are the same fact seen twice. Hidden when none are listed. -->
+              <div id="languages-block" class="hidden mt-5 pt-5 border-t border-slate-200/60 dark:border-slate-800/60">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i> Languages
+                </h4>
+                <div class="flex flex-wrap gap-2.5" id="languages-list"></div>
+              </div>
             </div>
           </div>
           
@@ -1258,6 +1284,14 @@
             <i data-lucide="grid" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> Core Competencies
           </h3>
           <div id="competencies-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- Interests, last: the part of someone that is not their job. Hidden when empty. -->
+        <div id="interests-section" class="hidden mt-12">
+          <h3 data-reveal class="text-xl font-bold font-display tracking-tight text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <i data-lucide="star" class="w-5 h-5 text-indigo-600 dark:text-amber-400"></i> Interests
+          </h3>
+          <div data-reveal class="flex flex-wrap gap-2.5" id="interests-list"></div>
         </div>
       </section>
 
@@ -2250,6 +2284,9 @@
     // Paper size and margin can only be set through an @page rule, and @page ignores CSS
     // custom properties — so the rule is rewritten as text whenever the settings change.
     const PR_MARGIN_MM = { compact: 10, normal: 12, roomy: 16 };
+    // Hard caps on the two list-shaped blocks. Documented in data/overview.js.
+    const PR_MAX_BARS = 12;
+    const PR_MAX_STRENGTHS = 6;
 
     // The faces on offer, and the one file per weight each is drawn from. Keep in step with the
     // @font-face block and the .pr-f-* rules above: `css` is what the browser resolves, `pdf` is
@@ -2352,17 +2389,29 @@
       clearTimeout(_gagTimer);
       _gagTimer = setTimeout(() => host.classList.add('hidden'), 3600);
     }
-    function gagColour() { showGagToast(gagLine('colourLines')); }
-    function gagFont() { showGagToast(gagLine('fontLines')); }
+    // The option refuses, visibly, before it says anything: a press that produced only a line
+    // of text somewhere else read as though the choice had been taken.
+    function gagRefuse(btn, kind) {
+      if (btn && !prefersReducedMotion()) {
+        btn.classList.remove('gag-shake');
+        void btn.offsetWidth;
+        btn.classList.add('gag-shake');
+        setTimeout(() => btn.classList.remove('gag-shake'), 460);
+      }
+      showGagToast(gagLine(kind));
+    }
+    function gagColour(btn) { gagRefuse(btn, 'colourLines'); }
+    function gagFont(btn) { gagRefuse(btn, 'fontLines'); }
 
     // The decoys, drawn at the end of the real rows. `type=button` with no radio role: they are
     // not choices, so they must not join the radio group or ever read as checked.
     function gagSwatchesHTML() {
       const cfg = gagCfg();
       if (!cfg || !cfg.colours) return '';
-      return '<span class="w-px h-5 bg-slate-300/70 dark:bg-slate-600/60 mx-0.5" aria-hidden="true"></span>' +
-        cfg.colours.map(c =>
-          '<button type="button" onclick="gagColour()" title="' + escapeAttr(c.label) + '"' +
+      // No divider before them. A fence in front of a trap tells you it is a trap, and the
+      // whole joke is that they look exactly as selectable as the four real ones.
+      return cfg.colours.map(c =>
+          '<button type="button" onclick="gagColour(this)" title="' + escapeAttr(c.label) + '"' +
           ' aria-label="' + escapeAttr(c.label) + '"' +
           ' class="pdf-gag-swatch w-7 h-7 rounded-lg border-2 border-transparent transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"' +
           ' style="background:' + c.hex + '"></button>').join('');
@@ -2371,7 +2420,7 @@
       const cfg = gagCfg();
       if (!cfg || !cfg.fonts) return '';
       return cfg.fonts.map(f =>
-        '<button type="button" onclick="gagFont()" aria-label="' + escapeAttr(f.label) + '"' +
+        '<button type="button" onclick="gagFont(this)" aria-label="' + escapeAttr(f.label) + '"' +
         ' class="pdf-gag-chip px-3 py-1.5 rounded-xl border transition-colors text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">' +
         f.mark + '</button>').join('');
     }
@@ -2725,7 +2774,9 @@
       // the user's choice.
       const PR_LEVELS = { Working: 1, Proficient: 2, Advanced: 3, Expert: 4 };
       const skillBarsHTML = (() => {
-        const bars = (OVERVIEW_DATA.skillBars || []).filter(x => x && x.name && PR_LEVELS[x.level]);
+        // Twelve and six. Past that a column of bars stops being a summary and becomes an
+        // inventory, and nobody reads an inventory.
+        const bars = (OVERVIEW_DATA.skillBars || []).filter(x => x && x.name && PR_LEVELS[x.level]).slice(0, PR_MAX_BARS);
         if (!bars.length) return '';
         const over = (config.page && config.page.skillLevels) || {};
         return '<div class="pr-skillbars">' + bars.map(x => {
@@ -2755,7 +2806,7 @@
       // Strengths: a few things out of the competencies, as plain pills. No scale — the bars
       // are where levels live, and a pill with a number on it is a bar pretending not to be one.
       const compTitles = (OVERVIEW_DATA.competencies || []).map(c => c.title);
-      const strengthPills = (OVERVIEW_DATA.strengths || []).filter(x => compTitles.indexOf(x) >= 0);
+      const strengthPills = (OVERVIEW_DATA.strengths || []).filter(x => compTitles.indexOf(x) >= 0).slice(0, PR_MAX_STRENGTHS);
       const strengthsHTML = strengthPills.length
         ? `<div class="pr-pills">${strengthPills.map(x => `<span class="pr-pill">${escapeHtml(x)}</span>`).join('')}</div>` : '';
       const langRows = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
@@ -2804,8 +2855,12 @@
             return `<li><span class="t">${escapeHtml(o.c.title)}</span>${sk.length ? `<div class="pr-aside-sk">${sk.map(escapeHtml).join(' &middot; ')}</div>` : ''}</li>`;
           }).join('');
         const lines = contacts ? `<h4>Contact</h4><div class="pr-meta">${contacts}</div>` : '';
-        const block = wantsBars ? `<h4>Skills</h4>${skillBarsHTML}`
-                                : (skills ? `<h4>Competencies</h4><ul>${skills}</ul>` : '');
+        // In bar mode the competency prose is gone, so the strengths go in as the short form of
+        // it; in text mode that prose already says all of this and repeating it would be noise.
+        const block = wantsBars
+          ? `<h4>Skills</h4>${skillBarsHTML}` + (strengthsHTML ? `<h4>Strengths</h4>${strengthsHTML}` : '')
+          : (skills ? `<h4>Competencies</h4><ul>${skills}</ul>` : '');
+        const langBlock = languagesHTML ? `<h4>Languages</h4>${languagesHTML}` : '';
         // Projects go on the column too — named there, detailed in the flow below, the way a
         // pata names each panel before telling it.
         const projNames = projOrder
@@ -2814,8 +2869,8 @@
           .map(pr => `<li class="pr-proj-row">${projChip(pr)}<span class="t">${escapeHtml(pr.name)}</span></li>`).join('');
         const projBlock = projNames ? `<h4>Projects</h4><ul>${projNames}</ul>` : '';
         const eduBlock = eduAsideHTML ? `<h4>Education</h4><ul>${eduAsideHTML}</ul>` : '';
-        return (block || lines || projBlock || eduBlock)
-          ? `<aside class="pr-aside">${lines}${block}${projBlock}${eduBlock}</aside>` : '';
+        return (block || lines || projBlock || eduBlock || langBlock)
+          ? `<aside class="pr-aside">${lines}${block}${projBlock}${eduBlock}${langBlock}</aside>` : '';
       })());
       // Whatever the sidebar carries is not repeated in the flow.
       const compFlow = asideHTML ? '' : comp;
@@ -3114,6 +3169,11 @@
           countriesWrapper.appendChild(badge);
         });
       }
+
+      // Languages, in the same card as the footprint. Both blocks hide themselves when they
+      // have nothing to say, so a profile that lists neither shows no empty headings.
+      renderLanguages();
+      renderInterests();
 
       // Quick Facts (Executive Profile sidepanel).
       // Current Position + Experience are computed from TRAJECTORY_DATA; the rest are user inputs.
@@ -7103,6 +7163,34 @@
         '<span class="pdf-contact-label flex-1 text-sm font-medium text-slate-700 dark:text-slate-300 truncate' + (included ? '' : ' line-through decoration-slate-400') + '">' + escapeHtml(cc.label) + '</span>' +
         pdfSwitchHTML('pdf-contact-include', included, 'Include ' + cc.label + ' in PDF') +
       '</li>';
+    }
+
+    // Languages and interests: the two blocks that are opt-in. Each stays hidden until the
+    // data file names something, because an empty "Interests" heading says less than nothing.
+    function renderLanguages() {
+      const block = document.getElementById('languages-block');
+      const list = document.getElementById('languages-list');
+      if (!block || !list) return;
+      const langs = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
+      block.classList.toggle('hidden', !langs.length);
+      if (!langs.length) return;
+      list.innerHTML = langs.map(l =>
+        '<div class="flex items-baseline gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm">' +
+          '<span class="font-semibold text-slate-700 dark:text-slate-300">' + escapeHtml(l.name) + '</span>' +
+          (l.level ? '<span class="text-xs font-medium text-slate-500 dark:text-slate-400">' + escapeHtml(l.level) + '</span>' : '') +
+        '</div>').join('');
+    }
+
+    function renderInterests() {
+      const block = document.getElementById('interests-section');
+      const list = document.getElementById('interests-list');
+      if (!block || !list) return;
+      const items = (OVERVIEW_DATA.interests || []).filter(Boolean);
+      block.classList.toggle('hidden', !items.length);
+      if (!items.length) return;
+      list.innerHTML = items.map(x =>
+        '<span class="px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 text-sm font-medium text-slate-700 dark:text-slate-300">' +
+        escapeHtml(x) + '</span>').join('');
     }
 
     function renderContactList() {

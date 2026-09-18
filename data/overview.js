@@ -23,6 +23,9 @@ const OVERVIEW_DATA = {
   // than a percentage, because nobody can defend the difference between 85% and 90% of SQL in
   // an interview. Order is the order they are drawn in; strongest first reads best.
   //
+  // TWELVE AT MOST. Anything past the twelfth is not drawn: a column of bars long enough to
+  // need scrolling has stopped being a summary and become an inventory.
+  //
   // Levels can also be dragged in the Save PDF editor. That only ever changes YOUR export, in
   // your own browser — this file stays the source of truth for what the site shows everyone.
   skillBars: [
@@ -84,8 +87,8 @@ const OVERVIEW_DATA = {
   // A subset of what you already claim, not a second list that can drift out of step with it:
   // anything here that is not a competency title is ignored.
   //
-  // Drawn as plain pills, with no proficiency scale — `skillBars` is where levels live. Leave
-  // it empty and nothing is drawn, on the page or in the résumé.
+  // Drawn as plain pills, with no proficiency scale — `skillBars` is where levels live. SIX AT
+  // MOST; anything past the sixth is not drawn. Leave it empty and nothing is drawn at all.
   strengths: [
     "Analytics & Data Science",
     "Strategic Leadership",
