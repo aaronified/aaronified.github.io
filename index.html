@@ -468,6 +468,17 @@
       .pdf-section.is-collapsed [data-sec-globals] { display: none; }
     }
 
+    /* The lean screen: the document and the ways to take it away, nothing to configure. */
+    #pdf-modal.pdf-lean #pdf-modal-body,
+    #pdf-modal.pdf-lean #pdf-mobile-tabs,
+    #pdf-modal.pdf-lean #pdf-reset,
+    #pdf-modal.pdf-lean #pdf-reset-m,
+    #pdf-modal.pdf-lean #pdf-edit-toggle { display: none !important; }
+    #pdf-modal.pdf-lean #pdf-preview-pane {
+      position: static; width: 100%; min-width: 0; height: auto; flex: 1 1 auto; border-left: 0;
+    }
+    #pdf-modal.pdf-lean #pdf-modal-panel { max-width: 56rem; }
+
     /* The phone view switch: the selected tab is filled, the other is quiet. */
     .pdf-mview[aria-selected="false"] { color: #475569; background: rgba(148,163,184,.14); }
     .dark .pdf-mview[aria-selected="false"] { color: #cbd5e1; background: rgba(148,163,184,.14); }
@@ -525,7 +536,7 @@
     .pr-doc .hl-num,
     .pr-doc .hl-skill,
     .pr-doc .hl-sw {
-      color: #1d4ed8 !important; font-weight: 700;
+      color: var(--pr-accent) !important; font-weight: 700;
       background: none !important; border: none !important; padding: 0 !important;
       border-radius: 0 !important; font-size: inherit; white-space: normal;
     }
@@ -534,12 +545,19 @@
     .pr-doc .pr-hero { display: flex; gap: 14px; align-items: center; margin-bottom: calc(9px * var(--pr-gap)); }
     .pr-doc .pr-hero img { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; object-position: top; flex: 0 0 auto; }
     .pr-doc .pr-name { font-size: 1.9em; font-weight: 800; line-height: 1.08; }
+    .pr-doc.pr-t-bhagirathi .pr-hero :where(.pr-name, .pr-title, .pr-meta, strong) { color: var(--pr-on-theme, inherit); }
     .pr-doc .pr-title { font-weight: 600; font-size: 1.05em; margin-top: 1px; }
     .pr-doc .pr-meta { font-size: 0.9em; margin-top: 3px; }
 
+    /* The document's own accent. A template may override it; the theme colour overrides both.
+       Everything below that is "the colour of this résumé" resolves through it, so choosing a
+       theme changes the document rather than one band at the top of it. */
+    .pr-doc { --pr-accent: #1d4ed8; }
     .pr-doc .pr-section-h {
       font-size: 1.16em; font-weight: 700;
-      margin: calc(10px * var(--pr-gap)) 0 calc(4px * var(--pr-gap)); border-bottom: 1px solid #d4d4d4; padding-bottom: 2px;
+      margin: calc(10px * var(--pr-gap)) 0 calc(4px * var(--pr-gap));
+      border-bottom: 1px solid color-mix(in srgb, var(--pr-accent) 38%, #d4d4d4);
+      padding-bottom: 2px;
     }
     .pr-doc .pr-summary { margin: 0; }
     .pr-doc .pr-comp p { margin: 2.5px 0; }
@@ -557,7 +575,7 @@
     .pr-doc .pr-projects .pr-proj-item { margin: calc(3px * var(--pr-gap)) 0; break-inside: avoid; }
     .pr-doc .pr-projects .pr-proj-item > p { margin: 0; }
     .pr-doc .pr-projects .t { font-weight: 700; }
-    .pr-doc .pr-projects .pr-proj-link { color: #1d4ed8 !important; white-space: nowrap; }
+    .pr-doc .pr-projects .pr-proj-link { color: var(--pr-accent) !important; white-space: nowrap; }
     /* real bullets (override the CDN reset) */
     .pr-doc .pr-projects ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }
     .pr-doc .pr-projects li { margin: 0.5px 0; }
@@ -576,7 +594,10 @@
     .pr-doc .pr-traj .lead { margin-bottom: 1px; }
     .pr-doc .pr-traj ul { list-style: disc; margin: 1px 0 0; padding-left: 15px; }
     .pr-doc .pr-traj li { margin: 0.5px 0; }
-    .pr-doc .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td { border-top: 1px solid #cbd5e1; padding-top: calc(6px * var(--pr-gap)); }
+    .pr-doc .pr-traj tbody.pr-entry:not(:first-child) tr:first-child td {
+      border-top: 1px solid color-mix(in srgb, var(--pr-accent) 24%, #cbd5e1);
+      padding-top: calc(6px * var(--pr-gap));
+    }
 
     /* ==========================================================
        GLASS, WHERE IT IS WORTH PAYING FOR
@@ -677,7 +698,8 @@
     .pr-doc.pr-t-bhagirathi { --pr-accent: #4f46e5; }
     .pr-doc.pr-t-bhagirathi .pr-hero {
       /* The band is the accent, thinned against the paper — so one colour drives both. */
-      background: color-mix(in srgb, var(--pr-accent) 12%, #fff);
+      background: var(--pr-theme, color-mix(in srgb, var(--pr-accent) 12%, #fff));
+      color: var(--pr-on-theme, inherit);
       border-bottom: 2px solid var(--pr-accent);
       /* Out to the paper edge, through the document's padding. */
       margin: calc(-1 * var(--pr-pad, 0px)) calc(-1 * var(--pr-pad, 0px)) calc(9px * var(--pr-gap));
@@ -692,7 +714,7 @@
        the corporate blue these layouts usually come in. --- */
     .pr-doc.pr-t-pattachitra {
       --pr-band: 56mm;
-      --pr-ink: #2a1a14;          /* lamp black, warmed */
+      --pr-ink: var(--pr-theme, #2a1a14);   /* the painted ground — the THEME colour */
       --pr-accent: #b45309;       /* the ochre — replaced by the chosen theme colour */
       --pr-ochre: var(--pr-accent);
       /* What the default ochre computes to. Stated rather than hand-picked, so the template's
@@ -700,7 +722,7 @@
          that were here before read at 4.4 and 3.9 against it — under AA, on the two surfaces
          that carry text on the accent. */
       --pr-on-accent: #FFFFFF;
-      --pr-cream: #f6efe6;
+      --pr-cream: var(--pr-on-theme, #f6efe6);   /* whatever stays readable on it */
     }
     /* The band is a real element, one per sheet — not a ::before. The PDF export transcribes
        the DOM, and a pseudo-element is not in the DOM: as a ::before it would be on screen and
@@ -794,10 +816,11 @@
        running beside them. The left column is floated, so the one-flow paginator measures it
        and page two runs full width; its content is finite and belongs on the opening page. --- */
     .pr-doc.pr-t-dokra {
-      --pr-cast: #2f3640;        /* the mould: near-black, slightly cool */
+      --pr-cast: var(--pr-theme, #2f3640);   /* the mould — the THEME colour */
       --pr-accent: #9a6b3f;      /* the metal — replaced by the chosen theme colour */
       --pr-bronze: var(--pr-accent);
-      --pr-ash: #eceef1;         /* the sand it is cast in */
+      /* the sand it is cast in: the theme, thinned almost to paper */
+      --pr-ash: color-mix(in srgb, var(--pr-theme, #2f3640) 7%, #fff);
       --pr-lead: 1.3; --pr-gap: 0.9;
       background: var(--pr-ash) !important;
     }
@@ -814,7 +837,7 @@
     }
     .pr-doc.pr-t-dokra .pr-hero {
       margin-top: calc(-1 * var(--pr-pad, 0px));
-      background: var(--pr-cast); color: #fff;
+      background: var(--pr-cast); color: var(--pr-on-theme, #fff);
       display: flex; align-items: center; justify-content: center; gap: 14px;
       padding-top: calc(10px * var(--pr-gap)); padding-bottom: calc(10px * var(--pr-gap));
       margin-bottom: 0; text-align: center;
@@ -825,7 +848,7 @@
     }
     .pr-doc.pr-t-dokra .pr-name {
       font-size: 1.85em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-      color: #fff; line-height: 1.1;
+      color: var(--pr-on-theme, #fff); line-height: 1.1;
     }
     .pr-doc.pr-t-dokra .pr-title {
       font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
@@ -904,6 +927,7 @@
   
   <!-- Load Sectioned Config Data -->
   <script src="assets/icons.js"></script>
+  <script src="data/settings.js"></script>
   <script src="data/personal.js"></script>
   <script src="data/overview.js"></script>
   <script src="data/trajectory.js"></script>
@@ -1171,7 +1195,10 @@
         <div class="flex items-start justify-between gap-3 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
           <div>
             <h2 id="pdf-modal-title" class="text-lg font-bold font-display text-slate-900 dark:text-white">Save PDF</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Choose what goes in, watch it in the preview. Your on-screen page is unchanged, and your choices are saved for next time.</p>
+            <p id="pdf-modal-sub" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Choose what goes in, watch it in the preview. Your on-screen page is unchanged, and your choices are saved for next time.</p>
+            <!-- Shown only on the lean screen: a way out of it, so nobody is stuck with the
+                 owner's choices if they want to change something. -->
+            <button id="pdf-customise" hidden onclick="openPdfModal()" class="mt-1 text-xs font-semibold text-indigo-600 dark:text-amber-400 hover:underline focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded">Customise what goes in &rsaquo;</button>
           </div>
           <button id="pdf-modal-close" onclick="closePdfModal()" aria-label="Close" class="flex-shrink-0 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
             <i data-lucide="x" class="w-5 h-5"></i>
@@ -1351,6 +1378,7 @@
     // Document Ready Initialisation
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
+      document.addEventListener('keydown', prShortcutKeydown, true);
       initAnimationsPref();    // sync the animations toggle with the reduce-motion state
       renderFontMenu();        // …and the typeface menu with the face applied before first paint
       initAppContent();
@@ -1513,6 +1541,50 @@
     // allowed), the incoming theme is revealed with a clip-path circle expanding from
     // the toggle button — a smooth ~450ms wipe. Otherwise it falls back to the body's
     // 300ms colour transition. Either way the end state is identical.
+    // --- Ctrl/Cmd-P and Ctrl/Cmd-S ---------------------------------------
+    // The two keys a reader of a résumé actually reaches for, and both do the wrong thing on a
+    // page like this one: Ctrl-P prints the WEB PAGE — navigation, chat bubble and all — and
+    // Ctrl-S saves a folder of HTML that needs JavaScript to show anything. Intercepted, they
+    // produce the document instead, laid out by the owner's settings.
+    //
+    // Only the keystrokes. The browser's own File menu still does whatever it does; there is no
+    // API for that and there should not be.
+    function prShortcutKeydown(e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      const key = (e.key || '').toLowerCase();
+      if (key !== 'p' && key !== 's') return;
+      // Never while someone is typing — Ctrl-S in a text box means "save what I wrote".
+      const t = e.target;
+      if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+      const cfg = (siteSettings().shortcuts) || {};
+      if (key === 'p' && cfg.print === false) return;
+      if (key === 's' && cfg.savePdf === false) return;
+      e.preventDefault();
+      if (key === 'p') prShortcutPrint(); else prShortcutSavePdf();
+    }
+
+    function prShortcutPrint() {
+      // Print does not need the export screen — the printed page is #print-resume, which this
+      // rebuilds with the owner's settings first.
+      const cfg = ownerResumeConfig();
+      buildPrintResume(cfg);
+      setTimeout(() => window.print(), 30);
+    }
+
+    async function prShortcutSavePdf() {
+      // The PDF is transcribed from the sheets the preview lays out, so the screen has to be
+      // open for there to be anything to transcribe. It opens lean, and the download starts
+      // straight away — the screen is the feedback, not a form to fill in.
+      if (typeof openPdfModal !== 'function') return;
+      openPdfModal({ lean: true });
+      const btn = document.getElementById('pdf-generate');
+      for (let i = 0; i < 80; i++) {
+        await new Promise(r => setTimeout(r, 50));
+        if (document.querySelector('#pdf-preview-pages .pdf-page')) break;
+      }
+      if (typeof savePdf === 'function') savePdf(btn);
+    }
+
     // Draw every icon on the page. Lucide first when it is there, then anything it left behind
     // from the vendored set in assets/icons.js — a name Lucide dropped (the brand marks) or the
     // whole library being unreachable both land here, and the page keeps its icons either way.
@@ -2053,7 +2125,58 @@
       ]
     };
     function prAccents(template) { return PR_ACCENTS[template] || PR_ACCENTS[PR_TEMPLATE_DEFAULT]; }
+
+    // THEME is the dominant background — the painted column, the cast banner. ACCENT is what is
+    // drawn ON the page: highlights, rules, links, bars. They are different jobs and different
+    // controls: Bhagirathi's band, Pattachitra's painted column, Dokra's cast banner are
+    // themes; the highlights and rules over them are accents. A theme may be light or dark —
+    // what is printed on it follows automatically.
+    const PR_THEMES = {
+      bhagirathi: [
+        { hex: '#EEF2FF', label: 'Mist' },
+        { hex: '#E7F0EE', label: 'Shallows' },
+        { hex: '#1E293B', label: 'Night water' },
+        { hex: '#0F766E', label: 'Deep teal' }
+      ],
+      pattachitra: [
+        { hex: '#2A1A14', label: 'Lamp black' },
+        { hex: '#3B1212', label: 'Deep maroon' },
+        { hex: '#14281F', label: 'Ink green' },
+        { hex: '#1E293B', label: 'Night indigo' }
+      ],
+      dokra: [
+        { hex: '#2F3640', label: 'Mould' },
+        { hex: '#3A2C1E', label: 'Dark bronze' },
+        { hex: '#1F2937', label: 'Slate' },
+        { hex: '#3F3F46', label: 'Iron' }
+      ]
+    };
+    function prThemes(template) { return PR_THEMES[template] || null; }
     const PR_HEX = /^#[0-9a-f]{6}$/i;
+
+    // --- The owner's settings ------------------------------------------------------------
+    // Read defensively: data/settings.js is a file the owner edits by hand, so a missing key,
+    // a missing file or a typo has to degrade to the built-in default rather than break the
+    // page for every visitor.
+    function siteSettings() {
+      return (typeof SITE_SETTINGS !== 'undefined' && SITE_SETTINGS) ? SITE_SETTINGS : {};
+    }
+    function siteResumeDefaults() {
+      const r = siteSettings().resume || {};
+      return { page: r.page || {}, hero: r.hero || {}, recommendations: r.recommendations || {} };
+    }
+    // The config the SHORTCUTS use: the owner's settings, deliberately ignoring whatever this
+    // visitor has saved for themselves. Someone pressing Ctrl-P has not opened the export
+    // screen and is not asking for their own tuning — they are asking for this résumé.
+    function ownerResumeConfig() {
+      const base = reconcilePdfConfig(null).config;
+      const d = siteResumeDefaults();
+      if (d.hero && typeof d.hero.showImage === 'boolean') base.hero.showImage = d.hero.showImage;
+      if (d.recommendations && typeof d.recommendations.enabled === 'boolean') {
+        base.recommendations.enabled = d.recommendations.enabled;
+      }
+      return base;
+    }
 
     // Which of near-white or near-black to print on a given colour, by WCAG relative luminance.
     // The threshold is where the two contrast ratios cross, so whichever side of it a colour
@@ -2125,6 +2248,13 @@
       } else {
         el.style.removeProperty('--pr-accent');
         el.style.removeProperty('--pr-on-accent');
+      }
+      if (PR_HEX.test(String(cfg.theme || ''))) {
+        el.style.setProperty('--pr-theme', cfg.theme);
+        el.style.setProperty('--pr-on-theme', prReadableOn(cfg.theme));
+      } else {
+        el.style.removeProperty('--pr-theme');
+        el.style.removeProperty('--pr-on-theme');
       }
     }
 
@@ -4608,7 +4738,7 @@
     let _pdfSaveTimer = null;
     // openSections: which Save PDF sections are expanded on a PHONE. On a wide screen every
     // section is always open and this is not consulted.
-    const pdfUi = { expandedComps: new Set(), openSections: new Set(['Page']),
+    const pdfUi = { expandedComps: new Set(), openSections: new Set(['Page']), lean: false,
                     editing: false, editDirty: false };
 
     // --- Small utilities ---
@@ -4692,6 +4822,10 @@
       catch (e) { return null; }
     }
     function savePdfConfig(cfg) {
+      // The lean screen shows the OWNER's settings, not this visitor's. Writing them to storage
+      // would quietly replace whatever the visitor had set up for themselves — they pressed
+      // Ctrl-S, they did not ask to have their own choices overwritten.
+      if (pdfUi.lean) return;
       try { localStorage.setItem(PDF_STORAGE_KEY, JSON.stringify(cfg || pdfConfig)); } catch (e) {}
     }
     function savePdfConfigDebounced() {
@@ -4881,7 +5015,11 @@
 
       // Paper size + density. Density drives text size, leading, block gaps AND the page
       // margin together, so one control genuinely changes how much fits on a page.
-      const sPage = saved.page || {};
+      // The owner's defaults from data/settings.js stand behind the built-in ones, so a visitor
+      // who has never opened this screen sees the résumé the way the owner set it up. Anything
+      // they then change is theirs and is saved in their browser, not here.
+      const sd = siteResumeDefaults().page;
+      const sPage = Object.assign({}, sd, saved.page || {});
       const page = {
         size: (sPage.size === 'letter') ? 'letter' : 'a4',
         density: (sPage.density === 'compact' || sPage.density === 'roomy') ? sPage.density : 'normal',
@@ -4896,7 +5034,9 @@
         skillLevels: (sPage.skillLevels && typeof sPage.skillLevels === 'object') ? sPage.skillLevels : {},
         // The document's accent. null means "whatever this template was designed in"; anything
         // else must be a six-digit hex, because it is written straight into a style property.
-        accent: PR_HEX.test(String(sPage.accent || '')) ? String(sPage.accent).toUpperCase() : null
+        accent: PR_HEX.test(String(sPage.accent || '')) ? String(sPage.accent).toUpperCase() : null,
+        // The dominant background, for the templates that have one.
+        theme: PR_HEX.test(String(sPage.theme || '')) ? String(sPage.theme).toUpperCase() : null
       };
 
       // Hero profile photo toggle.
@@ -5217,7 +5357,8 @@
       //    page counts wrong.
       scaler.style.transform = 'none';
       const laid = pdfLayoutSheets(pagesHost, pdfBreakBlocks(doc), {
-        density: density, font: cfg.font, template: cfg.template, accent: cfg.accent,
+        density: density, font: cfg.font, template: cfg.template,
+        accent: cfg.accent, theme: cfg.theme,
         pageW: pageW, pageH: dims[1] * MM_PX, pad: pad, usableH: usableH
       });
       laid.forEach((pg, i) => {
@@ -6346,19 +6487,43 @@
       pdfConfig.page.accent = hex ? hex.toUpperCase() : null;
       savePdfConfigDebounced();
       applyPrintPageStyle(pdfConfig);
-      Array.prototype.forEach.call(document.querySelectorAll('.pdf-swatch'), b => {
-        const match = prAccents(pdfConfig.page.template).find(a => a.label === b.getAttribute('title'));
-        const on = !!match && (pdfConfig.page.accent || '') === match.hex;
-        b.setAttribute('aria-checked', String(!!on));
-        b.classList.toggle('border-slate-900', !!on);
-        b.classList.toggle('dark:border-white', !!on);
-        b.classList.toggle('border-transparent', !on);
-      });
+      prSyncSwatches('pdf-accent-row', 'pdf-swatch', prAccents(pdfConfig.page.template), pdfConfig.page.accent);
       const field = document.getElementById('pdf-accent-hex');
       if (field && !typing) field.value = pdfConfig.page.accent || '';
       renderTemplateThumbs();
       updateResetButton();
       schedulePdfPreview();
+    }
+
+    // The background a template paints. Same shape as setPdfAccent, kept separate because they
+    // are separate colours, with separate palettes, and not every template has a background.
+    function setPdfTheme(value, typing) {
+      if (!pdfConfig || !pdfConfig.page) return;
+      let hex = value == null ? null : String(value).trim();
+      if (hex && hex.charAt(0) !== '#') hex = '#' + hex;
+      if (hex && !PR_HEX.test(hex)) { if (typing) return; hex = null; }
+      pdfConfig.page.theme = hex ? hex.toUpperCase() : null;
+      savePdfConfigDebounced();
+      applyPrintPageStyle(pdfConfig);
+      prSyncSwatches('pdf-theme-row', 'pdf-theme-swatch', prThemes(pdfConfig.page.template) || [], pdfConfig.page.theme);
+      const field = document.getElementById('pdf-theme-hex');
+      if (field && !typing) field.value = pdfConfig.page.theme || '';
+      renderTemplateThumbs();
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
+    // One routine for both swatch rows: mark the chosen one, clear the rest.
+    function prSyncSwatches(rowId, cls, palette, current) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      Array.prototype.forEach.call(row.querySelectorAll('.' + cls), b => {
+        const match = (palette || []).find(a => a.label === b.getAttribute('title'));
+        const on = !!match && (current || '') === match.hex;
+        b.setAttribute('aria-checked', String(on));
+        b.classList.toggle('border-slate-900', on);
+        b.classList.toggle('dark:border-white', on);
+      });
     }
 
     function setPdfMobileView(view) {
@@ -6373,10 +6538,17 @@
       if (preview) requestAnimationFrame(refreshPdfPreview);
     }
 
-    function openPdfModal() {
-      const rec = reconcilePdfConfig(loadPdfConfig());
+    // `lean` is the screen a reader who pressed Ctrl-P or Ctrl-S gets: the document and the two
+    // ways to take it away, with none of the section toggles. They did not come here to curate
+    // somebody else's résumé — and it is built from the OWNER's settings, not from whatever
+    // this browser happens to have saved.
+    function openPdfModal(opts) {
+      const lean = !!(opts && opts.lean === true);
+      const rec = lean ? { config: ownerResumeConfig(), changes: [] }
+                       : reconcilePdfConfig(loadPdfConfig());
       pdfConfig = rec.config;
-      savePdfConfig(pdfConfig);            // self-heal storage against any drift
+      if (!lean) savePdfConfig(pdfConfig);  // self-heal storage against any drift
+      pdfUi.lean = lean;
       pdfUi.expandedComps.clear();
       renderPdfModal(rec.changes);
       updateResetButton();
@@ -6392,8 +6564,17 @@
       }
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
-      setPdfMobileView('options');        // always opens on the options, on any width
+      setPdfMobileView(lean ? 'preview' : 'options');
       setPdfEditing(false);               // …and never mid-edit
+      modal.classList.toggle('pdf-lean', lean);
+      const title = document.getElementById('pdf-modal-title');
+      const sub = document.getElementById('pdf-modal-sub');
+      const custom = document.getElementById('pdf-customise');
+      if (title) title.textContent = lean ? 'Download this résumé' : 'Save PDF';
+      if (sub) sub.textContent = lean
+        ? 'Laid out the way it was meant to be read. Save it as a PDF, a Word file, or print it.'
+        : 'Choose what goes in, watch it in the preview. Your on-screen page is unchanged, and your choices are saved for next time.';
+      if (custom) custom.hidden = !lean;
       document.documentElement.style.overflow = 'hidden';
       const shell = document.getElementById('app-shell');
       if (shell) { shell.setAttribute('inert', ''); shell.setAttribute('aria-hidden', 'true'); }
@@ -6487,14 +6668,14 @@
 
     // Two-column section row. Left = title + count +
     // universal ("all items") toggles; right = the individual items. Columns stack on narrow widths.
-    function pdfSectionRowHTML(title, badgeHTML, globalsHTML, rightHTML) {
+    function pdfSectionRowHTML(title, badgeHTML, globalsHTML, rightHTML, leftClass) {
       // Seventeen screenfuls of settings is not a phone screen. Below `sm` each section is a
       // disclosure — its title and its count stay visible, its controls fold away — and the
       // open ones are remembered across the re-render every change triggers.
       const open = pdfUi.openSections.has(title);
       return '<section class="pdf-section flex flex-col sm:flex-row gap-3 sm:gap-5 py-4 border-t border-slate-200/50 dark:border-slate-800/50 first:border-t-0 first:pt-0' +
         (open ? '' : ' is-collapsed') + '" data-sec="' + escapeAttr(title) + '">' +
-        '<div class="w-full sm:w-44 md:w-52 flex-shrink-0 space-y-2 sm:self-start sm:sticky sm:top-0 sm:z-10 sm:bg-white/85 sm:dark:bg-slate-900/85 sm:backdrop-blur-sm sm:py-1.5 sm:rounded-lg">' +
+        '<div class="w-full ' + (leftClass || 'sm:w-44 md:w-52') + ' flex-shrink-0 space-y-2 sm:self-start sm:sticky sm:top-0 sm:z-10 sm:bg-white/85 sm:dark:bg-slate-900/85 sm:backdrop-blur-sm sm:py-1.5 sm:rounded-lg">' +
           '<div class="flex items-start justify-between gap-2">' +
             '<div><h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400">' + escapeHtml(title) + '</h3>' +
               (badgeHTML ? '<div class="mt-0.5">' + badgeHTML + '</div>' : '') + '</div>' +
@@ -6611,30 +6792,29 @@
           '">' + escapeHtml(f.label) + '</button>';
       }).join('');
 
-      const right =
+      // The controls live in the section's own column and the deck gets the room. Each group
+      // is a label and a control; the paragraphs that used to explain them said what a swatch
+      // and a paper size already say.
+      const controls =
         '<div class="space-y-3">' +
-          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Template</div>' +
-            '<div class="relative">' +
-            '<div id="pdf-tmpl-strip" class="pdf-tmpl-deck" role="radiogroup" aria-label="template">' +
-              cards + '</div>' +
-            // The card in front covers most of the ones behind it, so stepping through the deck
-            // needs its own controls — the cards alone would leave the far one hard to hit.
-            '<button type="button" id="pdf-tmpl-prev" onclick="stepTemplate(-1)" aria-label="Previous template"' +
-              ' class="absolute left-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>' +
-            '<button type="button" id="pdf-tmpl-next" onclick="stepTemplate(1)" aria-label="Next template"' +
-              ' class="absolute right-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>' +
+          // Two colours, two jobs: the background a template paints, and what is drawn on it.
+          '<div id="pdf-theme-opt" class="space-y-1.5' + (prThemes(page.template) ? '' : ' hidden') + '">' +
+            '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Theme colour <span class="normal-case tracking-normal font-normal">(background)</span></div>' +
+            '<div id="pdf-theme-row" class="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="theme colour">' +
+              (prThemes(page.template) || []).map(a =>
+                '<button type="button" role="radio" aria-checked="' + ((page.theme || '').toUpperCase() === a.hex ? 'true' : 'false') + '"' +
+                ' onclick="setPdfTheme(\'' + a.hex + '\')" title="' + a.label + '" aria-label="' + a.label + '"' +
+                ' class="pdf-theme-swatch w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+                ((page.theme || '').toUpperCase() === a.hex ? 'border-slate-900 dark:border-white' : 'border-slate-300/50 dark:border-slate-700/50') +
+                '" style="background:' + a.hex + '"></button>').join('') +
             '</div>' +
-            '<div class="pdf-tmpl-dots" aria-hidden="true">' +
-              Object.keys(PR_TEMPLATES).map(k =>
-                '<span class="pdf-tmpl-dot" data-dot="' + escapeAttr(k) + '" aria-current="' +
-                (k === (page.template || PR_TEMPLATE_DEFAULT) ? 'true' : 'false') + '"></span>').join('') +
+            '<div class="flex items-center gap-1.5">' +
+              '<input id="pdf-theme-hex" type="text" maxlength="7" spellcheck="false" value="' + escapeAttr(page.theme || '') + '"' +
+                ' placeholder="#RRGGBB" aria-label="Theme colour hex" oninput="setPdfTheme(this.value, true)"' +
+                ' class="w-[92px] px-2 py-1 rounded-lg text-xs font-mono border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">' +
+              '<button type="button" onclick="setPdfTheme(null)" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-1.5 py-1">Default</button>' +
             '</div></div>' +
-          // Rendered always, hidden where it means nothing: choosing a template deliberately does
-          // NOT re-render this section (that would replace the cards mid-animation), so the
-          // control has to already exist for the fast path to reveal it.
-          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Theme colour</div>' +
+          '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Accent colour <span class="normal-case tracking-normal font-normal">(rules &amp; highlights)</span></div>' +
             '<div id="pdf-accent-row" class="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="theme colour">' +
               prAccents(page.template).map(a =>
                 '<button type="button" role="radio" aria-checked="' + ((page.accent || '').toUpperCase() === a.hex ? 'true' : 'false') + '"' +
@@ -6642,29 +6822,45 @@
                 ' class="pdf-swatch w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
                 ((page.accent || '').toUpperCase() === a.hex ? 'border-slate-900 dark:border-white' : 'border-transparent') +
                 '" style="background:' + a.hex + '"></button>').join('') +
+            '</div>' +
+            '<div class="flex items-center gap-1.5">' +
               '<input id="pdf-accent-hex" type="text" inputmode="text" maxlength="7" spellcheck="false"' +
                 ' value="' + escapeAttr(page.accent || '') + '" placeholder="#RRGGBB" aria-label="Theme colour hex"' +
                 ' oninput="setPdfAccent(this.value, true)"' +
                 ' class="w-[92px] px-2 py-1 rounded-lg text-xs font-mono border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">' +
               '<button type="button" onclick="setPdfAccent(null)" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-1.5 py-1">Default</button>' +
-            '</div>' +
-            '<p class="text-[11px] text-slate-500 dark:text-slate-400">Drives the rules, bands and bars of whichever template is chosen.</p></div>' +
+            '</div></div>' +
           '<div id="pdf-skillbars-opt" class="space-y-1.5' + (page.template === 'pattachitra' ? '' : ' hidden') + '">' +
             '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Skills in the sidebar</div>' +
             group('skillBars', page.skillBars ? 'bars' : 'text',
-              [{ v: 'text', label: 'Competency text' }, { v: 'bars', label: 'Rated bars' }]) +
-            '<p class="text-[11px] text-slate-500 dark:text-slate-400">The column has room for one of the two. Dokra always shows bars; Bhagirathi never does.</p></div>' +
+              [{ v: 'text', label: 'Competency text' }, { v: 'bars', label: 'Rated bars' }]) + '</div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
-            '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div>' +
-            '<p class="text-[11px] text-slate-500 dark:text-slate-400">Embedded in the PDF. Anything a face lacks — ₹, for one — is drawn from Noto Sans behind it, so nothing is dropped.</p></div>' +
+            '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div></div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Paper</div>' +
             group('size', page.size, [{ v: 'a4', label: 'A4' }, { v: 'letter', label: 'US Letter' }]) + '</div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Density</div>' +
             group('density', page.density, [
-              { v: 'compact', label: 'Compact' }, { v: 'normal', label: 'Normal' }, { v: 'roomy', label: 'Roomy' }]) +
-            '<p class="text-[11px] text-slate-500 dark:text-slate-400">Sets text size, spacing and page margins together \u2014 compact fits noticeably more per page.</p></div>' +
+              { v: 'compact', label: 'Compact' }, { v: 'normal', label: 'Normal' }, { v: 'roomy', label: 'Roomy' }]) + '</div>' +
         '</div>';
-      return pdfSectionRowHTML('Page', '', '', right);
+
+      const right =
+        '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Template</div>' +
+          '<div class="relative">' +
+          '<div id="pdf-tmpl-strip" class="pdf-tmpl-deck" role="radiogroup" aria-label="template">' + cards + '</div>' +
+          '<button type="button" id="pdf-tmpl-prev" onclick="stepTemplate(-1)" aria-label="Previous template"' +
+            ' class="absolute left-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>' +
+          '<button type="button" id="pdf-tmpl-next" onclick="stepTemplate(1)" aria-label="Next template"' +
+            ' class="absolute right-0 top-[78px] z-20 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/60 shadow text-slate-600 dark:text-slate-300 disabled:opacity-30 enabled:hover:text-indigo-600 dark:enabled:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>' +
+          '</div>' +
+          '<div class="pdf-tmpl-dots" aria-hidden="true">' +
+            Object.keys(PR_TEMPLATES).map(k =>
+              '<span class="pdf-tmpl-dot" data-dot="' + escapeAttr(k) + '" aria-current="' +
+              (k === (page.template || PR_TEMPLATE_DEFAULT) ? 'true' : 'false') + '"></span>').join('') +
+          '</div></div>';
+
+      return pdfSectionRowHTML('Page', '', controls, right, 'sm:w-60 md:w-64');
     }
 
     function renderSummarySectionHTML() {
@@ -7360,23 +7556,27 @@
         if (skillOpt) skillOpt.classList.toggle('hidden', value !== 'pattachitra');
         // Each template offers its own palette, so the swatches are redrawn — in place, since
         // re-rendering the section would replace the deck mid-animation.
-        const swatches = document.getElementById('pdf-accent-row');
-        if (swatches) {
-          Array.prototype.forEach.call(swatches.querySelectorAll('.pdf-swatch'), (b, i) => {
-            const a = prAccents(value)[i];
+        const repaint = (rowId, cls, palette, current, setter) => {
+          const row = document.getElementById(rowId);
+          if (!row) return;
+          Array.prototype.forEach.call(row.querySelectorAll('.' + cls), (b, i) => {
+            const a = (palette || [])[i];
             if (!a) { b.hidden = true; return; }
             b.hidden = false;
             b.style.background = a.hex;
             b.title = a.label;
             b.setAttribute('aria-label', a.label);
-            b.setAttribute('onclick', "setPdfAccent('" + a.hex + "')");
-            const on = (pdfConfig.page.accent || '') === a.hex;
+            b.setAttribute('onclick', setter + "('" + a.hex + "')");
+            const on = (current || '') === a.hex;
             b.setAttribute('aria-checked', String(on));
             b.classList.toggle('border-slate-900', on);
             b.classList.toggle('dark:border-white', on);
-            b.classList.toggle('border-transparent', !on);
           });
-        }
+        };
+        repaint('pdf-accent-row', 'pdf-swatch', prAccents(value), pdfConfig.page.accent, 'setPdfAccent');
+        repaint('pdf-theme-row', 'pdf-theme-swatch', prThemes(value), pdfConfig.page.theme, 'setPdfTheme');
+        const themeOpt = document.getElementById('pdf-theme-opt');
+        if (themeOpt) themeOpt.classList.toggle('hidden', !prThemes(value));
         updateResetButton();
         schedulePdfPreview();
         return;
