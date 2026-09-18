@@ -47,7 +47,18 @@
   var BONUS_CHANCE = 0.10;      // …and the chance of one, from Manager onward
   var INSTAFIRE_CHANCE = 0.10;  // …and of a bomb that ends it outright
   var NIRVANA = 1e9;            // ₹100 crore
-  var HIRE_COST = 2500;
+  // What each rank costs to take on, what they destroy when they sabotage, and how many
+  // packages that destruction is worth. The flat figures are a FLOOR: income doubles with every
+  // rung and compounds 5% with every increment, so a flat ₹1 lakh is one package by Senior
+  // Manager and a rounding error after it. The multiples are what keep a sabotage meaning
+  // something at the top of the ladder.
+  var RANKS = {
+    intern:   { hire: 2500,    floor: 5000,  packets: 3 },
+    manager:  { hire: 10000,   floor: 1e5,   packets: 25 },
+    director: { hire: 1000000, floor: 1e8,   packets: 400 }
+  };
+  var SABOTAGE_LO = 0.10, SABOTAGE_HI = 0.30;   // per catch, across the ladder
+  var DIRECTOR_COOLDOWN = 20;                   // drops before another director destroy can land
   var INTERN_LOSS = 5000;
   var INTERN_SAVED = 0.80;      // how often the boss pulls an intern clear
   var AUTO_DROP = 4.5;          // seconds between unprompted drops, from Manager onward
@@ -156,7 +167,7 @@
       items: [], puffs: [],
       money: 0, rung: 0, strikes: 0, caught: 0, increments: 0,
       status: 'ok',             // 'ok' | 'pip' | 'fired' | 'nirvana'
-      settled: false,
+      settled: false, dirCool: 0, sabotages: 0,
       hired: false, entering: 0, leaving: 0
     };
   }
@@ -173,9 +184,20 @@
   }
   // What the next package is worth: the base band, doubled once per rung, compounded by every
   // increment along the way.
+  function valueScale() { return Math.pow(2, g.rung) * Math.pow(INCREMENT, g.increments); }
   function packetValue() {
-    return (VALUE_LO + Math.random() * (VALUE_HI - VALUE_LO)) *
-           Math.pow(2, g.rung) * Math.pow(INCREMENT, g.increments);
+    return (VALUE_LO + Math.random() * (VALUE_HI - VALUE_LO)) * valueScale();
+  }
+  // Nobody sabotages a place the owner is running. That is most of what hiring him buys, and
+  // why nirvana without him is possible but a much longer afternoon.
+  function sabotageChance() {
+    if (g.hired || g.rung < MANAGER_RUNG) return 0;
+    var k = Math.max(0, Math.min(1, (g.rung - MANAGER_RUNG) / (LADDER.length - 1 - MANAGER_RUNG)));
+    return SABOTAGE_LO + k * (SABOTAGE_HI - SABOTAGE_LO);
+  }
+  function destroys(kind) {
+    var r = RANKS[kind];
+    return Math.max(r.floor, r.packets * ((VALUE_LO + VALUE_HI) / 2) * valueScale());
   }
   function live() { return active && onScreen && !document.hidden && !reduced; }
   function over() { return g.status === 'fired' || g.status === 'nirvana'; }
@@ -255,6 +277,7 @@
       taken: null
     });
     if (g.items.length > 26) g.items.shift();
+    if (g.dirCool > 0) g.dirCool--;
     start();
   }
 
@@ -327,7 +350,7 @@
         var w = makeWorker(kind, Math.max(0.03, Math.min(0.97, lead().x + (counts[kind] % 2 ? 0.06 : -0.06))));
         w.slot = counts[kind];
         g.crew.push(w);
-        g.money = Math.max(0, g.money - HIRE_COST);
+        g.money = Math.max(0, g.money - RANKS[kind].hire);
         counts[kind]++;
       }
     });
@@ -452,6 +475,20 @@
     if (!hitBy) { g.puffs.push({ x: it.x, y: groundY() - 10, t: 0, text: '' }); return; }
 
     if (!it.bomb) {
+      // A helper who was going to bring this in may take it the other way instead.
+      if (hitBy.kind !== 'lead' && Math.random() < sabotageChance()) {
+        var kind = hitBy.kind;
+        if (kind === 'director' && g.dirCool > 0) kind = 'manager';   // still on its cooldown
+        if (kind === 'director') g.dirCool = DIRECTOR_COOLDOWN;
+        var cost = destroys(kind);
+        g.money = Math.max(0, g.money - cost);
+        g.sabotages++;
+        g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0, text: '-' + money(cost), tone: 'bad' });
+        toast(kind === 'director' ? 'A director has destroyed \u20b9' + money(cost).slice(1)
+                                  : 'Sabotage on the ' + kind + ' desk', 'bad');
+        syncPanel();
+        return;
+      }
       g.money += it.value;
       g.caught++;
       g.puffs.push({ x: it.x, y: groundY() - SPRITE_H * PX - 4, t: 0,
@@ -909,7 +946,8 @@
                    interns: g.crew.filter(function (w) { return w.kind === 'intern'; }).length,
                    managers: g.crew.filter(function (w) { return w.kind === 'manager'; }).length,
                    directors: g.crew.filter(function (w) { return w.kind === 'director'; }).length,
-                   status: g.status, hired: g.hired, parked: !!g.parked, caught: g.caught } : null;
+                   status: g.status, hired: g.hired, parked: !!g.parked, caught: g.caught,
+                   sabotages: g.sabotages, sabotageChance: sabotageChance() } : null;
     }
   };
 
