@@ -98,7 +98,11 @@ const OVERVIEW_DATA = {
   // LANGUAGES — shown on the Overview tab beside the global footprint, and in the résumé's
   // column. `level` is free text: "Native", "Professional", "Conversational", whatever is true.
   // Example: { name: "English", level: "Professional" }
-  languages: [],
+  languages: [
+    { name: "English", level: "Fluent" },
+    { name: "Hindi",   level: "Professional" },
+    { name: "Bengali", level: "Native" }
+  ],
 
   // INTERESTS — the last thing on the Overview tab, and nowhere near the résumé unless you put
   // it there. Plain strings.

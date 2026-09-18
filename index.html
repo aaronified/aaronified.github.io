@@ -623,6 +623,18 @@
       -webkit-backdrop-filter: none !important;
     }
 
+    /* The gag toast's entrance. Removed and re-added on every press so a second press reads as
+       a second answer; skipped outright under reduced motion. */
+    @keyframes gag-pop {
+      0%   { opacity: 0; transform: scale(.94) translateY(6px); }
+      60%  { opacity: 1; transform: scale(1.02) translateY(0); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .gag-in { animation: gag-pop .26s cubic-bezier(.34, 1.56, .64, 1) both; }
+    /* The decoys look exactly as selectable as the real thing, which is the joke. What they
+       never get is the selection ring — they are never selected. */
+    .pdf-gag-chip svg { height: 15px; width: auto; display: block; }
+
     /* The strip's own toast. Its three tones are muted on purpose: a promotion should read as
        good news, not as a system alert going off under someone's résumé. */
     #arcade-toast[data-tone="text"] { color: #64748b; }
@@ -1039,6 +1051,7 @@
   <script src="data/faqs.js"></script>
   <script src="data/recommendations.js"></script>
   <script src="data/chat.js"></script>
+  <script src="data/gags.js"></script>
   <script src="assets/arcade.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 transition-colors duration-300 font-sans antialiased overflow-x-hidden relative min-h-screen">
@@ -1317,6 +1330,14 @@
       <p>Modular Portfolio Format &bull; Built with Tailwind CSS & Lucide Icons</p>
     </footer>
 
+  </div>
+
+  <!-- THE GAG TOAST. Centred, above every dialog, and never in the way: pointer-events-none,
+       so it cannot intercept the press that follows it. See data/gags.js. -->
+  <div id="gag-toast" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-6 pointer-events-none print:hidden">
+    <p role="status" aria-live="polite"
+       class="max-w-sm text-center text-sm font-semibold leading-snug px-5 py-3.5 rounded-2xl shadow-2xl
+              bg-slate-900/90 text-white dark:bg-white/90 dark:text-slate-900 backdrop-blur-sm"></p>
   </div>
 
   <!-- COMPACT PRINT / PDF RÉSUMÉ (hidden on screen; populated by buildPrintResume()) -->
@@ -2283,6 +2304,78 @@
       ]
     };
     function prAccents(template) { return PR_ACCENTS[template] || PR_ACCENTS[PR_TEMPLATE_DEFAULT]; }
+
+    // THE RUNNING GAG. Two gaudy colours and two infamous typefaces sit at the end of their
+    // pickers looking selectable. They are not: pressing one shows a line and changes nothing.
+    // Everything about them lives in data/gags.js, so deleting that file removes the gag whole.
+    function gagCfg() {
+      const g = (typeof GAGS_CONFIG !== 'undefined') ? GAGS_CONFIG : null;
+      return (g && g.enabled !== false) ? g : null;
+    }
+    // A shuffled bag rather than a coin: pure random repeats itself, and the second time you see
+    // the same line in a row the joke is over.
+    const _gagBag = {};
+    function gagLine(kind) {
+      const cfg = gagCfg();
+      const all = (cfg && cfg[kind]) || [];
+      if (!all.length) return '';
+      let bag = _gagBag[kind];
+      if (!bag || !bag.length) {
+        bag = all.slice();
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+        }
+        // Never open a fresh bag with the line the last one closed on.
+        if (_gagBag[kind + ':last'] && bag[bag.length - 1] === _gagBag[kind + ':last'] && bag.length > 1) {
+          bag.unshift(bag.pop());
+        }
+        _gagBag[kind] = bag;
+      }
+      const line = bag.pop();
+      _gagBag[kind + ':last'] = line;
+      return line;
+    }
+
+    let _gagTimer = null;
+    function showGagToast(text) {
+      const host = document.getElementById('gag-toast');
+      if (!host || !text) return;
+      const card = host.firstElementChild;
+      card.textContent = text;
+      host.classList.remove('hidden');
+      // Re-trigger the entrance even when it is already up, so a second press reads as a second
+      // answer rather than as nothing happening.
+      card.classList.remove('gag-in');
+      void card.offsetWidth;
+      if (!prefersReducedMotion()) card.classList.add('gag-in');
+      clearTimeout(_gagTimer);
+      _gagTimer = setTimeout(() => host.classList.add('hidden'), 3600);
+    }
+    function gagColour() { showGagToast(gagLine('colourLines')); }
+    function gagFont() { showGagToast(gagLine('fontLines')); }
+
+    // The decoys, drawn at the end of the real rows. `type=button` with no radio role: they are
+    // not choices, so they must not join the radio group or ever read as checked.
+    function gagSwatchesHTML() {
+      const cfg = gagCfg();
+      if (!cfg || !cfg.colours) return '';
+      return '<span class="w-px h-5 bg-slate-300/70 dark:bg-slate-600/60 mx-0.5" aria-hidden="true"></span>' +
+        cfg.colours.map(c =>
+          '<button type="button" onclick="gagColour()" title="' + escapeAttr(c.label) + '"' +
+          ' aria-label="' + escapeAttr(c.label) + '"' +
+          ' class="pdf-gag-swatch w-7 h-7 rounded-lg border-2 border-transparent transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"' +
+          ' style="background:' + c.hex + '"></button>').join('');
+    }
+    function gagFontChipsHTML() {
+      const cfg = gagCfg();
+      if (!cfg || !cfg.fonts) return '';
+      return cfg.fonts.map(f =>
+        '<button type="button" onclick="gagFont()" aria-label="' + escapeAttr(f.label) + '"' +
+        ' class="pdf-gag-chip px-3 py-1.5 rounded-xl border transition-colors text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-700/60 hover:border-indigo-500/50 dark:hover:border-amber-400/50 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">' +
+        f.mark + '</button>').join('');
+    }
+
 
     // THEME is the dominant background — the painted column, the cast banner. ACCENT is what is
     // drawn ON the page: highlights, rules, links, bars. They are different jobs and different
@@ -7073,7 +7166,7 @@
       const controls =
         '<div class="space-y-3">' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Typeface</div>' +
-            '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="font">' + fontChips + '</div></div>' +
+            '<div class="flex flex-wrap gap-1.5"><span class="contents" role="radiogroup" aria-label="font">' + fontChips + '</span>' + gagFontChipsHTML() + '</div></div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Paper</div>' +
             group('size', page.size, [{ v: 'a4', label: 'A4' }, { v: 'letter', label: 'US Letter' }]) + '</div>' +
           '<div class="space-y-1.5"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Density</div>' +
@@ -7107,7 +7200,7 @@
                 ' onclick="setPdfAccent(\'' + a.hex + '\')" title="' + a.label + '" aria-label="' + a.label + '"' +
                 ' class="pdf-swatch w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
                 'border-transparent' +
-                '" style="background:' + a.hex + '"></button>').join('') +
+                '" style="background:' + a.hex + '"></button>').join('') + gagSwatchesHTML() +
             '</div>' +
             '<div class="flex items-center gap-1.5">' +
               '<input id="pdf-accent-hex" type="text" inputmode="text" maxlength="7" spellcheck="false"' +
