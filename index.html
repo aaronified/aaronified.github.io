@@ -2694,6 +2694,13 @@
         const v = (typeof txtCfg[key] === 'string' && txtCfg[key] !== '') ? txtCfg[key] : null;
         return `<span data-edit="${escapeAttr(key)}">${formatText(v != null ? escapeHtml(v) : src)}</span>`;
       };
+      // What a key currently says, for the places that need the string rather than a run of
+      // editable HTML \u2014 a project's generated mark is drawn from its name, so renaming the
+      // project has to move the mark with it.
+      const edVal = (key, src) => {
+        const v = (typeof txtCfg[key] === 'string' && txtCfg[key] !== '') ? txtCfg[key] : null;
+        return v != null ? v : (src == null ? '' : String(src));
+      };
       // Achievements keep their authored index, because that is what the "dropped" list and
       // therefore the override key are numbered by — not their position after the drops.
       const pickHi = (all, cfg) => {
@@ -2864,8 +2871,9 @@
       const projChip = pr => {
         const cfg = projCfg[pr.id] || {};
         if (cfg.showLogo !== false && pr.logo) return logoImg(pr.logo);
-        const hue = prNameHue(pr.name || '');
-        const letter = escapeHtml((pr.name || '?').trim().charAt(0).toUpperCase());
+        const shown = edVal('proj:' + pr.id + ':name', pr.name);
+        const hue = prNameHue(shown || '');
+        const letter = escapeHtml((shown || '?').trim().charAt(0).toUpperCase());
         return `<span class="pr-chip" style="background:hsl(${hue} 52% 38%)">${letter}</span>`;
       };
 
@@ -2909,7 +2917,7 @@
           const level = PR_LEVELS[over[x.name]] ? over[x.name] : x.level;
           const pct = (PR_LEVELS[level] / 4) * 100;
           return '<div class="pr-sb" data-skill="' + escapeAttr(x.name) + '" data-level="' + escapeAttr(level) + '">' +
-            '<span class="pr-sb-n">' + escapeHtml(x.name) + '</span>' +
+            '<span class="pr-sb-n">' + ed('skill:' + x.name, x.name) + '</span>' +
             '<span class="pr-sb-l">' + escapeHtml(level) + '</span>' +
             '<span class="pr-sb-t"><span class="pr-sb-f" style="width:' + pct + '%"></span></span>' +
           '</div>';
@@ -2987,7 +2995,7 @@
           .filter(o => o.c && o.item && o.item.include)
           .map(o => {
             const sk = o.c.skills || [];
-            return `<li><span class="t">${ed('compt:' + o.c.title, o.c.title)}</span>${sk.length ? `<div class="pr-aside-sk">${sk.map(escapeHtml).join(' &middot; ')}</div>` : ''}</li>`;
+            return `<li><span class="t">${ed('compt:' + o.c.title, o.c.title)}</span>${sk.length ? `<div class="pr-aside-sk">${ed('compsk:' + o.c.title, sk.join(' \u00b7 '))}</div>` : ''}</li>`;
           }).join('');
         const lines = contacts ? `<h4>${ed('h:a-contact', 'Contact')}</h4><div class="pr-meta">${contacts}</div>` : '';
         // In bar mode the competency prose is gone, so the strengths go in as the short form of
@@ -5342,10 +5350,15 @@
       if (out.competencies && out.competencies.items) {
         Object.keys(out.competencies.items).forEach(k => { delete out.competencies.items[k].text; });
       }
-      // A reference's title, relationship, email and mobile stay: they are not rewrites of
-      // anything the data files say, they are the details the owner types in to prepare a
-      // PDF, and losing them on every visit would make the section unusable.
       if (out.text) out.text = {};
+      // A reference's title and relationship are written in data/recommendations.js, so a
+      // rewrite of them is a rewrite like the rest. Email and mobile are not written anywhere
+      // \u2014 they are what the owner types in to prepare the PDF \u2014 so those two stay.
+      if (out.recommendations && out.recommendations.items) {
+        Object.keys(out.recommendations.items).forEach(k => {
+          delete out.recommendations.items[k].title; delete out.recommendations.items[k].relationship;
+        });
+      }
       if (out.languages && out.languages.items) {
         Object.keys(out.languages.items).forEach(k => {
           delete out.languages.items[k].name; delete out.languages.items[k].level;
@@ -7167,7 +7180,7 @@
       };
       host.addEventListener('pointerdown', e => {
         const row = e.target.closest && e.target.closest('.pr-sb');
-        if (!row || !pdfUi.editing) return;
+        if (!row || !pdfUi.editing || (e.target.closest && e.target.closest('[data-edit]'))) return;
         e.preventDefault();
         dragging = row;
         try { row.setPointerCapture && row.setPointerCapture(e.pointerId); } catch (err) { /* no live pointer */ }
@@ -7183,7 +7196,7 @@
       host.addEventListener('pointercancel', end);
       host.addEventListener('keydown', e => {
         const row = e.target.closest && e.target.closest('.pr-sb');
-        if (!row || !pdfUi.editing) return;
+        if (!row || !pdfUi.editing || (e.target.closest && e.target.closest('[data-edit]'))) return;
         const step = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1
                    : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
         if (!step) return;
@@ -7892,7 +7905,8 @@
           '<span class="font-medium text-slate-600 dark:text-slate-300">Strengths</span>' +
           pdfSwitchHTML('pdf-comp-strengths', strengthsOn, 'Show strengths alongside the rated bars') + '</label>';
       const right = '<p class="text-[11px] text-slate-500 dark:text-slate-400 -mt-1 mb-1">Reorder (arrows / drag), toggle, and use the pencil to edit each competency\'s text.</p>' +
-        '<ul id="pdf-comp-list" data-sort-list="comp" class="space-y-2">' + order.map((t, i) => pdfCompRowHTML(t, i, order.length)).join('') + '</ul>';
+        '<ul id="pdf-comp-list" data-sort-list="comp" class="space-y-2">' + order.map((t, i) => pdfCompRowHTML(t, i, order.length)).join('') + '</ul>' +
+        pdfSkillLabelsHTML();
       return pdfSectionRowHTML('Core Competencies', pdfBadgeHTML('pdf-comp-badge', inc, order.length), globals, right);
     }
 
@@ -7998,6 +8012,21 @@
       schedulePdfPreview();
     }
 
+    // The rated bars carry names too. Their levels are set by dragging the bar itself, but a
+    // name is text, and text that only one of three templates prints still has to be
+    // rewritable from here.
+    function pdfSkillLabelsHTML() {
+      const bars = (OVERVIEW_DATA.skillBars || []).filter(x => x && x.name).slice(0, PR_MAX_BARS);
+      if (!bars.length) return '';
+      return '<details class="pdf-text-fold text-xs pt-1">' +
+        '<summary class="cursor-pointer font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded">Edit the rated bars\u2019 labels</summary>' +
+        '<div class="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">' +
+          bars.map(x => pdfTextFieldHTML('skill:' + x.name, x.name, x.name)).join('') +
+        '</div>' +
+        '<p class="text-[10px] text-slate-400 dark:text-slate-500 leading-snug pt-1">Levels are set by dragging a bar in the document.</p>' +
+      '</details>';
+    }
+
     function pdfCompRowHTML(title, idx, total) {
       const c = OVERVIEW_DATA.competencies.find(x => x.title === title);
       if (!c) return '';
@@ -8018,6 +8047,7 @@
         '</div>' +
         '<div id="' + editorId + '" class="pdf-comp-editor accordion-grid' + (expanded ? ' open' : '') + '"><div class="overflow-hidden"><div class="px-3 pb-3 pt-1 space-y-2">' +
           pdfTextFieldHTML('compt:' + title, title, 'Heading') +
+          ((c.skills || []).length ? pdfTextFieldHTML('compsk:' + title, (c.skills || []).join(' \u00b7 '), 'Skills line (side column)') : '') +
           pdfMarkerHelpHTML() +
           '<textarea class="pdf-comp-text w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 p-2.5 font-mono focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" rows="3">' + escapeHtml(curText) + '</textarea>' +
           '<p class="pdf-comp-warn text-xs text-amber-600 dark:text-amber-400' + (pdfHasUnbalancedMarkers(curText) ? '' : ' hidden') + '">Unclosed marker — it will print literally.</p>' +
