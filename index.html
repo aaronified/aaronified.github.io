@@ -1475,6 +1475,12 @@
             </div>
             <!-- Shown only while editing. The marks are the same three the résumé data uses. -->
             <div id="pdf-edit-bar" hidden class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-slate-200/50 dark:border-slate-800/50 bg-indigo-500/5 dark:bg-amber-400/5">
+              <!-- The way out, on the side people look for it. "Done" is up in the header and
+                   easy to miss when the document has taken over the dialog. -->
+              <button type="button" onclick="setPdfEditing(false)"
+                      class="inline-flex items-center gap-1 px-2 py-1 mr-2 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-indigo-500/60 dark:hover:border-amber-400/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                Back to options</button>
               <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">Highlight:</span>
               <button type="button" data-mark="hl-sw" aria-pressed="false" onclick="pdfApplyMark('hl-sw'); pdfSyncEditToolbar();"
                       class="pdf-mark-btn px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" title="Tool or system (Ctrl+B)">Tool</button>
@@ -2408,6 +2414,17 @@
     // and Dokra — which puts the projects in a half-width column — asks for descriptions only.
     // Defined once because three places need to agree: the document, the switch that renders
     // it, and the fast path that re-marks the switch when the template changes under it.
+    // Competency text or rated bars, and who decided. Bhagirathi is a single column of prose
+    // with nowhere to hang a bar; Dokra's whole layout is built around them. Only Pattachitra
+    // is a real choice, so only there is the control live.
+    function prSkillMode(config) {
+      const cfg = config || pdfConfig;
+      const t = ((cfg && cfg.page) || {}).template || PR_TEMPLATE_DEFAULT;
+      if (t === 'bhagirathi') return { value: 'text', forced: 'Bhagirathi is one flowing column \u2014 it never shows bars.' };
+      if (t === 'dokra') return { value: 'bars', forced: 'Dokra is built around the bars.' };
+      return { value: ((cfg && cfg.page) || {}).skillBars ? 'bars' : 'text', forced: '' };
+    }
+
     function prWantsProjHighlights(config) {
       const v = (config && config.projects && config.projects.showHighlights);
       if (typeof v === 'boolean') return v;
@@ -2884,7 +2901,7 @@
       // are where levels live, and a pill with a number on it is a bar pretending not to be one.
       const compTitles = (OVERVIEW_DATA.competencies || []).map(c => c.title);
       const strengthPills = (OVERVIEW_DATA.strengths || []).filter(x => compTitles.indexOf(x) >= 0).slice(0, PR_MAX_STRENGTHS);
-      const strengthsHTML = strengthPills.length
+      const strengthsHTML = (strengthPills.length && compCfg.showStrengths !== false)
         ? `<div class="pr-pills">${strengthPills.map(x => `<span class="pr-pill">${escapeHtml(x)}</span>`).join('')}</div>` : '';
       const langRows = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
       const languagesHTML = langRows.length
@@ -5522,6 +5539,9 @@
           text: typeof s.text === 'string' ? s.text : null
         };
       });
+      // The strengths pills ride along with the rated bars, and only there — in text mode the
+      // competency prose already says all of it. On unless the visitor turns it off.
+      const showStrengths = sComp.showStrengths !== false;
 
       // Entries — keyed by id / id#index; best-effort re-match merged sub-roles by roleTitle.
       const entries = {};
@@ -5657,7 +5677,7 @@
       const projHi = typeof sProjects.showHighlights === 'boolean' ? sProjects.showHighlights : null;
       const projects = { order: projOrder, items: projItems, showHighlights: projHi };
 
-      return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
+      return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items, showStrengths: showStrengths }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
     }
 
     // --- Pagination ---------------------------------------------------------
@@ -7565,10 +7585,6 @@
                 ' class="w-[92px] px-2 py-1 rounded-lg text-xs font-mono border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none">' +
               '<button type="button" onclick="setPdfAccent(null)" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded px-1.5 py-1">Default</button>' +
             '</div></div>' +
-          '<div id="pdf-skillbars-opt" class="space-y-1.5' + (page.template === 'pattachitra' ? '' : ' hidden') + '">' +
-            '<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Skills in the sidebar</div>' +
-            group('skillBars', page.skillBars ? 'bars' : 'text',
-              [{ v: 'text', label: 'Competency text' }, { v: 'bars', label: 'Rated bars' }]) + '</div>' +
         '</div>';
 
       const right =
@@ -7691,9 +7707,31 @@
     function renderCompetencySectionHTML() {
       const order = pdfConfig.competencies.order;
       const inc = order.filter(t => pdfConfig.competencies.items[t] && pdfConfig.competencies.items[t].include).length;
+      // HOW they are shown, not just which of them. Some templates have already made the
+      // choice — Bhagirathi is a column of prose and has nowhere to put a bar, Dokra is built
+      // around them — so the control says so rather than pretending to be free.
+      const mode = prSkillMode();
+      const forced = mode.forced;
+      const seg = [{ v: 'text', label: 'Competency text' }, { v: 'bars', label: 'Rated bars' }].map(o =>
+        '<button type="button" role="radio" aria-checked="' + (o.v === mode.value ? 'true' : 'false') + '"' +
+        (forced ? ' disabled' : '') +
+        ' class="pdf-page-opt px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ' +
+        (o.v === mode.value
+          ? 'bg-indigo-600 dark:bg-amber-400 text-white dark:text-slate-950 border-transparent'
+          : 'text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-700/60') +
+        '" data-page-key="skillBars" data-page-value="' + o.v + '">' + o.label + '</button>').join('');
+      const strengthsOn = pdfConfig.competencies.showStrengths !== false;
+      const globals =
+        '<div class="space-y-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Show as</div>' +
+          '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="how competencies are shown">' + seg + '</div>' +
+          (forced ? '<p class="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">' + escapeHtml(forced) + '</p>' : '') +
+        '</div>' +
+        '<label id="pdf-strengths-row" class="flex items-center justify-between gap-2 text-xs' + (mode.value === 'bars' ? '' : ' hidden') + '">' +
+          '<span class="font-medium text-slate-600 dark:text-slate-300">Strengths</span>' +
+          pdfSwitchHTML('pdf-comp-strengths', strengthsOn, 'Show strengths alongside the rated bars') + '</label>';
       const right = '<p class="text-[11px] text-slate-500 dark:text-slate-400 -mt-1 mb-1">Reorder (arrows / drag), toggle, and use the pencil to edit each competency\'s text.</p>' +
         '<ul id="pdf-comp-list" data-sort-list="comp" class="space-y-2">' + order.map((t, i) => pdfCompRowHTML(t, i, order.length)).join('') + '</ul>';
-      return pdfSectionRowHTML('Core Competencies', pdfBadgeHTML('pdf-comp-badge', inc, order.length), '', right);
+      return pdfSectionRowHTML('Core Competencies', pdfBadgeHTML('pdf-comp-badge', inc, order.length), globals, right);
     }
 
     function pdfCompRowHTML(title, idx, total) {
@@ -7939,6 +7977,7 @@
         if ((el = t.closest('.pdf-contact-include'))) { toggleContactInclude(el.closest('.pdf-contact-row').dataset.contactKey, el); return; }
         if ((el = t.closest('.pdf-summary-include'))) { toggleSummaryInclude(el); return; }
         if ((el = t.closest('.pdf-summary-reset'))) { resetSummaryText(el); return; }
+        if ((el = t.closest('.pdf-comp-strengths'))) { toggleCompStrengths(el); return; }
         if ((el = t.closest('.pdf-proj-highlights'))) { toggleProjHighlights(el); return; }
         if ((el = t.closest('.pdf-reco-enabled'))) { toggleRecoEnabled(el); return; }
         if ((el = t.closest('.pdf-reco-include'))) { toggleRecoInclude(el.closest('.pdf-reco-row').dataset.recoKey, el); return; }
@@ -8284,8 +8323,6 @@
           card.classList.toggle('dark:border-slate-700/60', !on);
         });
         layoutTemplateDeck();
-        const skillOpt = document.getElementById('pdf-skillbars-opt');
-        if (skillOpt) skillOpt.classList.toggle('hidden', value !== 'pattachitra');
         // Each template offers its own palette, so the swatches are redrawn — in place, since
         // re-rendering the section would replace the deck mid-animation.
         const repaint = (rowId, cls, palette, current, setter) => {
@@ -8311,6 +8348,14 @@
         // pressed it, because then it is their answer and not the template's.
         const hiSwitch = document.querySelector('.pdf-proj-highlights');
         if (hiSwitch) hiSwitch.setAttribute('aria-checked', prWantsProjHighlights(pdfConfig) ? 'true' : 'false');
+        refreshCompSection();
+        updateResetButton();
+        schedulePdfPreview();
+        return;
+      }
+
+      if (key === 'skillBars') {
+        refreshCompSection();
         updateResetButton();
         schedulePdfPreview();
         return;
@@ -8398,6 +8443,26 @@
     // value and mirror it onto the child switches in the DOM (so the section stays consistent).
     // Pressing it makes the tri-state a real boolean: from here on it is the visitor's choice,
     // not the template's default, and changing template no longer moves it.
+    // Core Competencies redrawn in place. Its controls read the template (which mode is
+    // possible) and the config (which is chosen), so both have to be able to repaint it
+    // without rebuilding the whole dialog and losing every open disclosure.
+    function refreshCompSection() {
+      const sec = document.querySelector('.pdf-section[data-sec="Core Competencies"]');
+      if (!sec) return;
+      sec.outerHTML = renderCompetencySectionHTML();
+      drawIcons();
+      refreshPdfModifiedHighlights();
+    }
+
+    function toggleCompStrengths(btn) {
+      const cur = btn.getAttribute('aria-checked') === 'true';
+      pdfConfig.competencies.showStrengths = !cur;
+      btn.setAttribute('aria-checked', !cur ? 'true' : 'false');
+      savePdfConfigDebounced();
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
     function toggleProjHighlights(btn) {
       const cur = btn.getAttribute('aria-checked') === 'true';
       pdfConfig.projects.showHighlights = !cur;
