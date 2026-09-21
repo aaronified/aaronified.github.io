@@ -2661,6 +2661,11 @@
     // override instead of storing a copy of them.
     let _prEditSrc = {};
 
+    // The employer line as the document prints it — company and city. Module scope because
+    // the chooser offers the same string to rewrite, and two copies of it would drift.
+    const cityOf = loc => (loc || '').split(',')[0].trim();
+    const prEntryCo = e => e.company + ', ' + cityOf(e.location);
+
     function buildPrintResume(config) {
       const el = document.getElementById('print-resume');
       if (el) el.innerHTML = buildPrintResumeHTML(config);
@@ -2701,7 +2706,7 @@
         return (t != null && t !== '') ? formatText(escapeHtml(t)) : formatText(c.description);
       };
 
-      const cityOf = loc => (loc || '').split(',')[0].trim();
+
       const base = (OVERVIEW_DATA.quickFacts || []).find(f => /base/i.test(f.label));
 
       // Hero contacts — kept lines, in the user's chosen order (incl. the derived web URL).
@@ -6960,6 +6965,14 @@
         if (!item || !c) return null;
         return { get: () => item.text, set: v => { item.text = v; }, original: () => c.description || '' };
       }
+      if (key.indexOf('reco:') === 0) {
+        const cut = key.lastIndexOf(':');
+        const rk = key.slice(5, cut), f = key.slice(cut + 1);
+        const it = pdfConfig.recommendations.items[rk];
+        const r = pdfRecoList().find(x => x.key === rk);
+        if (it && r && f === 'title') return { get: () => it.title, set: v => { it.title = v; }, original: () => r.title || '' };
+        if (it && r && f === 'rel') return { get: () => it.relationship, set: v => { it.relationship = v; }, original: () => r.relationship || '' };
+      }
       // Everything else. One flat store, keyed by whatever the document wrote into data-edit,
       // so a new editable run needs no new case here. A key the last render did not produce
       // (a project dropped, a competency renamed in the data) simply stops being editable.
@@ -7493,7 +7506,9 @@
       const inc = order.filter(k => items[k] && items[k].include !== false).length;
       const showImg = !(pdfConfig.hero && pdfConfig.hero.showImage === false);
       const globals = '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300">Profile photo</span>' +
-        pdfSwitchHTML('pdf-hero-image', showImg, 'Show profile photo in PDF') + '</label>';
+        pdfSwitchHTML('pdf-hero-image', showImg, 'Show profile photo in PDF') + '</label>' +
+        pdfTextFieldHTML('name', PERSONAL_DATA.name, 'Name') +
+        pdfTextFieldHTML('title', PERSONAL_DATA.title, 'Headline');
       const right = '<ul id="pdf-contact-list" data-sort-list="contact" class="space-y-2">' + pdfContactListHTML() + '</ul>';
       return pdfSectionRowHTML('Contact Details', pdfBadgeHTML('pdf-contact-badge', inc, order.length), globals, right);
     }
@@ -7724,7 +7739,9 @@
       const included = sum.include !== false;
       const curText = sum.text != null ? sum.text : OVERVIEW_DATA.bio;
       const globals = '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300">Include</span>' +
-        pdfSwitchHTML('pdf-summary-include', included, 'Include the summary in PDF') + '</label>';
+        pdfSwitchHTML('pdf-summary-include', included, 'Include the summary in PDF') + '</label>' +
+        pdfTextFieldHTML('h:summary', 'Summary', 'Section heading') +
+        pdfTextFieldHTML('h:about', 'About', 'Section heading (Dokra)');
       const right = '<div class="pdf-summary-controls space-y-2' + (included ? '' : ' opacity-50 pointer-events-none') + '"' + (included ? '' : ' inert aria-hidden="true"') + '>' +
         pdfMarkerHelpHTML() +
         '<textarea class="pdf-summary-text w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 p-2.5 font-mono focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" rows="4">' + escapeHtml(curText) + '</textarea>' +
@@ -7750,6 +7767,7 @@
       const globals =
         '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-semibold text-slate-700 dark:text-slate-200">Enable</span>' +
           pdfSwitchHTML('pdf-reco-enabled', enabled, 'Include the references section in PDF') + '</label>' +
+        pdfTextFieldHTML('h:refs', 'References', 'Section heading') +
         '<div class="pdf-reco-globals space-y-1.5 pt-1.5 border-t border-indigo-400/20 dark:border-amber-400/20' + (enabled ? '' : ' opacity-50 pointer-events-none') + '"' + (enabled ? '' : ' inert aria-hidden="true"') + '>' +
           pdfBulkToggleHTML('reco', 'showImage', 'Photos') +
           pdfBulkToggleHTML('reco', 'showTitle', 'Titles') +
@@ -7791,6 +7809,7 @@
             pdfChipToggleHTML('pdf-reco-field', it.showImage !== false, 'Photo', ' data-field="showImage"') +
             pdfChipToggleHTML('pdf-reco-field', it.showContacts !== false, 'Contacts', ' data-field="showContacts"') +
           '</div>' +
+          pdfTextFieldHTML('reco:' + key + ':author', r.author, 'Name') +
           '<input type="text" class="pdf-reco-title w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" placeholder="Title" value="' + escapeAttr(titleVal) + '">' +
           '<input type="text" class="pdf-reco-rel w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" placeholder="Relationship" value="' + escapeAttr(relVal) + '">' +
           '<div class="flex flex-wrap gap-2">' +
@@ -7834,6 +7853,7 @@
         '" data-page-key="skillBars" data-page-value="' + o.v + '">' + o.label + '</button>').join('');
       const strengthsOn = pdfConfig.competencies.showStrengths !== false;
       const globals =
+        pdfTextFieldHTML('h:comp', 'Core Competencies', 'Section heading') +
         '<div class="space-y-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Show as</div>' +
           '<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="how competencies are shown">' + seg + '</div>' +
           (forced ? '<p class="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">' + escapeHtml(forced) + '</p>' : '') +
@@ -7858,6 +7878,7 @@
         '<label class="flex items-center justify-between gap-2 text-xs">' +
           '<span class="font-medium text-slate-600 dark:text-slate-300">Languages block</span>' +
           pdfSwitchHTML('pdf-langs-enabled', cfg.enabled !== false, 'Print the languages block') + '</label>' +
+        pdfTextFieldHTML('h:a-lang', 'Languages', 'Section heading') +
         '<p class="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">Printed in the side column \u2014 Pattachitra and Dokra. Bhagirathi has none.</p>';
       const right = '<p class="text-[11px] text-slate-500 dark:text-slate-400 -mt-1 mb-1">Reorder (arrows / drag), toggle, and rewrite the name or the level.</p>' +
         '<ul id="pdf-lang-list" data-sort-list="lang" class="space-y-2">' + pdfLangListHTML() + '</ul>';
@@ -7966,6 +7987,7 @@
           '<button type="button" class="pdf-comp-expand p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none transition-colors" aria-expanded="' + (expanded ? 'true' : 'false') + '" aria-controls="' + editorId + '" aria-label="Edit text for ' + escapeAttr(title) + '"><i data-lucide="pencil" class="w-4 h-4"></i></button>' +
         '</div>' +
         '<div id="' + editorId + '" class="pdf-comp-editor accordion-grid' + (expanded ? ' open' : '') + '"><div class="overflow-hidden"><div class="px-3 pb-3 pt-1 space-y-2">' +
+          pdfTextFieldHTML('compt:' + title, title, 'Heading') +
           pdfMarkerHelpHTML() +
           '<textarea class="pdf-comp-text w-full text-sm rounded-xl border border-slate-300/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 p-2.5 font-mono focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" rows="3">' + escapeHtml(curText) + '</textarea>' +
           '<p class="pdf-comp-warn text-xs text-amber-600 dark:text-amber-400' + (pdfHasUnbalancedMarkers(curText) ? '' : ' hidden') + '">Unclosed marker — it will print literally.</p>' +
@@ -7994,6 +8016,45 @@
       badge.textContent = inc + ' of ' + order.length + ' shown';
     }
 
+    // A box bound to the shared text store — the same keys the edit stage writes, so a
+    // rewrite made here and one made on the document are one rewrite and not two. Empty means
+    // "whatever the data file says", which is also how you undo one.
+    function pdfTextFieldHTML(key, src, label, rows) {
+      src = src == null ? '' : String(src);
+      const cur = (pdfConfig.text && typeof pdfConfig.text[key] === 'string') ? pdfConfig.text[key] : src;
+      const common = ' class="pdf-text-field w-full px-2 py-1 rounded-lg text-xs border border-slate-200/70 dark:border-slate-700/60' +
+        ' bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"' +
+        ' data-text-key="' + escapeAttr(key) + '" data-src="' + escapeAttr(src) + '" aria-label="' + escapeAttr(label) + '"';
+      const box = (rows && rows > 1)
+        ? '<textarea' + common + ' rows="' + rows + '">' + escapeHtml(cur) + '</textarea>'
+        : '<input type="text"' + common + ' value="' + escapeAttr(cur) + '">';
+      return '<label class="block space-y-0.5">' +
+        '<span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">' + escapeHtml(label) + '</span>' +
+        box + '</label>';
+    }
+
+    // The fold those boxes live in on a card. Native <details> rather than the accordion the
+    // competencies use: there is one of these per entry, and remembering which of thirty were
+    // open is state nobody asked for.
+    function pdfTextFoldHTML(fields) {
+      const body = fields.filter(f => f && f.key).map(f => pdfTextFieldHTML(f.key, f.src, f.label, f.rows)).join('');
+      if (!body) return '';
+      return '<details class="pdf-text-fold text-xs">' +
+        '<summary class="cursor-pointer font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none rounded">Edit text</summary>' +
+        '<div class="mt-1.5 space-y-1.5">' + body +
+        '<p class="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">Empty restores what the data file says. This visit only — use Save session to keep it.</p>' +
+        '</div></details>';
+    }
+
+    function onGenericTextInput(key, el) {
+      if (!pdfConfig.text) pdfConfig.text = {};
+      const src = el.getAttribute('data-src') || '';
+      const v = el.value;
+      if (v.trim() === '' || v === src) delete pdfConfig.text[key]; else pdfConfig.text[key] = v;
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
     function pdfSwitchHTML(cls, checked, label) {
       return '<button type="button" role="switch" aria-checked="' + (checked ? 'true' : 'false') + '" aria-label="' + escapeAttr(label) + '" class="pdf-switch ' + cls + '"></button>';
     }
@@ -8014,14 +8075,17 @@
             e.roles.forEach((r, i) => {
               const key = e.id + '#' + i;
               pdfSectionKeys.work.push(key);
-              rows += pdfEntryCardHTML(key, e.logo, r.role, null, r.period, r.highlights || [], {});
+              rows += pdfEntryCardHTML(key, e.logo, r.role, null, r.period, r.highlights || [],
+                { text: pdfEntryTextFields('ent:' + key, prEntryCo(e), 'ent:' + e.id, r.role, r.period, r.description, r.highlights) });
             });
           } else {
             pdfSectionKeys.work.push(e.id);
-            rows += pdfEntryCardHTML(e.id, e.logo, e.company, e.role, e.period, e.highlights || [], {});
+            rows += pdfEntryCardHTML(e.id, e.logo, e.company, e.role, e.period, e.highlights || [],
+              { text: pdfEntryTextFields('ent:' + e.id, prEntryCo(e), null, e.role, e.period, e.description, e.highlights) });
           }
         });
-        const wGlobals = pdfBulkToggleHTML('work', 'showLogo', 'Logos') +
+        const wGlobals = pdfTextFieldHTML('h:traj', 'Career Trajectory', 'Section heading') +
+          pdfBulkToggleHTML('work', 'showLogo', 'Logos') +
           pdfBulkToggleHTML('work', 'showDescription', 'Descriptions');
         html += pdfSectionWrap('Work Experience', 'pdf-work-badge', pdfSectionKeys.work, wGlobals, '<div class="space-y-2.5">' + rows + '</div>');
       }
@@ -8031,7 +8095,8 @@
       const pRows = pdfProjectRowsHTML();
       if (pRows) {
         const hiOn = prWantsProjHighlights(pdfConfig);
-        const pGlobals = pdfBulkToggleHTML('projects', 'showDescription', 'Descriptions') +
+        const pGlobals = pdfTextFieldHTML('h:projects', 'Projects', 'Section heading') +
+          pdfBulkToggleHTML('projects', 'showDescription', 'Descriptions') +
           '<label class="flex items-center justify-between gap-2 text-xs"><span class="font-medium text-slate-600 dark:text-slate-300">Achievements</span>' +
           pdfSwitchHTML('pdf-proj-highlights', hiOn, 'Show project achievements in PDF') + '</label>';
         html += pdfSectionWrap('Projects', 'pdf-proj-badge', pdfSectionKeys.projects, pGlobals,
@@ -8044,21 +8109,26 @@
       let rows = '';
       eduList.forEach((e, i) => {
         pdfSectionKeys.edu.push(e.id);
-        const college = pdfEntryCardHTML(e.id, e.logo, e.company, e.role, e.period, [], { hasScore: !!e.score });
+        const college = pdfEntryCardHTML(e.id, e.logo, e.company, e.role, e.period, [],
+          { hasScore: !!e.score, text: pdfEntryTextFields('ent:' + e.id, e.company, null, e.role, e.period, e.description, null, e.score) });
         let subs = '';
         nested[i].forEach(intn => {
           placed[intn.id] = true;
           pdfSectionKeys.edu.push(intn.id);
-          subs += pdfEntryCardHTML(intn.id, intn.logo, intn.company, intn.role, intn.period, intn.highlights || [], { isSub: true });
+          subs += pdfEntryCardHTML(intn.id, intn.logo, intn.company, intn.role, intn.period, intn.highlights || [],
+            { isSub: true, text: pdfEntryTextFields('ent:' + intn.id, intn.company, null, intn.role, intn.period, intn.description, intn.highlights) });
         });
         rows += '<div class="space-y-2">' + college + (subs ? '<div class="space-y-2">' + subs + '</div>' : '') + '</div>';
       });
       allInterns.filter(x => !placed[x.id]).forEach(intn => {
         pdfSectionKeys.edu.push(intn.id);
-        rows += pdfEntryCardHTML(intn.id, intn.logo, intn.company, intn.role, intn.period, intn.highlights || [], {});
+        rows += pdfEntryCardHTML(intn.id, intn.logo, intn.company, intn.role, intn.period, intn.highlights || [],
+          { text: pdfEntryTextFields('ent:' + intn.id, intn.company, null, intn.role, intn.period, intn.description, intn.highlights) });
       });
       if (rows) {
-        const eGlobals = pdfBulkToggleHTML('edu', 'showLogo', 'Logos') +
+        const eGlobals = pdfTextFieldHTML('h:edu', 'Education', 'Section heading') +
+          pdfTextFieldHTML('h:interns', 'Internships', 'Section heading') +
+          pdfBulkToggleHTML('edu', 'showLogo', 'Logos') +
           pdfBulkToggleHTML('edu', 'showDescription', 'Descriptions') +
           pdfBulkToggleHTML('edu', 'showScore', 'Scores');
         html += pdfSectionWrap('Education & Internships', 'pdf-edu-badge', pdfSectionKeys.edu, eGlobals, '<div class="space-y-2.5">' + rows + '</div>');
@@ -8081,8 +8151,11 @@
         const p = projById[id];
         const key = 'proj:' + id;
         pdfSectionKeys.projects.push(key);
+        const pf = [{ key: 'proj:' + id + ':name', src: p.name, label: 'Name' }];
+        if (p.summary) pf.push({ key: 'proj:' + id + ':desc', src: p.summary, label: 'Description', rows: 3 });
+        (p.highlights || []).forEach((h, hi) => pf.push({ key: 'proj:' + id + ':hl' + hi, src: h, label: 'Achievement ' + (hi + 1), rows: 2 }));
         return pdfEntryCardHTML(key, p.logo || null, p.name, p.tagline || '', p.period || '', p.highlights || [],
-          { sort: { kind: 'proj', key: id, idx: i, total: live.length } });
+          { sort: { kind: 'proj', key: id, idx: i, total: live.length }, text: pf });
       }).join('');
     }
 
@@ -8099,6 +8172,18 @@
       return pdfSectionRowHTML(title, pdfBadgeHTML(badgeId, inc, keys.length), globalsHTML, rowsHTML);
     }
 
+    // The text fields of one entry, in the order the document prints them.
+    function pdfEntryTextFields(base, co, coKey, role, period, desc, highlights, scoreSrc) {
+      const f = [];
+      if (co != null) f.push({ key: (coKey || base) + ':co', src: co, label: 'Organisation' });
+      if (role != null) f.push({ key: base + ':role', src: role, label: 'Role' });
+      if (period != null) f.push({ key: base + ':period', src: period, label: 'Dates' });
+      if (scoreSrc) f.push({ key: base + ':score', src: scoreSrc, label: 'Score' });
+      if (desc) f.push({ key: base + ':desc', src: desc, label: 'Description', rows: 3 });
+      (highlights || []).forEach((h, i) => f.push({ key: base + ':hl' + i, src: h, label: 'Achievement ' + (i + 1), rows: 2 }));
+      return f;
+    }
+
     function pdfEntryCardHTML(key, logo, primary, secondary, period, highlights, opts) {
       opts = opts || {};
       highlights = highlights || [];
@@ -8111,6 +8196,7 @@
       if (logo) chips += pdfChipToggleHTML('pdf-entry-logo', node.showLogo !== false, 'Logo');
       if (opts.hasScore) chips += pdfChipToggleHTML('pdf-entry-score', node.showScore !== false, 'Score');
       const achBlock = highlights.length ? pdfAchBlockHTML(key, highlights, node) : '';
+      const textFold = pdfTextFoldHTML(opts.text || []);
       // Sortable entries (projects) carry the shared drag/arrow cluster and sort dataset.
       const sort = opts.sort;
       const sortAttrs = sort ? ' data-sort-kind="' + escapeAttr(sort.kind) + '" data-sort-key="' + escapeAttr(sort.key) + '" draggable="true"' : '';
@@ -8130,6 +8216,7 @@
         '<div class="pdf-entry-controls pl-8 space-y-2' + (included ? '' : ' opacity-50 pointer-events-none') + '"' + (included ? '' : ' inert aria-hidden="true"') + '>' +
           '<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">' + chips + '</div>' +
           achBlock +
+          textFold +
         '</div>' +
       '</div>';
     }
@@ -8205,7 +8292,9 @@
       });
 
       body.addEventListener('input', function (e) {
-        if (e.target.classList.contains('pdf-lang-field')) {
+        if (e.target.classList.contains('pdf-text-field')) {
+          onGenericTextInput(e.target.getAttribute('data-text-key'), e.target);
+        } else if (e.target.classList.contains('pdf-lang-field')) {
           onLangFieldInput(e.target.closest('.pdf-lang-row').dataset.langKey, e.target);
         } else if (e.target.classList.contains('pdf-comp-text')) {
           onCompTextInput(e.target.closest('.pdf-comp-row').dataset.compKey, e.target);
