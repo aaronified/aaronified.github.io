@@ -673,6 +673,16 @@
               mask: var(--wm) no-repeat center / contain;
     }
 
+    /* A language's mark is one letter of its own script, so the font stack has to name the
+       faces that actually carry those letters before falling back. Without this a Devanagari
+       or Bengali letter is a box on a system whose UI font is Latin-only. */
+    .lang-mark {
+      font-size: 12px;
+      font-family: 'Noto Sans', 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali',
+                   'Noto Sans Arabic', 'Noto Sans CJK SC', 'Noto Sans JP', 'Noto Sans KR',
+                   'Segoe UI', system-ui, sans-serif;
+    }
+
     /* The strip's own toast. Its three tones are muted on purpose: a promotion should read as
        good news, not as a system alert going off under someone's résumé. */
     #arcade-toast[data-tone="text"] { color: #64748b; }
@@ -1284,26 +1294,29 @@
           <div class="md:col-span-2 space-y-6">
             <p id="overview-bio" data-reveal class="text-lg leading-relaxed text-slate-600 dark:text-slate-300 font-medium"></p>
 
-            <!-- Geographic / Global Footprint Widget (heading + visibility set by JS) -->
-            <div id="footprint-widget" data-reveal class="p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shadow-lg">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
-                <i data-lucide="globe" class="w-4 h-4"></i> <span id="footprint-heading">Global Footprint</span>
-              </h3>
-              <p id="global-footprint-text" class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4"></p>
-              
-              <div class="flex flex-wrap gap-2.5" id="overview-countries"></div>
+            <!-- Where he has worked and what he speaks, SIDE BY SIDE: stacked, the pair ran
+                 taller than the Executive Profile beside them and left a column of air. -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+              <!-- Geographic / Global Footprint Widget (heading + visibility set by JS) -->
+              <div id="footprint-widget" data-reveal class="p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 shadow-lg">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+                  <i data-lucide="globe" class="w-4 h-4"></i> <span id="footprint-heading">Global Footprint</span>
+                </h3>
+                <p id="global-footprint-text" class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4"></p>
+                <div class="flex flex-wrap gap-2.5" id="overview-countries"></div>
+              </div>
 
-              <!-- Languages live with the footprint: where someone has worked and what they
-                   speak there are the same fact seen twice. Hidden when none are listed. -->
-              <div id="languages-block" class="hidden mt-5 pt-5 border-t border-slate-200/60 dark:border-slate-800/60">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+              <!-- Languages, beside the footprint rather than under it: where someone has
+                   worked and what they speak there are the same fact seen twice. -->
+              <div id="languages-block" data-reveal class="hidden p-6 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 shadow-lg">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-amber-400 mb-3 flex items-center gap-2">
                   <i data-lucide="message-circle" class="w-4 h-4"></i> Languages
-                </h4>
+                </h3>
                 <div class="flex flex-wrap gap-2.5" id="languages-list"></div>
               </div>
             </div>
           </div>
-          
+
           <!-- Quick Facts Sidepanel -->
           <div id="overview-sidepanel" data-reveal="right" class="rounded-3xl bg-gradient-to-b from-indigo-500/5 to-purple-500/5 dark:from-indigo-950/10 dark:to-purple-950/10 border border-slate-200/60 dark:border-slate-800/60 p-6 space-y-6">
             <h3 class="text-lg font-bold font-display text-slate-900 dark:text-white flex items-center gap-2">
@@ -3229,7 +3242,7 @@
         footprint.countries.forEach(country => {
           const badge = document.createElement('div');
           badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm font-semibold';
-          badge.innerHTML = `<span>${country.flag}</span> <span class="text-slate-700 dark:text-slate-300">${country.name}</span>`;
+          badge.innerHTML = `${countryChip(country.flag)} <span class="text-slate-700 dark:text-slate-300">${country.name}</span>`;
           countriesWrapper.appendChild(badge);
         });
       }
@@ -3527,7 +3540,7 @@
                   <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                     ${companyHTML}
                     <span class="text-slate-400">•</span>
-                    <span class="flex items-center gap-0.5">${item.flag} ${item.location}</span>
+                    <span class="flex items-center gap-1">${countryChip(item.flag)} ${item.location}</span>
                   </div>
                 </div>
               </div>
@@ -3587,7 +3600,7 @@
                 <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                   ${companyHTML}
                   <span class="text-slate-400">•</span>
-                  <span class="flex items-center gap-0.5">${item.flag} ${item.location}</span>
+                  <span class="flex items-center gap-1">${countryChip(item.flag)} ${item.location}</span>
                 </div>
               </div>
             </div>
@@ -5985,9 +5998,10 @@
       scaler.style.width = (pageW * scale) + 'px';
       scaler.style.height = (pagesHost.offsetHeight * scale) + 'px';
 
-      // The sheets above are brand new elements, so whatever editing state was on has to be put
-      // back on them — contenteditable, the inert flip and the link tabindexes alike.
-      if (pdfUi.editing) setPdfEditing(true);
+      // The sheets above are brand new elements, so the editing attributes have to be put back
+      // on them. Marking only — calling setPdfEditing here would schedule another refresh, and
+      // that refresh would call it again.
+      pdfMarkEditable();
 
       const meta = document.getElementById('pdf-preview-meta');
       if (meta) {
@@ -7023,9 +7037,49 @@
       });
     }
 
+    // TWO JOBS, KEPT APART. setPdfEditing changes the MODE — the stage layout, the toolbar, the
+    // reflow that follows the pane growing. pdfMarkEditable puts the editing attributes back on
+    // sheets that have just been rebuilt, and touches nothing else.
+    //
+    // They used to be one function, and refreshPdfPreview called it. So turning editing on
+    // scheduled a refresh, the refresh called setPdfEditing, that scheduled another refresh,
+    // and the sheets were rebuilt forever — every node you clicked into was replaced under the
+    // caret before you could type into it. Which is exactly what "I cannot edit anything" is.
+    function pdfMarkEditable() {
+      const host = document.getElementById('pdf-preview-pages');
+      if (!host) return;
+      const on = pdfUi.editing;
+      host.classList.toggle('pr-editing', on);
+      // The sheets are a second rendering of the document, so they stay out of the tab order —
+      // except while editing, when the editable runs have to be reachable. The links inside
+      // them are pushed out of it by hand, or turning editing on would put every link in the
+      // résumé into the tab order twice.
+      if (on) { host.removeAttribute('inert'); host.removeAttribute('aria-hidden'); }
+      else { host.setAttribute('inert', ''); host.setAttribute('aria-hidden', 'true'); }
+      Array.prototype.forEach.call(host.querySelectorAll('a[href]'), a => {
+        if (on) a.setAttribute('tabindex', '-1'); else a.removeAttribute('tabindex');
+      });
+      Array.prototype.forEach.call(host.querySelectorAll('.pr-sb'), row => {
+        if (on) {
+          row.setAttribute('tabindex', '0');
+          row.setAttribute('role', 'slider');
+          row.setAttribute('aria-label', (row.getAttribute('data-skill') || '') + ' level');
+          row.setAttribute('aria-valuetext', row.getAttribute('data-level') || '');
+          row.style.cursor = 'ew-resize';
+        } else {
+          ['tabindex', 'role', 'aria-label', 'aria-valuetext'].forEach(a => row.removeAttribute(a));
+          row.style.cursor = '';
+        }
+      });
+      Array.prototype.forEach.call(host.querySelectorAll('[data-edit]'), el => {
+        const editable = on && !!pdfEditField(el.getAttribute('data-edit'));
+        if (editable) { el.setAttribute('contenteditable', 'true'); el.setAttribute('spellcheck', 'true'); }
+        else { el.removeAttribute('contenteditable'); el.removeAttribute('spellcheck'); }
+      });
+    }
+
     function setPdfEditing(on) {
       pdfUi.editing = !!on;
-      const host = document.getElementById('pdf-preview-pages');
       const bar = document.getElementById('pdf-edit-bar');
       const btn = document.getElementById('pdf-edit-toggle');
       const modal = document.getElementById('pdf-modal');
@@ -7046,35 +7100,7 @@
       wirePdfSkillDrag();
       if (bar) bar.hidden = !pdfUi.editing;
       if (btn) btn.setAttribute('aria-pressed', String(pdfUi.editing));
-      if (!host) return;
-      host.classList.toggle('pr-editing', pdfUi.editing);
-      // The sheets are a second rendering of the document, so they stay out of the tab order —
-      // except while editing, when the editable runs have to be reachable. The links inside
-      // them are pushed out of it by hand, or turning editing on would put every link in the
-      // résumé into the tab order twice.
-      if (pdfUi.editing) { host.removeAttribute('inert'); host.removeAttribute('aria-hidden'); }
-      else { host.setAttribute('inert', ''); host.setAttribute('aria-hidden', 'true'); }
-      Array.prototype.forEach.call(host.querySelectorAll('a[href]'), a => {
-        if (pdfUi.editing) a.setAttribute('tabindex', '-1'); else a.removeAttribute('tabindex');
-      });
-      // The sheets are rebuilt on every refresh, so this is re-applied there too.
-      Array.prototype.forEach.call(host.querySelectorAll('.pr-sb'), row => {
-        if (pdfUi.editing) {
-          row.setAttribute('tabindex', '0');
-          row.setAttribute('role', 'slider');
-          row.setAttribute('aria-label', (row.getAttribute('data-skill') || '') + ' level');
-          row.setAttribute('aria-valuetext', row.getAttribute('data-level') || '');
-          row.style.cursor = 'ew-resize';
-        } else {
-          ['tabindex', 'role', 'aria-label', 'aria-valuetext'].forEach(a => row.removeAttribute(a));
-          row.style.cursor = '';
-        }
-      });
-      Array.prototype.forEach.call(host.querySelectorAll('[data-edit]'), el => {
-        const editable = pdfUi.editing && !!pdfEditField(el.getAttribute('data-edit'));
-        if (editable) { el.setAttribute('contenteditable', 'true'); el.setAttribute('spellcheck', 'true'); }
-        else { el.removeAttribute('contenteditable'); el.removeAttribute('spellcheck'); }
-      });
+      pdfMarkEditable();
       if (!pdfUi.editing) pdfFlushEdits();
     }
 
@@ -7359,6 +7385,47 @@
       '</li>';
     }
 
+    // A flag emoji is two regional-indicator letters, and plenty of systems have no glyph for
+    // the pair — Windows draws "IN", some Linux builds draw two boxes. Decoding it back to the
+    // ISO code and setting THAT is a thing every font can draw, and it cannot drift from the
+    // data because it is derived from it rather than written down twice.
+    function isoFromFlag(flag) {
+      const cps = Array.from(String(flag || ''));
+      if (cps.length !== 2) return '';
+      const letters = cps.map(ch => {
+        const cp = ch.codePointAt(0);
+        return cp >= 0x1F1E6 && cp <= 0x1F1FF ? String.fromCharCode(65 + cp - 0x1F1E6) : '';
+      });
+      return letters.every(Boolean) ? letters.join('') : '';
+    }
+    // A country chip: its ISO code, set in the same small caps everywhere it appears.
+    function countryChip(flag, cls) {
+      const code = isoFromFlag(flag);
+      if (!code) return '';
+      return '<span class="' + (cls || '') + ' inline-flex items-center justify-center px-1 h-[15px] rounded ' +
+        'bg-slate-500/15 text-[9px] font-bold tracking-wider tabular-nums align-middle">' + code + '</span>';
+    }
+
+    // One letter of a language's own script, as its mark. Latin languages get a Latin letter,
+    // so the row reads as a set rather than as an exception. Anything not listed falls back to
+    // its own first letter, which is always SOMETHING and never a missing glyph.
+    const LANG_SCRIPT = {
+      english: 'A', french: 'A', german: 'A', spanish: 'A', portuguese: 'A', italian: 'A',
+      dutch: 'A', swedish: 'A', norwegian: 'A', danish: 'A', polish: 'A', turkish: 'A',
+      hindi: '\u0905', marathi: '\u0905', nepali: '\u0905', sanskrit: '\u0905',
+      bengali: '\u0985', bangla: '\u0985', assamese: '\u0985',
+      gujarati: '\u0A85', punjabi: '\u0A05', tamil: '\u0B85', telugu: '\u0C05',
+      kannada: '\u0C85', malayalam: '\u0D05', odia: '\u0B05', oriya: '\u0B05',
+      urdu: '\u0627', arabic: '\u0627', persian: '\u0627', farsi: '\u0627',
+      russian: '\u0410', ukrainian: '\u0410', greek: '\u0391', hebrew: '\u05D0',
+      japanese: '\u3042', chinese: '\u4E2D', mandarin: '\u4E2D', korean: '\uAC00',
+      thai: '\u0E01', sinhala: '\u0D85', burmese: '\u1000'
+    };
+    function langMark(name) {
+      const key = String(name || '').trim().toLowerCase();
+      return LANG_SCRIPT[key] || String(name || '?').trim().charAt(0).toUpperCase();
+    }
+
     // Languages and interests: the two blocks that are opt-in. Each stays hidden until the
     // data file names something, because an empty "Interests" heading says less than nothing.
     function renderLanguages() {
@@ -7368,8 +7435,14 @@
       const langs = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
       block.classList.toggle('hidden', !langs.length);
       if (!langs.length) return;
+      // It was display:none when the reveal observer first swept the page, so it was recorded
+      // as off screen and left half-arrived — sitting eighteen pixels lower than the card
+      // beside it, which is not what "side by side" looks like. Register it now it has a box.
+      registerReveals(block);
       list.innerHTML = langs.map(l =>
-        '<div class="flex items-baseline gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm">' +
+        '<div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/5 dark:bg-amber-400/5 border border-indigo-500/10 dark:border-amber-400/10 text-sm">' +
+          '<span class="lang-mark w-5 h-5 flex items-center justify-center rounded-md bg-indigo-500/10 dark:bg-amber-400/10 ' +
+            'text-indigo-700 dark:text-amber-300 font-bold leading-none" aria-hidden="true">' + escapeHtml(langMark(l.name)) + '</span>' +
           '<span class="font-semibold text-slate-700 dark:text-slate-300">' + escapeHtml(l.name) + '</span>' +
           (l.level ? '<span class="text-xs font-medium text-slate-500 dark:text-slate-400">' + escapeHtml(l.level) + '</span>' : '') +
         '</div>').join('');
@@ -7382,6 +7455,7 @@
       const items = (OVERVIEW_DATA.interests || []).filter(Boolean);
       block.classList.toggle('hidden', !items.length);
       if (!items.length) return;
+      registerReveals(block);
       list.innerHTML = items.map(x =>
         '<span class="px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 text-sm font-medium text-slate-700 dark:text-slate-300">' +
         escapeHtml(x) + '</span>').join('');
