@@ -2903,7 +2903,15 @@
       const strengthPills = (OVERVIEW_DATA.strengths || []).filter(x => compTitles.indexOf(x) >= 0).slice(0, PR_MAX_STRENGTHS);
       const strengthsHTML = (strengthPills.length && compCfg.showStrengths !== false)
         ? `<div class="pr-pills">${strengthPills.map(x => `<span class="pr-pill">${escapeHtml(x)}</span>`).join('')}</div>` : '';
-      const langRows = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
+      const langCfg = config.languages || {};
+      const langRows = (langCfg.enabled === false) ? [] :
+        (langCfg.order || (OVERVIEW_DATA.languages || []).map(l => l && l.name))
+          .map(k => {
+            const src = (OVERVIEW_DATA.languages || []).find(l => l && l.name === k);
+            const it = (langCfg.items || {})[k] || {};
+            if (!src || it.include === false) return null;
+            return { name: it.name != null ? it.name : src.name, level: it.level != null ? it.level : src.level };
+          }).filter(l => l && l.name);
       const languagesHTML = langRows.length
         ? `<ul class="pr-langs">${langRows.map(l => `<li><span class="t">${escapeHtml(l.name)}</span>` +
             `${l.level ? `<span class="pr-aside-sk"> &middot; ${escapeHtml(l.level)}</span>` : ''}</li>`).join('')}</ul>` : '';
@@ -5300,6 +5308,11 @@
       if (out.competencies && out.competencies.items) {
         Object.keys(out.competencies.items).forEach(k => { delete out.competencies.items[k].text; });
       }
+      if (out.languages && out.languages.items) {
+        Object.keys(out.languages.items).forEach(k => {
+          delete out.languages.items[k].name; delete out.languages.items[k].level;
+        });
+      }
       return out;
     }
 
@@ -5458,6 +5471,14 @@
         const cur = pdfConfig.competencies.items[row.getAttribute('data-comp-key')] || {};
         const d = def.competencies.items[row.getAttribute('data-comp-key')] || {};
         mark(row.querySelector('.pdf-comp-include'), !!cur.include !== !!d.include);
+      });
+
+      // Languages — the block switch plus include per row.
+      mark(body.querySelector('.pdf-langs-enabled'), on(pdfConfig.languages.enabled) !== on(def.languages.enabled));
+      body.querySelectorAll('[data-lang-key]').forEach(row => {
+        const cur = pdfConfig.languages.items[row.getAttribute('data-lang-key')] || {};
+        const d = def.languages.items[row.getAttribute('data-lang-key')] || {};
+        mark(row.querySelector('.pdf-lang-include'), on(cur.include) !== on(d.include));
       });
 
       // Work / project / education entries — include + description / logo / score toggles.
@@ -5677,7 +5698,28 @@
       const projHi = typeof sProjects.showHighlights === 'boolean' ? sProjects.showHighlights : null;
       const projects = { order: projOrder, items: projItems, showHighlights: projHi };
 
-      return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items, showStrengths: showStrengths }, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
+      // Languages — keyed by the authored name, the same stable handle the competencies use.
+      // `name` and `level` are overrides: null means "whatever data/overview.js says", so a
+      // correction in the data file reaches everyone who did not rewrite that line themselves.
+      const sLangs = saved.languages || {};
+      const sLangItems = sLangs.items || {};
+      const liveLangs = (OVERVIEW_DATA.languages || []).filter(l => l && l.name).map(l => l.name);
+      const hadLangs = Array.isArray(sLangs.order);
+      let langOrder = hadLangs ? sLangs.order.filter(k => liveLangs.indexOf(k) >= 0) : [];
+      if (hadLangs) sLangs.order.forEach(k => { if (liveLangs.indexOf(k) < 0) changes.push('Language \u201C' + k + '\u201D was removed'); });
+      liveLangs.forEach(k => { if (langOrder.indexOf(k) < 0) { langOrder.push(k); if (hadLangs) changes.push('New language \u201C' + k + '\u201D added'); } });
+      const langItems = {};
+      langOrder.forEach(k => {
+        const sl = sLangItems[k] || {};
+        langItems[k] = {
+          include: typeof sl.include === 'boolean' ? sl.include : true,
+          name: typeof sl.name === 'string' ? sl.name : null,
+          level: typeof sl.level === 'string' ? sl.level : null
+        };
+      });
+      const languages = { enabled: sLangs.enabled !== false, order: langOrder, items: langItems };
+
+      return { config: { v: PDF_CONFIG_VERSION, page: page, hero: hero, contacts: { order: contactOrder, items: contactItems }, summary: summary, competencies: { order: order, items: items, showStrengths: showStrengths }, languages: languages, entries: entries, projects: projects, recommendations: recommendations }, changes: changes };
     }
 
     // --- Pagination ---------------------------------------------------------
@@ -7324,6 +7366,7 @@
       html += renderContactsSectionHTML();
       html += renderSummarySectionHTML();
       html += renderCompetencySectionHTML();
+      html += renderLanguagesSectionHTML();
       html += renderEntrySectionsHTML();
       html += renderRecommendationsSectionHTML();
       body.innerHTML = html;
@@ -7734,6 +7777,107 @@
       return pdfSectionRowHTML('Core Competencies', pdfBadgeHTML('pdf-comp-badge', inc, order.length), globals, right);
     }
 
+    // Languages. Two of the three templates have a side column to put them in; Bhagirathi is
+    // one flowing column and has none, which the note under the switch says rather than
+    // leaving someone to wonder why nothing moved.
+    function renderLanguagesSectionHTML() {
+      const src = (OVERVIEW_DATA.languages || []).filter(l => l && l.name);
+      if (!src.length) return '';
+      const cfg = pdfConfig.languages;
+      const inc = cfg.order.filter(k => cfg.items[k] && cfg.items[k].include !== false).length;
+      const globals =
+        '<label class="flex items-center justify-between gap-2 text-xs">' +
+          '<span class="font-medium text-slate-600 dark:text-slate-300">Languages block</span>' +
+          pdfSwitchHTML('pdf-langs-enabled', cfg.enabled !== false, 'Print the languages block') + '</label>' +
+        '<p class="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">Printed in the side column \u2014 Pattachitra and Dokra. Bhagirathi has none.</p>';
+      const right = '<p class="text-[11px] text-slate-500 dark:text-slate-400 -mt-1 mb-1">Reorder (arrows / drag), toggle, and rewrite the name or the level.</p>' +
+        '<ul id="pdf-lang-list" data-sort-list="lang" class="space-y-2">' + pdfLangListHTML() + '</ul>';
+      return pdfSectionRowHTML('Languages', pdfBadgeHTML('pdf-lang-badge', inc, cfg.order.length), globals, right);
+    }
+
+    function pdfLangListHTML() {
+      const order = pdfConfig.languages.order;
+      return order.map((k, i) => pdfLangRowHTML(k, i, order.length)).filter(Boolean).join('');
+    }
+
+    function pdfLangRowHTML(key, idx, total) {
+      const src = (OVERVIEW_DATA.languages || []).find(l => l && l.name === key);
+      if (!src) return '';
+      const item = pdfConfig.languages.items[key] || {};
+      const included = item.include !== false;
+      const name = item.name != null ? item.name : src.name;
+      const level = item.level != null ? item.level : (src.level || '');
+      const field = (f, val, ph, lbl, cls) =>
+        '<input type="text" class="pdf-lang-field ' + cls + ' min-w-0 px-2 py-1 rounded-lg text-xs border border-slate-200/70 dark:border-slate-700/60' +
+        ' bg-white/60 dark:bg-slate-950/40 text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"' +
+        ' data-field="' + f + '" value="' + escapeAttr(val) + '" placeholder="' + escapeAttr(ph) + '" aria-label="' + escapeAttr(lbl) + '">';
+      return '<li data-lang-key="' + escapeAttr(key) + '" data-sort-kind="lang" data-sort-key="' + escapeAttr(key) + '" draggable="true"' +
+        ' class="pdf-lang-row pdf-sortable flex items-center gap-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-2.5' +
+        (included ? '' : ' opacity-60') + '">' +
+        pdfSortHandleHTML('lang', key, idx, total, src.name) +
+        '<span class="lang-mark w-6 h-6 flex items-center justify-center flex-shrink-0 rounded-lg bg-indigo-500/10 dark:bg-amber-400/10' +
+          ' text-indigo-700 dark:text-amber-300 font-bold leading-none" aria-hidden="true">' + escapeHtml(langMark(name)) + '</span>' +
+        field('name', name, 'Language', 'Language name', 'flex-1') +
+        field('level', level, 'Level', 'Level for ' + src.name, 'w-24 flex-shrink-0') +
+        pdfSwitchHTML('pdf-lang-include', included, 'Include ' + src.name + ' in PDF') +
+      '</li>';
+    }
+
+    function renderLanguageList() {
+      const ul = document.getElementById('pdf-lang-list');
+      if (!ul) return;
+      ul.innerHTML = pdfLangListHTML();
+      updateLangBadge();
+      drawIcons();
+    }
+
+    function updateLangBadge() {
+      const badge = document.getElementById('pdf-lang-badge');
+      if (!badge) return;
+      const cfg = pdfConfig.languages;
+      const inc = cfg.order.filter(k => cfg.items[k] && cfg.items[k].include !== false).length;
+      badge.textContent = inc + ' of ' + cfg.order.length + ' shown';
+    }
+
+    function toggleLangsEnabled(btn) {
+      const cur = btn.getAttribute('aria-checked') === 'true';
+      pdfConfig.languages.enabled = !cur;
+      btn.setAttribute('aria-checked', !cur ? 'true' : 'false');
+      savePdfConfigDebounced();
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
+    function toggleLangInclude(key, btn) {
+      const item = pdfConfig.languages.items[key];
+      if (!item) return;
+      item.include = !(item.include !== false);
+      btn.setAttribute('aria-checked', item.include ? 'true' : 'false');
+      const row = btn.closest('.pdf-lang-row');
+      if (row) row.classList.toggle('opacity-60', !item.include);
+      updateLangBadge();
+      savePdfConfigDebounced();
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
+    // Typing in a language field. An empty box means "use what the data file says" rather than
+    // an empty line in the document, so clearing it is how you undo the rewrite.
+    function onLangFieldInput(key, input) {
+      const item = pdfConfig.languages.items[key];
+      if (!item) return;
+      const f = input.getAttribute('data-field');
+      const v = input.value;
+      item[f] = v.trim() ? v : null;
+      if (f === 'name') {
+        const mark = input.closest('.pdf-lang-row').querySelector('.lang-mark');
+        const src = (OVERVIEW_DATA.languages || []).find(l => l && l.name === key);
+        if (mark) mark.textContent = langMark(item.name != null ? item.name : (src ? src.name : key));
+      }
+      updateResetButton();
+      schedulePdfPreview();
+    }
+
     function pdfCompRowHTML(title, idx, total) {
       const c = OVERVIEW_DATA.competencies.find(x => x.title === title);
       if (!c) return '';
@@ -7977,6 +8121,8 @@
         if ((el = t.closest('.pdf-contact-include'))) { toggleContactInclude(el.closest('.pdf-contact-row').dataset.contactKey, el); return; }
         if ((el = t.closest('.pdf-summary-include'))) { toggleSummaryInclude(el); return; }
         if ((el = t.closest('.pdf-summary-reset'))) { resetSummaryText(el); return; }
+        if ((el = t.closest('.pdf-langs-enabled'))) { toggleLangsEnabled(el); return; }
+        if ((el = t.closest('.pdf-lang-include'))) { toggleLangInclude(el.closest('.pdf-lang-row').dataset.langKey, el); return; }
         if ((el = t.closest('.pdf-comp-strengths'))) { toggleCompStrengths(el); return; }
         if ((el = t.closest('.pdf-proj-highlights'))) { toggleProjHighlights(el); return; }
         if ((el = t.closest('.pdf-reco-enabled'))) { toggleRecoEnabled(el); return; }
@@ -7990,7 +8136,9 @@
       });
 
       body.addEventListener('input', function (e) {
-        if (e.target.classList.contains('pdf-comp-text')) {
+        if (e.target.classList.contains('pdf-lang-field')) {
+          onLangFieldInput(e.target.closest('.pdf-lang-row').dataset.langKey, e.target);
+        } else if (e.target.classList.contains('pdf-comp-text')) {
           onCompTextInput(e.target.closest('.pdf-comp-row').dataset.compKey, e.target);
         } else if (e.target.classList.contains('pdf-summary-text')) {
           onSummaryTextInput(e.target);
@@ -8026,6 +8174,7 @@
       if (kind === 'contact') return pdfConfig.contacts.order;
       if (kind === 'reco') return pdfConfig.recommendations.order;
       if (kind === 'proj') return pdfConfig.projects.order;
+      if (kind === 'lang') return pdfConfig.languages.order;
       return null;
     }
     function pdfRerenderList(kind) {
@@ -8033,6 +8182,7 @@
       else if (kind === 'contact') renderContactList();
       else if (kind === 'reco') renderRecoList();
       else if (kind === 'proj') renderProjectList();
+      else if (kind === 'lang') renderLanguageList();
     }
     function pdfMove(kind, fromIdx, toIdx, focusDir) {
       const order = pdfOrderFor(kind);
